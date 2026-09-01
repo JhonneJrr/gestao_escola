@@ -1,5 +1,5 @@
 interface TelaEntryProps {
-  aoEntrar: () => void;
+  aoEntrar: (destino: "home" | "modoAluno") => void;
 }
 
 function TelaEntry({ aoEntrar }: TelaEntryProps) {
@@ -14,9 +14,14 @@ function TelaEntry({ aoEntrar }: TelaEntryProps) {
       </div>
       <h1>Portal de Gestão Escolar</h1>
       <p>Acompanhe alunos, disciplinas e matrículas em um só lugar.</p>
-      <button className="botao-entrar" type="button" onClick={aoEntrar}>
-        Entrar no portal
-      </button>
+      <div className="entry-acoes">
+        <button className="botao-entrar" type="button" onClick={() => aoEntrar("home")}>
+          Entrar no portal
+        </button>
+        <button className="botao-entrar-secundario" type="button" onClick={() => aoEntrar("modoAluno")}>
+          Ver como aluno
+        </button>
+      </div>
     </div>
   );
 }

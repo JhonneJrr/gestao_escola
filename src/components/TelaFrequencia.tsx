@@ -1,32 +1,50 @@
 import { useEffect, useState } from "react";
-import type { Aluno } from "../types";
-import { frequenciasDoAluno, listarAlunos, type DisciplinaComFrequencia } from "../api";
+import type { Disciplina } from "../types";
+import { frequenciaDaTurma, listarDisciplinas } from "../api";
+import type { AlunoComFrequencia } from "../api";
 import BotaoVoltar from "./BotaoVoltar";
-import SeletorAlunos from "./SeletorAlunos";
+import CalendarioChamada from "./CalendarioChamada";
 
 interface TelaFrequenciaProps {
   aoVoltar: () => void;
 }
 
 function TelaFrequencia({ aoVoltar }: TelaFrequenciaProps) {
-  const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  const [disciplinaId, setDisciplinaId] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  const [alunoId, setAlunoId] = useState("");
-  const [frequencias, setFrequencias] = useState<DisciplinaComFrequencia[]>([]);
-  const [carregandoFrequencias, setCarregandoFrequencias] = useState(false);
+  const [turma, setTurma] = useState<AlunoComFrequencia[]>([]);
+  const [carregandoTurma, setCarregandoTurma] = useState(false);
+
+  async function carregarTurma(idDisciplina: string) {
+    if (idDisciplina === "") {
+      setTurma([]);
+      return;
+    }
+
+    setCarregandoTurma(true);
+    try {
+      const dados = await frequenciaDaTurma(Number(idDisciplina));
+      setTurma(dados);
+    } catch {
+      setTurma([]);
+    } finally {
+      setCarregandoTurma(false);
+    }
+  }
 
   useEffect(() => {
     async function carregar() {
       try {
-        const alunosCarregados = await listarAlunos();
-        setAlunos(alunosCarregados);
-        if (alunosCarregados.length > 0) {
-          setAlunoId(String(alunosCarregados[0].id));
+        const disciplinasCarregadas = await listarDisciplinas();
+        setDisciplinas(disciplinasCarregadas);
+        if (disciplinasCarregadas.length > 0) {
+          setDisciplinaId(String(disciplinasCarregadas[0].id));
         }
       } catch {
-        setErro("Não foi possível carregar os dados.");
+        setErro("Não foi possível carregar as disciplinas.");
       } finally {
         setCarregando(false);
       }
@@ -36,27 +54,10 @@ function TelaFrequencia({ aoVoltar }: TelaFrequenciaProps) {
   }, []);
 
   useEffect(() => {
-    async function carregarFrequencias() {
-      if (alunoId === "") {
-        setFrequencias([]);
-        return;
-      }
+    carregarTurma(disciplinaId);
+  }, [disciplinaId]);
 
-      setCarregandoFrequencias(true);
-      try {
-        const dados = await frequenciasDoAluno(Number(alunoId));
-        setFrequencias(dados);
-      } catch {
-        setFrequencias([]);
-      } finally {
-        setCarregandoFrequencias(false);
-      }
-    }
-
-    carregarFrequencias();
-  }, [alunoId]);
-
-  const alunoSelecionado = alunos.find((aluno) => aluno.id === Number(alunoId));
+  const disciplinaSelecionada = disciplinas.find((disciplina) => disciplina.id === Number(disciplinaId));
 
   return (
     <div className="tela-frequencia">
@@ -65,48 +66,56 @@ function TelaFrequencia({ aoVoltar }: TelaFrequenciaProps) {
 
       {carregando && <p className="mensagem-status">Carregando...</p>}
       {!carregando && erro !== "" && <p className="mensagem-erro">{erro}</p>}
+      {!carregando && erro === "" && disciplinas.length === 0 && (
+        <p className="mensagem-vazia">Nenhuma disciplina cadastrada ainda.</p>
+      )}
 
-      {!carregando && erro === "" && (
-        <div className="tela-com-roster">
-          <SeletorAlunos alunos={alunos} alunoSelecionadoId={alunoId} aoSelecionar={setAlunoId} />
+      {!carregando && erro === "" && disciplinas.length > 0 && (
+        <>
+          <div className="campo">
+            <label htmlFor="select-disciplina-frequencia">Disciplina</label>
+            <select
+              id="select-disciplina-frequencia"
+              value={disciplinaId}
+              onChange={(evento) => setDisciplinaId(evento.target.value)}
+            >
+              {disciplinas.map((disciplina) => (
+                <option key={disciplina.id} value={disciplina.id}>
+                  {disciplina.nome}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {alunoSelecionado && (
-            <div className="painel-matricula">
-              <div className="aluno-selecionado">
-                <div className="aluno-selecionado-icone">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                </div>
-                <div>
-                  <h3>{alunoSelecionado.nome}</h3>
-                  <p>Matrícula {alunoSelecionado.matricula}</p>
-                </div>
-              </div>
+          {disciplinaSelecionada && (
+            <div className="frequencia-grid">
+              <CalendarioChamada
+                disciplinaId={disciplinaSelecionada.id}
+                aoAtualizarFrequencia={() => carregarTurma(disciplinaId)}
+              />
 
-              <div className="lista-vinculos">
-                <p className="rotulo-secao">Frequência por disciplina</p>
-                {carregandoFrequencias && <p className="mensagem-status">Carregando...</p>}
-                {!carregandoFrequencias && frequencias.length === 0 && (
-                  <p className="mensagem-vazia">Este aluno ainda não tem frequência registrada.</p>
+              <div className="quadro-turma">
+                <p className="rotulo-secao">Frequência da turma</p>
+                {carregandoTurma && <p className="mensagem-status">Carregando...</p>}
+                {!carregandoTurma && turma.length === 0 && (
+                  <p className="mensagem-vazia">Nenhum aluno matriculado nessa disciplina.</p>
                 )}
-                {!carregandoFrequencias && frequencias.length > 0 && (
-                  <ul className="chips-disciplinas">
-                    {frequencias.map((disciplina) => {
-                      const risco = disciplina.percentual < 75;
-                      const classeChip = risco ? "chip-disciplina chip-risco" : "chip-disciplina";
-                      return (
-                        <li key={disciplina.id} className={classeChip}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v3"></path><path d="M16 2v3"></path><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="m9 15 2 2 4-4"></path></svg>
-                          {disciplina.nome}
-                          <span className="chip-disciplina-horas">{disciplina.percentual}%</span>
-                        </li>
-                      );
-                    })}
+                {!carregandoTurma && turma.length > 0 && (
+                  <ul className="lista-risco">
+                    {turma.map((aluno) => (
+                      <li key={aluno.id}>
+                        <span>{aluno.nome}</span>
+                        <span className={aluno.percentual !== null && aluno.percentual < 75 ? "valor-risco" : "valor-turma"}>
+                          {aluno.percentual === null ? "sem chamada" : `${aluno.percentual.toFixed(0)}%`}
+                        </span>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

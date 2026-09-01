@@ -8,7 +8,6 @@ interface TelaHomeProps {
 function TelaHome({ aoAbrirTela }: TelaHomeProps) {
   return (
     <div className="tela-home">
-      <h2>O que você quer fazer?</h2>
       <div className="grade-funcoes">
         <CardFuncao
           titulo="Gestão de Alunos"
@@ -48,7 +47,7 @@ function TelaHome({ aoAbrirTela }: TelaHomeProps) {
 
         <CardFuncao
           titulo="Painel"
-          descricao="Estatísticas da turma: médias, aprovação e carga horária."
+          descricao="Visão de risco: médias baixas, faltas e avaliações sem nota."
           aoAbrir={(evento) => aoAbrirTela("dashboard", evento)}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

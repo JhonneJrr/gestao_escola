@@ -10,14 +10,12 @@ function FormAluno({ aoCriarAluno }: FormAlunoProps) {
   const [nome, setNome] = useState("");
   const [idade, setIdade] = useState("");
   const [matricula, setMatricula] = useState("");
-  const [media, setMedia] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
 
   function limparCampos() {
     setNome("");
     setIdade("");
     setMatricula("");
-    setMedia("");
   }
 
   async function aoEnviar(evento: React.FormEvent) {
@@ -40,18 +38,11 @@ function FormAluno({ aoCriarAluno }: FormAlunoProps) {
       return;
     }
 
-    const mediaNumero = Number(media);
-    if (media.trim() === "" || Number.isNaN(mediaNumero) || mediaNumero < 0 || mediaNumero > 10) {
-      setMensagemErro("Informe uma média entre 0 e 10.");
-      return;
-    }
-
     try {
       const novoAluno = await criarAluno({
         nome,
         idade: idadeNumero,
         matricula,
-        media: mediaNumero,
       });
       aoCriarAluno(novoAluno);
       limparCampos();
@@ -96,18 +87,6 @@ function FormAluno({ aoCriarAluno }: FormAlunoProps) {
             placeholder="Ex.: 2026009"
             value={matricula}
             onChange={(evento) => setMatricula(evento.target.value)}
-          />
-        </div>
-
-        <div className="campo">
-          <label htmlFor="media-form">Média</label>
-          <input
-            id="media-form"
-            type="number"
-            step="0.1"
-            placeholder="Ex.: 7.5"
-            value={media}
-            onChange={(evento) => setMedia(evento.target.value)}
           />
         </div>
 

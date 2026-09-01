@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import type { Aluno, Disciplina } from "../types";
-import { disciplinasDoAluno, lancarNota, listarAlunos, notasDoAluno } from "../api";
+import type { Aluno } from "../types";
+import { boletimDoAluno, lancarNota, listarAlunos } from "../api";
+import type { BoletimDaMateria } from "../api";
 import BotaoVoltar from "./BotaoVoltar";
 import SeletorAlunos from "./SeletorAlunos";
 
@@ -14,31 +15,26 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
   const [erro, setErro] = useState("");
 
   const [alunoId, setAlunoId] = useState("");
-  const [disciplinasMatriculadas, setDisciplinasMatriculadas] = useState<Disciplina[]>([]);
-  const [notas, setNotas] = useState<(Disciplina & { nota: number })[]>([]);
+  const [boletim, setBoletim] = useState<BoletimDaMateria[]>([]);
   const [carregandoBoletim, setCarregandoBoletim] = useState(false);
 
-  const [disciplinaId, setDisciplinaId] = useState("");
+  const [avaliacaoId, setAvaliacaoId] = useState("");
   const [valorNota, setValorNota] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
 
   async function carregarBoletim(idAluno: string) {
     if (idAluno === "") {
-      setDisciplinasMatriculadas([]);
-      setNotas([]);
+      setBoletim([]);
       return;
     }
 
     setCarregandoBoletim(true);
     try {
-      const disciplinasCarregadas = await disciplinasDoAluno(Number(idAluno));
-      const notasCarregadas = await notasDoAluno(Number(idAluno));
-      setDisciplinasMatriculadas(disciplinasCarregadas);
-      setNotas(notasCarregadas);
+      const boletimCarregado = await boletimDoAluno(Number(idAluno));
+      setBoletim(boletimCarregado);
     } catch {
-      setDisciplinasMatriculadas([]);
-      setNotas([]);
+      setBoletim([]);
     } finally {
       setCarregandoBoletim(false);
     }
@@ -68,7 +64,7 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
 
   function aoMudarAluno(novoAlunoId: string) {
     setAlunoId(novoAlunoId);
-    setDisciplinaId("");
+    setAvaliacaoId("");
     setValorNota("");
     setMensagem("");
     setMensagemErro("");
@@ -80,8 +76,8 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
     setMensagemErro("");
 
     const notaNumero = Number(valorNota);
-    if (disciplinaId === "") {
-      setMensagemErro("Selecione a disciplina.");
+    if (avaliacaoId === "") {
+      setMensagemErro("Selecione a avaliação.");
       return;
     }
     if (valorNota.trim() === "" || Number.isNaN(notaNumero) || notaNumero < 0 || notaNumero > 10) {
@@ -90,7 +86,7 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
     }
 
     try {
-      await lancarNota(Number(alunoId), Number(disciplinaId), notaNumero);
+      await lancarNota(Number(alunoId), Number(avaliacaoId), notaNumero);
       setMensagem("Nota lançada com sucesso.");
       setValorNota("");
       await carregarBoletim(alunoId);
@@ -121,31 +117,31 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
                 </div>
                 <div>
                   <h3>{alunoSelecionado.nome}</h3>
-                  <p>
-                    Matrícula {alunoSelecionado.matricula} · Média {alunoSelecionado.media}
-                  </p>
+                  <p>Matrícula {alunoSelecionado.matricula}</p>
                 </div>
               </div>
 
-              {!carregandoBoletim && disciplinasMatriculadas.length === 0 && (
+              {!carregandoBoletim && boletim.length === 0 && (
                 <p className="mensagem-vazia">Este aluno ainda não está matriculado em nenhuma disciplina.</p>
               )}
 
-              {!carregandoBoletim && disciplinasMatriculadas.length > 0 && (
+              {!carregandoBoletim && boletim.length > 0 && (
                 <form className="form-matricula-inline" onSubmit={aoLancarNota}>
                   <div className="campo">
-                    <label htmlFor="select-disciplina-nota">Disciplina</label>
+                    <label htmlFor="select-avaliacao">Avaliação</label>
                     <select
-                      id="select-disciplina-nota"
-                      value={disciplinaId}
-                      onChange={(evento) => setDisciplinaId(evento.target.value)}
+                      id="select-avaliacao"
+                      value={avaliacaoId}
+                      onChange={(evento) => setAvaliacaoId(evento.target.value)}
                     >
-                      <option value="">Selecione uma disciplina</option>
-                      {disciplinasMatriculadas.map((disciplina) => (
-                        <option key={disciplina.id} value={disciplina.id}>
-                          {disciplina.nome}
-                        </option>
-                      ))}
+                      <option value="">Selecione uma avaliação</option>
+                      {boletim.map((materia) =>
+                        materia.notas.map((nota) => (
+                          <option key={nota.avaliacao.id} value={nota.avaliacao.id}>
+                            {materia.disciplina.nome} — {nota.avaliacao.nome} (peso {nota.avaliacao.peso})
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -171,22 +167,29 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
               )}
 
               <div className="lista-vinculos">
-                <p className="rotulo-secao">Notas lançadas</p>
+                <p className="rotulo-secao">Boletim por matéria</p>
                 {carregandoBoletim && <p className="mensagem-status">Carregando...</p>}
-                {!carregandoBoletim && notas.length === 0 && (
-                  <p className="mensagem-vazia">Nenhuma nota lançada ainda.</p>
-                )}
-                {!carregandoBoletim && notas.length > 0 && (
-                  <ul className="chips-disciplinas">
-                    {notas.map((disciplina) => (
-                      <li key={disciplina.id} className="chip-disciplina">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
-                        {disciplina.nome}
-                        <span className="chip-disciplina-horas">{disciplina.nota.toFixed(1)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {!carregandoBoletim &&
+                  boletim.map((materia) => (
+                    <div key={materia.disciplina.id} className="materia-boletim">
+                      <div className="materia-boletim-topo">
+                        <strong>{materia.disciplina.nome}</strong>
+                        <span>
+                          {materia.media === null
+                            ? "sem nota lançada"
+                            : `${materia.media.toFixed(1)}${materia.parcial ? " (parcial)" : ""}`}
+                        </span>
+                      </div>
+                      <ul className="chips-disciplinas">
+                        {materia.notas.map((nota) => (
+                          <li key={nota.avaliacao.id} className="chip-disciplina">
+                            {nota.avaliacao.nome}
+                            <span className="chip-disciplina-horas">{nota.valor === null ? "—" : nota.valor.toFixed(1)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
               </div>
             </div>
           )}

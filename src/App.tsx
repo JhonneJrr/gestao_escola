@@ -11,6 +11,7 @@ import TelaEntry from "./components/TelaEntry";
 import TelaFrequencia from "./components/TelaFrequencia";
 import TelaHome from "./components/TelaHome";
 import TelaMatriculas from "./components/TelaMatriculas";
+import TelaModoAluno from "./components/TelaModoAluno";
 
 interface OrigemTransicao {
   x: number;
@@ -22,6 +23,7 @@ interface OrigemTransicao {
 function App() {
   const [tela, setTela] = useState<Tela>("entry");
   const [transicao, setTransicao] = useState<OrigemTransicao | null>(null);
+  const [destinoAposCarregar, setDestinoAposCarregar] = useState<Tela>("home");
 
   useEffect(() => {
     if (tela !== "alunos") {
@@ -42,11 +44,18 @@ function App() {
   }
 
   if (tela === "entry") {
-    return <TelaEntry aoEntrar={() => setTela("carregando")} />;
+    return (
+      <TelaEntry
+        aoEntrar={(destino) => {
+          setDestinoAposCarregar(destino);
+          setTela("carregando");
+        }}
+      />
+    );
   }
 
   if (tela === "carregando") {
-    return <TelaCarregando aoConcluir={() => setTela("home")} />;
+    return <TelaCarregando aoConcluir={() => setTela(destinoAposCarregar)} />;
   }
 
   return (
@@ -74,6 +83,7 @@ function App() {
       {tela === "boletim" && <TelaBoletim aoVoltar={() => setTela("home")} />}
       {tela === "frequencia" && <TelaFrequencia aoVoltar={() => setTela("home")} />}
       {tela === "avisos" && <TelaAvisos aoVoltar={() => setTela("home")} />}
+      {tela === "modoAluno" && <TelaModoAluno aoVoltar={() => setTela("entry")} />}
     </div>
   );
 }

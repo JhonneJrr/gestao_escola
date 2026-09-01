@@ -116,9 +116,7 @@ function TelaMatriculas({ aoVoltar }: TelaMatriculasProps) {
                   </div>
                   <div>
                     <h3>{alunoSelecionado.nome}</h3>
-                    <p>
-                      Matrícula {alunoSelecionado.matricula} · Média {alunoSelecionado.media}
-                    </p>
+                    <p>Matrícula {alunoSelecionado.matricula}</p>
                   </div>
                 </div>
 

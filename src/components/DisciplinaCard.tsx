@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { DisciplinaComContagem } from "../types";
+import FormAvaliacao from "./FormAvaliacao";
 
 interface DisciplinaCardProps {
   disciplina: DisciplinaComContagem;
@@ -6,8 +8,28 @@ interface DisciplinaCardProps {
 }
 
 function DisciplinaCard({ disciplina, aoExcluir }: DisciplinaCardProps) {
+  const [expandida, setExpandida] = useState(false);
+
+  function aoClicarExcluir(evento: React.MouseEvent) {
+    evento.stopPropagation();
+    aoExcluir(disciplina.id);
+  }
+
   return (
-    <article className="card-disciplina">
+    <article
+      className="card-disciplina"
+      tabIndex={0}
+      role="button"
+      aria-expanded={expandida}
+      aria-label={`Ver avaliações de ${disciplina.nome}`}
+      onClick={() => setExpandida(!expandida)}
+      onKeyDown={(evento) => {
+        if (evento.key === "Enter" || evento.key === " ") {
+          evento.preventDefault();
+          setExpandida(!expandida);
+        }
+      }}
+    >
       <div className="card-disciplina-cabecalho">
         <div className="card-disciplina-icone">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -34,7 +56,7 @@ function DisciplinaCard({ disciplina, aoExcluir }: DisciplinaCardProps) {
           className="botao-excluir"
           type="button"
           aria-label={`Excluir ${disciplina.nome}`}
-          onClick={() => aoExcluir(disciplina.id)}
+          onClick={aoClicarExcluir}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 11v6"></path>
@@ -45,6 +67,12 @@ function DisciplinaCard({ disciplina, aoExcluir }: DisciplinaCardProps) {
           </svg>
         </button>
       </div>
+
+      {expandida && (
+        <div onClick={(evento) => evento.stopPropagation()}>
+          <FormAvaliacao disciplinaId={disciplina.id} />
+        </div>
+      )}
     </article>
   );
 }

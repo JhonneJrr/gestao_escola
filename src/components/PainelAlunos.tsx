@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Aluno } from "../types";
 import { excluirAluno, listarAlunos } from "../api";
+import AlunoDrawer from "./AlunoDrawer";
 import BotaoVoltar from "./BotaoVoltar";
 import Filtros from "./Filtros";
 import FormAluno from "./FormAluno";
@@ -18,6 +19,8 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
   const [q, setQ] = useState("");
   const [idadeMinima, setIdadeMinima] = useState("");
   const [mediaMinima, setMediaMinima] = useState("");
+
+  const [alunoAberto, setAlunoAberto] = useState<Aluno | null>(null);
 
   useEffect(() => {
     async function carregar() {
@@ -56,6 +59,9 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
     try {
       await excluirAluno(id);
       setAlunos(alunos.filter((aluno) => aluno.id !== id));
+      if (alunoAberto?.id === id) {
+        setAlunoAberto(null);
+      }
     } catch (erro) {
       setErro((erro as Error).message);
     }
@@ -74,6 +80,9 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
     <main className="conteudo">
       <section className="painel">
         <BotaoVoltar aoVoltar={aoVoltar} />
+
+        <h2>Gestão de Alunos</h2>
+
         <Filtros
           q={q}
           idadeMinima={idadeMinima}
@@ -90,12 +99,21 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
             <p className="contagem">
               <strong>{alunos.length}</strong> aluno(s) encontrado(s)
             </p>
-            <ListaAlunos alunos={alunos} mensagemVazia={mensagemVazia} aoExcluir={aoExcluir} />
+            <ListaAlunos
+              alunos={alunos}
+              mensagemVazia={mensagemVazia}
+              aoAbrir={setAlunoAberto}
+              aoExcluir={aoExcluir}
+            />
           </>
         )}
       </section>
 
       <FormAluno aoCriarAluno={aoCriarAluno} />
+
+      {alunoAberto && (
+        <AlunoDrawer aluno={alunoAberto} aoFechar={() => setAlunoAberto(null)} aoExcluir={aoExcluir} />
+      )}
     </main>
   );
 }
