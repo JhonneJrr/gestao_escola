@@ -23,6 +23,7 @@ na API real.
   carga horária) e a proporção de aprovados/reprovados.
 - Tema próprio (vidro/glassmorphism, paleta violeta/âmbar), responsivo e com
   estados de carregando/erro/vazio em toda tela que busca dados.
+- Alunos, Disciplinas e Avisos com paginação e busca no servidor; painel com indicadores, alunos em risco, ranking e avaliações pendentes.
 
 ## Início rápido
 
