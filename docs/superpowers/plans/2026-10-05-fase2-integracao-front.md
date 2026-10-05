@@ -21,7 +21,7 @@ Desvios do spec (decididos aqui): (a) `TelaDashboard` continua usando `listarAlu
 - Código simples, nível de curso: sem biblioteca de estado, sem react-query; props tipadas por `interface`, sem `any`.
 - Comentários só onde o "porquê" não é óbvio. Texto de UI em pt-br com acentos.
 - Commits: 1 linha, sem acento, **sem Co-Authored-By nem menção a IA**. Sem push (o dono manda).
-- UI nova (tela de login, estilo do botão Sair) é do orquestrador com a skill `impeccable`, nunca do Codex.
+- UI nova (tela de login, estilo do botão Sair): por decisão do dono em 05/10, o CODEX implementa (exceção à regra de que front é do orquestrador). O orquestrador escreve a direção visual no briefing (a partir do `index.css` e da `TelaEntry` atuais) e VÊ as capturas de tela antes de aceitar.
 - Ambiente: API local em `http://localhost:8000` (uvicorn, Postgres portátil `~/.pg16` porta 55432, `python seed.py --apagar-tudo` aplicado), front em `http://localhost:5173`. Logins demo: `prof@escola.com` e `ana@escola.com`, senha `escola123`.
 
 ## Review Focus
@@ -929,7 +929,7 @@ git commit -m "Adiciona React Router, rotas protegidas e painel do aluno logado"
 
 ---
 
-### Task 5: Tela de login e estilo da sessão (UI — orquestrador + `impeccable`, NÃO Codex)
+### Task 5: Tela de login e estilo da sessão (UI — Codex, com direção visual do orquestrador)
 
 **Files:**
 - Modify (reescrever): `src/components/TelaLogin.tsx`
@@ -990,7 +990,7 @@ function TelaLogin() {
 
 export default TelaLogin;
 ```
-(O JSX final é escrito na execução com a direção visual; todo o resto acima é fixo.)
+(O JSX final segue a direção visual do briefing; todo o resto acima é fixo.)
 
 - [ ] **Step 3: Estilo do cabeçalho logado** — `.cabecalho` vira flex com `.cabecalho-sessao` à direita; `.botao-sair` e `.cabecalho-usuario` no mundo visual atual; em celular o e-mail some antes de quebrar a linha.
 
@@ -1000,7 +1000,7 @@ Run: `git rm src/components/TelaEntry.tsx` e remover os estilos órfãos de `.te
 
 - [ ] **Step 5: Verificar e ver**
 
-Run: `npx tsc -b && npm run build`; subir `npm run dev` e abrir `/login`, `/` (logado como professor) e `/meu-painel` (aluno) com o navegador do Playwright; **o orquestrador vê as capturas** (login, home com cabeçalho, painel do aluno) antes de seguir; corrigir aperto/espaço solto.
+Run: `npx tsc -b && npm run build`; subir `npm run dev` e abrir `/login`, `/` (logado como professor) e `/meu-painel` (aluno) com o navegador do Playwright; **o orquestrador vê as capturas** (login, home com cabeçalho, painel do aluno, em 1280px e 390px) antes de aceitar; aperto/espaço solto volta ao Codex como correção.
 
 - [ ] **Step 6: Commit**
 ```bash
@@ -1155,5 +1155,5 @@ git commit -m "Adiciona teste de fumaca do login e das rotas protegidas"
 
 - **Cobertura do spec:** `http.ts` + Bearer + 401 (T2); `api.ts` real sem mock (T3); `AuthContext`/sessão em `localStorage`/`ProtectedRoute`/rotas por perfil (T2, T4); `Cabecalho` com e-mail e Sair (T4); `TelaLogin` (T5); `alunos.media` no backend (T1); fumaça + build (T6). Desvios declarados no topo (dashboard na Fase 3, `TelaCarregando` removida, `playwright-core` + Edge).
 - **Consistência de nomes:** `useAuth().entrar/sair/sessao`, `Sessao`, `acordarApi`, `buscarAluno`, `caminhoDe`, `ContextoLayout.abrirComTransicao` iguais entre tasks; contrato de acessibilidade do login (labels "E-mail"/"Senha", botão "Entrar", `role="alert"`) usado igual em T5 e T6.
-- **Placeholders:** nenhum no comportamento; o JSX/CSS da `TelaLogin` é deliberadamente deixado para a direção visual da execução (UI nova do orquestrador), com a lógica e o contrato de acessibilidade fixados.
+- **Placeholders:** nenhum no comportamento; o JSX/CSS da `TelaLogin` segue a direção visual escrita no briefing da Task 5; a lógica e o contrato de acessibilidade estão fixados aqui.
 - **Risco aberto:** `TelaDashboard` continua N+1 (poucos alunos); `listarDisciplinasComContagem` faz 1 chamada por disciplina; ambos aceitáveis nesta fase.
