@@ -76,8 +76,6 @@ export interface AvisoEntrada {
 }
 
 export type Tela =
-  | "entry"
-  | "carregando"
   | "home"
   | "alunos"
   | "disciplinas"

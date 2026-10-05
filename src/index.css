@@ -108,7 +108,7 @@ h3 {
   }
 }
 
-.tela-entry {
+.tela-login {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -119,7 +119,7 @@ h3 {
   padding: var(--espaco);
 }
 
-.entry-logo {
+.tela-login-logo {
   width: 60px;
   height: 60px;
   border-radius: var(--raio);
@@ -131,71 +131,68 @@ h3 {
   margin-bottom: 8px;
 }
 
-.entry-logo svg {
+.tela-login-logo svg {
   width: 30px;
   height: 30px;
 }
 
-.tela-entry h1 {
+.tela-login h1 {
   margin: 0;
   font-size: 32px;
   font-style: italic;
   letter-spacing: -0.01em;
 }
 
-.tela-entry p {
+.tela-login-apoio {
   margin: 0 0 8px;
   color: var(--texto-suave);
   max-width: 420px;
 }
 
-.botao-entrar {
-  min-height: 44px;
-  padding: 12px 28px;
+.tela-login-formulario {
+  width: 100%;
+  max-width: 380px;
+  padding: 28px;
+  background: var(--superficie);
+  border: 1px solid var(--borda-fraca);
   border-radius: var(--raio);
-  background: var(--texto);
-  color: var(--fundo);
-  font: inherit;
-  font-weight: 600;
-  transition: transform 0.15s ease;
+  text-align: left;
 }
 
-.botao-entrar:hover {
-  transform: translateY(-1px);
+.tela-login-erro {
+  min-height: 54px;
 }
 
-.botao-entrar:focus-visible {
-  outline: 3px solid var(--texto);
-  outline-offset: 2px;
+.tela-login-erro .campo-erro {
+  margin: 0 0 14px;
+  line-height: 1.5;
 }
 
-.entry-acoes {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+.tela-login-formulario .botao-primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
-.botao-entrar-secundario {
-  min-height: 44px;
-  padding: 12px 28px;
-  border-radius: var(--raio);
-  border: 1px solid var(--borda);
-  background: transparent;
-  color: var(--texto);
-  font: inherit;
-  font-weight: 600;
-  transition: border-color 0.15s ease;
+.tela-login-demonstracao {
+  width: 100%;
+  max-width: 380px;
+  font-size: 13px;
+  color: var(--texto-suave);
+  line-height: 1.6;
 }
 
-.botao-entrar-secundario:hover {
-  border-color: var(--texto);
+.tela-login-demonstracao h2 {
+  margin: 0 0 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--texto-fraco);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.botao-entrar-secundario:focus-visible {
-  outline: 3px solid var(--texto);
-  outline-offset: 2px;
+.tela-login-demonstracao p {
+  margin: 0;
 }
 
 .somente-leitura {
@@ -209,6 +206,45 @@ h3 {
 
 .cabecalho {
   padding: 24px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cabecalho-sessao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cabecalho-usuario {
+  font-size: 13px;
+  color: var(--texto-suave);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.botao-sair {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--borda);
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  border-radius: var(--raio);
+  cursor: pointer;
+}
+
+.botao-sair:hover {
+  border-color: var(--texto);
+}
+
+.botao-sair:focus-visible {
+  outline: 3px solid var(--texto);
+  outline-offset: 2px;
 }
 
 .cabecalho h1 {
@@ -1639,6 +1675,10 @@ h3 {
 }
 
 @media (max-width: 720px) {
+  .cabecalho-usuario {
+    display: none;
+  }
+
   .conteudo,
   .matricula-grid,
   .frequencia-grid {
@@ -1691,17 +1731,17 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .tela-entry .entry-logo {
+  .tela-login .tela-login-logo {
     width: 52px;
     height: 52px;
   }
 
-  .tela-entry .entry-logo svg {
+  .tela-login .tela-login-logo svg {
     width: 26px;
     height: 26px;
   }
 
-  .tela-entry h1 {
+  .tela-login h1 {
     font-size: 24px;
   }
 }

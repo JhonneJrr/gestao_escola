@@ -39,6 +39,51 @@ Abra o endereço mostrado (ex.: <http://localhost:5173>).
 npm run build   # confere tipos (tsc) e gera a versão de produção
 ```
 
+## Rodando com a API
+
+No ambiente local, com o Postgres portátil já configurado em
+`$env:USERPROFILE\.pg16`, suba o banco na porta 55432. No repositório
+`gestao-alunos`, com as dependências do backend disponíveis, aplique o seed
+de demonstração (apaga os dados locais) e inicie a API na porta 8000:
+
+```powershell
+pg_ctl -D "$env:USERPROFILE\.pg16\data" -o "-p 55432" start
+cd C:\Users\Administrator\Documents\gestao-alunos
+python seed.py --apagar-tudo
+uvicorn main:app --port 8000
+```
+
+Em outro terminal, inicie o front:
+
+```powershell
+cd C:\Users\Administrator\Documents\gestao-alunos-frontend
+npm run dev
+```
+
+Abra <http://localhost:5173>. Os acessos de demonstração são
+`prof@escola.com` (professor) e `ana@escola.com` (aluno), ambos com a senha
+`escola123`.
+
+Com a API e o front no ar e o Microsoft Edge instalado, rode o teste de
+fumaça em um terceiro terminal, na pasta do front:
+
+```powershell
+npm run smoke
+```
+
+O smoke usa `http://localhost:5173` e `http://localhost:8000` por padrão.
+Para outros endereços, defina as variáveis de ambiente antes de rodar:
+
+```powershell
+$env:FRONT_URL = "http://localhost:5173"
+$env:API_URL = "http://localhost:8000"
+npm run smoke
+```
+
+O resultado esperado é `SMOKE OK`; as capturas ficam em `e2e/saida/`.
+
+Link de produção: a definir na Fase 4.
+
 ## Estrutura
 
 ```

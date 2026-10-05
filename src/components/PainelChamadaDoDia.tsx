@@ -17,6 +17,7 @@ function formatarDataBR(data: string): string {
 function PainelChamadaDoDia({ disciplinaId, data, aoFechar, aoSalvar }: PainelChamadaDoDiaProps) {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState("");
   const [presentes, setPresentes] = useState<Record<number, boolean>>({});
   const [salvando, setSalvando] = useState(false);
   const [mensagemErro, setMensagemErro] = useState("");
@@ -24,6 +25,7 @@ function PainelChamadaDoDia({ disciplinaId, data, aoFechar, aoSalvar }: PainelCh
   useEffect(() => {
     async function carregar() {
       setCarregando(true);
+      setErroCarregamento("");
       try {
         const [alunosCarregados, presencasExistentes] = await Promise.all([
           alunosDaDisciplina(disciplinaId),
@@ -36,6 +38,8 @@ function PainelChamadaDoDia({ disciplinaId, data, aoFechar, aoSalvar }: PainelCh
           presencaInicial[aluno.id] = presencasExistentes[aluno.id] ?? true;
         }
         setPresentes(presencaInicial);
+      } catch (erro) {
+        setErroCarregamento((erro as Error).message);
       } finally {
         setCarregando(false);
       }
@@ -75,7 +79,8 @@ function PainelChamadaDoDia({ disciplinaId, data, aoFechar, aoSalvar }: PainelCh
       <p className="form-chamada-cabecalho">Chamada de {formatarDataBR(data)}</p>
 
       {carregando && <p className="mensagem-status">Carregando...</p>}
-      {!carregando && alunos.length === 0 && (
+      {!carregando && erroCarregamento !== "" && <p className="mensagem-erro">{erroCarregamento}</p>}
+      {!carregando && erroCarregamento === "" && alunos.length === 0 && (
         <p className="mensagem-vazia">Nenhum aluno matriculado nessa disciplina.</p>
       )}
 

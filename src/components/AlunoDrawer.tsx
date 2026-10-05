@@ -14,10 +14,12 @@ function AlunoDrawer({ aluno, aoFechar, aoExcluir }: AlunoDrawerProps) {
   const [boletim, setBoletim] = useState<BoletimDaMateria[]>([]);
   const [frequencias, setFrequencias] = useState<FrequenciaDaMateria[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState("");
 
   useEffect(() => {
     async function carregar() {
       setCarregando(true);
+      setErroCarregamento("");
       try {
         const [situacaoCarregada, boletimCarregado, frequenciasCarregadas] = await Promise.all([
           situacaoDoAluno(aluno.id),
@@ -27,6 +29,8 @@ function AlunoDrawer({ aluno, aoFechar, aoExcluir }: AlunoDrawerProps) {
         setSituacao(situacaoCarregada);
         setBoletim(boletimCarregado);
         setFrequencias(frequenciasCarregadas);
+      } catch (erro) {
+        setErroCarregamento((erro as Error).message);
       } finally {
         setCarregando(false);
       }
@@ -107,7 +111,8 @@ function AlunoDrawer({ aluno, aoFechar, aoExcluir }: AlunoDrawerProps) {
 
         <p className="rotulo-secao">Boletim</p>
         {carregando && <p className="mensagem-status">Carregando...</p>}
-        {!carregando && boletim.length === 0 && <p className="mensagem-vazia">Este aluno não está matriculado em nenhuma disciplina.</p>}
+        {!carregando && erroCarregamento !== "" && <p className="mensagem-erro">{erroCarregamento}</p>}
+        {!carregando && erroCarregamento === "" && boletim.length === 0 && <p className="mensagem-vazia">Este aluno não está matriculado em nenhuma disciplina.</p>}
         {!carregando &&
           boletim.map((materia) => (
             <div key={materia.disciplina.id} className="materia-boletim">

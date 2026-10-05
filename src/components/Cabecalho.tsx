@@ -1,8 +1,10 @@
 interface CabecalhoProps {
+  email: string;
   aoIrParaHome: () => void;
+  aoSair: () => void;
 }
 
-function Cabecalho({ aoIrParaHome }: CabecalhoProps) {
+function Cabecalho({ email, aoIrParaHome, aoSair }: CabecalhoProps) {
   return (
     <header className="cabecalho">
       <h1>
@@ -22,6 +24,12 @@ function Cabecalho({ aoIrParaHome }: CabecalhoProps) {
         </button>
         <span className="somente-leitura">Portal de Gestão Escolar</span>
       </h1>
+      <div className="cabecalho-sessao">
+        <span className="cabecalho-usuario">{email}</span>
+        <button className="botao-sair" type="button" onClick={aoSair}>
+          Sair
+        </button>
+      </div>
     </header>
   );
 }

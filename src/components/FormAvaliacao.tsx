@@ -9,6 +9,7 @@ interface FormAvaliacaoProps {
 function FormAvaliacao({ disciplinaId }: FormAvaliacaoProps) {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState("");
 
   const [nome, setNome] = useState("");
   const [peso, setPeso] = useState("");
@@ -16,9 +17,12 @@ function FormAvaliacao({ disciplinaId }: FormAvaliacaoProps) {
 
   async function carregar() {
     setCarregando(true);
+    setErroCarregamento("");
     try {
       const dados = await listarAvaliacoes(disciplinaId);
       setAvaliacoes(dados);
+    } catch (erro) {
+      setErroCarregamento((erro as Error).message);
     } finally {
       setCarregando(false);
     }
@@ -72,7 +76,8 @@ function FormAvaliacao({ disciplinaId }: FormAvaliacaoProps) {
 
       {carregando && <p className="mensagem-status">Carregando...</p>}
 
-      {!carregando && avaliacoes.length === 0 && (
+      {!carregando && erroCarregamento !== "" && <p className="mensagem-erro">{erroCarregamento}</p>}
+      {!carregando && erroCarregamento === "" && avaliacoes.length === 0 && (
         <p className="mensagem-vazia">Nenhuma avaliação cadastrada ainda.</p>
       )}
 
