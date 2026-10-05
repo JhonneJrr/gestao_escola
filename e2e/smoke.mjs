@@ -23,6 +23,16 @@ page.on("console", (m) => {
     errosDeConsole.push(m.text());
   }
 });
+const errosDaPagina = [];
+page.on("pageerror", (erro) => {
+  errosDaPagina.push(`pageerror: ${erro.message}`);
+});
+const errosDaApi = [];
+page.on("response", (resposta) => {
+  if (resposta.url().startsWith(API) && resposta.status() >= 500) {
+    errosDaApi.push(`API ${resposta.status()}: ${resposta.url()}`);
+  }
+});
 
 function conferir(condicao, mensagem) {
   if (!condicao) {
@@ -99,7 +109,8 @@ try {
   await page.waitForURL("**/meu-painel");
   conferir(true, "aluno em /alunos e redirecionado para /meu-painel");
 
-  conferir(errosDeConsole.length === 0, `console sem erros (${errosDeConsole.join(" | ")})`);
+  const erros = [...errosDeConsole, ...errosDaPagina, ...errosDaApi];
+  conferir(erros.length === 0, `console sem erros (${erros.join(" | ")})`);
   console.log("SMOKE OK");
 } catch (erro) {
   await page.screenshot({ path: "e2e/saida/falha.png" }).catch(() => {});
