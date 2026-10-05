@@ -1,20 +1,25 @@
 import { useEffect, useState } from "react";
-import type { Aluno } from "../types";
-import { avaliacoesSemNotaLancada, listarAlunos, situacaoDoAluno } from "../api";
-import type { AvaliacaoPendente, Situacao } from "../api";
+import { avaliacoesSemNotaLancada, resumoDoDashboard } from "../api";
+import type { AvaliacaoPendente, ResumoAluno, ResumoDoDashboard } from "../api";
 import BotaoVoltar from "./BotaoVoltar";
 
 interface TelaDashboardProps {
   aoVoltar: () => void;
 }
 
-interface AlunoComSituacao {
-  aluno: Aluno;
-  situacao: Situacao;
+function motivosDeRisco(aluno: ResumoAluno): string[] {
+  const motivos: string[] = [];
+  if (aluno.mediaGeral !== null && aluno.mediaGeral < 6) {
+    motivos.push("média abaixo de 6");
+  }
+  if (aluno.frequenciaGeral !== null && aluno.frequenciaGeral < 75) {
+    motivos.push("frequência abaixo de 75%");
+  }
+  return motivos;
 }
 
 function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
-  const [alunosComSituacao, setAlunosComSituacao] = useState<AlunoComSituacao[]>([]);
+  const [resumo, setResumo] = useState<ResumoDoDashboard | null>(null);
   const [pendentes, setPendentes] = useState<AvaliacaoPendente[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -22,12 +27,14 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
   useEffect(() => {
     async function carregar() {
       try {
-        const alunos = await listarAlunos();
-        const situacoes = await Promise.all(alunos.map((aluno) => situacaoDoAluno(aluno.id)));
-        setAlunosComSituacao(alunos.map((aluno, indice) => ({ aluno, situacao: situacoes[indice] })));
-        setPendentes(await avaliacoesSemNotaLancada());
-      } catch {
-        setErro("Não foi possível carregar os indicadores.");
+        const [resumoCarregado, pendentesCarregadas] = await Promise.all([
+          resumoDoDashboard(),
+          avaliacoesSemNotaLancada(),
+        ]);
+        setResumo(resumoCarregado);
+        setPendentes(pendentesCarregadas);
+      } catch (e) {
+        setErro((e as Error).message);
       } finally {
         setCarregando(false);
       }
@@ -45,19 +52,14 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
     );
   }
 
-  if (erro !== "") {
+  if (erro !== "" || resumo === null) {
     return (
       <div className="tela-dashboard">
         <BotaoVoltar aoVoltar={aoVoltar} />
-        <p className="mensagem-erro">{erro}</p>
+        <p className="mensagem-erro">{erro !== "" ? erro : "Não foi possível carregar os indicadores."}</p>
       </div>
     );
   }
-
-  const mediaBaixa = alunosComSituacao.filter((item) => item.situacao.mediaGeral !== null && item.situacao.mediaGeral < 6);
-  const frequenciaBaixa = alunosComSituacao.filter(
-    (item) => item.situacao.frequenciaGeral !== null && item.situacao.frequenciaGeral < 75
-  );
 
   return (
     <div className="tela-dashboard">
@@ -67,16 +69,18 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
 
       <div className="grade-indicadores">
         <div className="indicador">
-          <span className="indicador-valor">{alunosComSituacao.length}</span>
+          <span className="indicador-valor">{resumo.totalAlunos}</span>
           <span className="indicador-rotulo">alunos</span>
         </div>
         <div className="indicador">
-          <span className="indicador-valor">{mediaBaixa.length}</span>
-          <span className="indicador-rotulo">com média abaixo de 6</span>
+          <span className="indicador-valor">{resumo.mediaTurma === null ? "—" : resumo.mediaTurma.toFixed(1)}</span>
+          <span className="indicador-rotulo">média da turma</span>
         </div>
         <div className="indicador">
-          <span className="indicador-valor">{frequenciaBaixa.length}</span>
-          <span className="indicador-rotulo">com frequência abaixo de 75%</span>
+          <span className="indicador-valor">
+            {resumo.frequenciaMedia === null ? "—" : `${resumo.frequenciaMedia.toFixed(0)}%`}
+          </span>
+          <span className="indicador-rotulo">frequência média</span>
         </div>
         <div className="indicador">
           <span className="indicador-valor">{pendentes.length}</span>
@@ -84,34 +88,45 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
         </div>
       </div>
 
-      <div className="painel-risco">
-        <p className="rotulo-secao">Média abaixo de 6</p>
-        {mediaBaixa.length === 0 && <p className="mensagem-vazia">Nenhum aluno nessa situação.</p>}
-        {mediaBaixa.length > 0 && (
-          <ul className="lista-risco">
-            {mediaBaixa.map((item) => (
-              <li key={item.aluno.id}>
-                <span>{item.aluno.nome}</span>
-                <span className="valor-risco">{item.situacao.mediaGeral!.toFixed(1)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <div className="painel-colunas">
+        <div className="painel-risco">
+          <p className="rotulo-secao">Em risco</p>
+          {resumo.alunosEmRisco.length === 0 && <p className="mensagem-vazia">Nenhum aluno em risco.</p>}
+          {resumo.alunosEmRisco.length > 0 && (
+            <ul className="lista-risco">
+              {resumo.alunosEmRisco.map((aluno) => (
+                <li key={aluno.id}>
+                  <div>
+                    <span>{aluno.nome}</span>
+                    <span className="motivo-risco">{motivosDeRisco(aluno).join(" · ")}</span>
+                  </div>
+                  <span className="valor-risco">
+                    {aluno.mediaGeral === null ? "—" : aluno.mediaGeral.toFixed(1)} ·{" "}
+                    {aluno.frequenciaGeral === null ? "—" : `${aluno.frequenciaGeral.toFixed(0)}%`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-      <div className="painel-risco">
-        <p className="rotulo-secao">Frequência abaixo de 75%</p>
-        {frequenciaBaixa.length === 0 && <p className="mensagem-vazia">Nenhum aluno nessa situação.</p>}
-        {frequenciaBaixa.length > 0 && (
-          <ul className="lista-risco">
-            {frequenciaBaixa.map((item) => (
-              <li key={item.aluno.id}>
-                <span>{item.aluno.nome}</span>
-                <span className="valor-risco">{item.situacao.frequenciaGeral!.toFixed(0)}%</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="painel-risco">
+          <p className="rotulo-secao">Ranking — top 5</p>
+          {resumo.ranking.length === 0 && <p className="mensagem-vazia">Ainda não há notas lançadas.</p>}
+          {resumo.ranking.length > 0 && (
+            <ol className="lista-ranking">
+              {resumo.ranking.map((aluno, indice) => (
+                <li key={aluno.id}>
+                  <span className="posicao-ranking">{indice + 1}</span>
+                  <span className={indice === 0 ? "nome-ranking nome-ranking-primeiro" : "nome-ranking"}>
+                    {aluno.nome}
+                  </span>
+                  <span className="valor-risco">{aluno.mediaGeral === null ? "—" : aluno.mediaGeral.toFixed(1)}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
 
       <div className="painel-risco">

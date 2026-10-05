@@ -1145,6 +1145,18 @@ h3 {
   color: var(--texto-fraco);
 }
 
+.painel-colunas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaco);
+}
+
+@media (min-width: 900px) {
+  .painel-colunas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .painel-risco {
   padding: 22px 24px;
   background: var(--superficie);
@@ -1173,6 +1185,50 @@ h3 {
 
 .lista-risco li:last-child {
   border-bottom: none;
+}
+
+.motivo-risco {
+  display: block;
+  font-size: 12px;
+  color: var(--aviso);
+}
+
+.lista-ranking {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lista-ranking li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--borda-fraca);
+  font-size: 13.5px;
+}
+
+.lista-ranking li:last-child {
+  border-bottom: none;
+}
+
+.posicao-ranking {
+  font-family: "Newsreader", serif;
+  font-size: 20px;
+  font-style: italic;
+}
+
+.nome-ranking {
+  flex: 1;
+  min-width: 0;
+}
+
+.nome-ranking-primeiro {
+  font-weight: 600;
 }
 
 .valor-risco {
