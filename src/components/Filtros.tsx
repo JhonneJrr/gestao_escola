@@ -26,8 +26,8 @@ function Filtros({
         </svg>
         <input
           type="text"
-          placeholder="Buscar por nome..."
-          aria-label="Buscar por nome"
+          placeholder="Buscar por nome ou matrícula..."
+          aria-label="Buscar por nome ou matrícula"
           value={q}
           onChange={(evento) => aoMudarQ(evento.target.value)}
         />

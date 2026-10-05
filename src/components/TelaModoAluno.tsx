@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Aluno, Aviso } from "../types";
 import { boletimDoAluno, buscarAluno, frequenciaDoAluno, listarAvisos } from "../api";
 import type { BoletimDaMateria, FrequenciaDaMateria } from "../api";
+import { formatarDataBR } from "../formatar";
 import { useAuth } from "../auth/AuthContext";
 
 function TelaModoAluno() {
@@ -128,7 +129,7 @@ function TelaModoAluno() {
                     </div>
                     <div className="card-aviso-info">
                       <h3>{aviso.titulo}</h3>
-                      <span className="card-aviso-data">{aviso.data}</span>
+                      <span className="card-aviso-data">{formatarDataBR(aviso.data)}</span>
                     </div>
                   </div>
                   <p className="card-aviso-mensagem">{aviso.mensagem}</p>

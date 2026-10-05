@@ -1,75 +1,118 @@
 import { useEffect, useState } from "react";
 import type { Aluno } from "../types";
-import { excluirAluno, listarAlunos } from "../api";
+import { excluirAluno, listarAlunosPagina } from "../api";
+import { useAtraso } from "../useAtraso";
 import AlunoDrawer from "./AlunoDrawer";
 import BotaoVoltar from "./BotaoVoltar";
 import Filtros from "./Filtros";
 import FormAluno from "./FormAluno";
 import ListaAlunos from "./ListaAlunos";
+import Paginacao from "./Paginacao";
 
 interface PainelAlunosProps {
   aoVoltar: () => void;
 }
 
+const TAMANHO_PAGINA = 10;
+
 function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [recarregar, setRecarregar] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
   const [q, setQ] = useState("");
   const [idadeMinima, setIdadeMinima] = useState("");
   const [mediaMinima, setMediaMinima] = useState("");
+  const qAtrasado = useAtraso(q);
 
   const [alunoAberto, setAlunoAberto] = useState<Aluno | null>(null);
 
   useEffect(() => {
+    let cancelado = false;
+
     async function carregar() {
       setCarregando(true);
       setErro("");
 
       try {
-        const dados = await listarAlunos({
-          q: q === "" ? undefined : q,
-          idade_minima: idadeMinima === "" ? undefined : Number(idadeMinima),
-          media_minima: mediaMinima === "" ? undefined : Number(mediaMinima),
-        });
-        setAlunos(dados);
-      } catch {
-        setErro("Não foi possível carregar os alunos.");
+        const dados = await listarAlunosPagina(
+          {
+            q: qAtrasado === "" ? undefined : qAtrasado,
+            idade_minima: idadeMinima === "" ? undefined : Number(idadeMinima),
+            media_minima: mediaMinima === "" ? undefined : Number(mediaMinima),
+          },
+          pagina,
+          TAMANHO_PAGINA
+        );
+        if (cancelado) {
+          return;
+        }
+        if (dados.itens.length === 0 && pagina > 1) {
+          setPagina(pagina - 1);
+          return;
+        }
+        setAlunos(dados.itens);
+        setTotal(dados.total);
+      } catch (e) {
+        if (!cancelado) {
+          setErro((e as Error).message);
+        }
       } finally {
-        setCarregando(false);
+        if (!cancelado) {
+          setCarregando(false);
+        }
       }
     }
 
     carregar();
-  }, [q, idadeMinima, mediaMinima]);
+    return () => {
+      cancelado = true;
+    };
+  }, [qAtrasado, idadeMinima, mediaMinima, pagina, recarregar]);
+
+  function mudarQ(valor: string) {
+    setQ(valor);
+    setPagina(1);
+  }
+  function mudarIdadeMinima(valor: string) {
+    setIdadeMinima(valor);
+    setPagina(1);
+  }
+  function mudarMediaMinima(valor: string) {
+    setMediaMinima(valor);
+    setPagina(1);
+  }
 
   function limparFiltros() {
     setQ("");
     setIdadeMinima("");
     setMediaMinima("");
+    setPagina(1);
   }
 
-  function aoCriarAluno(novoAluno: Aluno) {
-    setAlunos([...alunos, novoAluno]);
+  function aoCriarAluno() {
     limparFiltros();
+    setRecarregar(recarregar + 1);
   }
 
   async function aoExcluir(id: number) {
     try {
       await excluirAluno(id);
-      setAlunos(alunos.filter((aluno) => aluno.id !== id));
       if (alunoAberto?.id === id) {
         setAlunoAberto(null);
       }
-    } catch (erro) {
-      setErro((erro as Error).message);
+      setRecarregar(recarregar + 1);
+    } catch (erroExclusao) {
+      setErro((erroExclusao as Error).message);
     }
   }
 
   useEffect(() => {
-    document.title = `Portal — ${alunos.length} alunos`;
-  }, [alunos]);
+    document.title = `Portal — ${total} alunos`;
+  }, [total]);
 
   const temFiltroAtivo = q !== "" || idadeMinima !== "" || mediaMinima !== "";
   const mensagemVazia = temFiltroAtivo
@@ -87,9 +130,9 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
           q={q}
           idadeMinima={idadeMinima}
           mediaMinima={mediaMinima}
-          aoMudarQ={setQ}
-          aoMudarIdadeMinima={setIdadeMinima}
-          aoMudarMediaMinima={setMediaMinima}
+          aoMudarQ={mudarQ}
+          aoMudarIdadeMinima={mudarIdadeMinima}
+          aoMudarMediaMinima={mudarMediaMinima}
           aoLimpar={limparFiltros}
         />
         {carregando && <p className="mensagem-status">Carregando...</p>}
@@ -97,7 +140,7 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
         {!carregando && erro === "" && (
           <>
             <p className="contagem">
-              <strong>{alunos.length}</strong> aluno(s) encontrado(s)
+              <strong>{total}</strong> aluno(s) encontrado(s)
             </p>
             <ListaAlunos
               alunos={alunos}
@@ -105,6 +148,7 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
               aoAbrir={setAlunoAberto}
               aoExcluir={aoExcluir}
             />
+            <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
           </>
         )}
       </section>

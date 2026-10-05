@@ -1,42 +1,73 @@
 import { useEffect, useState } from "react";
-import type { Disciplina, DisciplinaComContagem } from "../types";
-import { excluirDisciplina, listarDisciplinasComContagem } from "../api";
+import type { DisciplinaComContagem } from "../types";
+import { excluirDisciplina, listarDisciplinasPagina } from "../api";
+import { useAtraso } from "../useAtraso";
 import BotaoVoltar from "./BotaoVoltar";
+import CampoBusca from "./CampoBusca";
 import DisciplinaCard from "./DisciplinaCard";
 import FormDisciplina from "./FormDisciplina";
+import Paginacao from "./Paginacao";
 
 interface TelaDisciplinasProps {
   aoVoltar: () => void;
 }
 
+const TAMANHO_PAGINA = 10;
+
 function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
   const [disciplinas, setDisciplinas] = useState<DisciplinaComContagem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [recarregar, setRecarregar] = useState(0);
+  const [q, setQ] = useState("");
+  const qAtrasado = useAtraso(q);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
   useEffect(() => {
+    let cancelado = false;
+
     async function carregar() {
+      setCarregando(true);
+      setErro("");
       try {
-        const dados = await listarDisciplinasComContagem();
-        setDisciplinas(dados);
-      } catch {
-        setErro("Não foi possível carregar as disciplinas.");
+        const dados = await listarDisciplinasPagina(qAtrasado, pagina, TAMANHO_PAGINA);
+        if (cancelado) {
+          return;
+        }
+        if (dados.itens.length === 0 && pagina > 1) {
+          setPagina(pagina - 1);
+          return;
+        }
+        setDisciplinas(dados.itens);
+        setTotal(dados.total);
+      } catch (e) {
+        if (!cancelado) {
+          setErro((e as Error).message);
+        }
       } finally {
-        setCarregando(false);
+        if (!cancelado) {
+          setCarregando(false);
+        }
       }
     }
 
     carregar();
-  }, []);
+    return () => {
+      cancelado = true;
+    };
+  }, [qAtrasado, pagina, recarregar]);
 
-  function aoCriarDisciplina(novaDisciplina: Disciplina) {
-    setDisciplinas([...disciplinas, { ...novaDisciplina, totalAlunos: 0 }]);
+  function aoCriarDisciplina() {
+    setQ("");
+    setPagina(1);
+    setRecarregar(recarregar + 1);
   }
 
   async function aoExcluir(id: number) {
     try {
       await excluirDisciplina(id);
-      setDisciplinas(disciplinas.filter((disciplina) => disciplina.id !== id));
+      setRecarregar(recarregar + 1);
     } catch (erroExclusao) {
       setErro((erroExclusao as Error).message);
     }
@@ -49,16 +80,19 @@ function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
       <h2>Disciplinas</h2>
 
       <FormDisciplina aoCriarDisciplina={aoCriarDisciplina} />
+      <CampoBusca valor={q} rotulo="Buscar disciplina" placeholder="Buscar disciplina..." aoMudar={(v) => { setQ(v); setPagina(1); }} />
 
       {carregando && <p className="mensagem-status">Carregando...</p>}
       {!carregando && erro !== "" && <p className="mensagem-erro">{erro}</p>}
       {!carregando && erro === "" && (
         <>
           <p className="contagem">
-            <strong>{disciplinas.length}</strong> disciplina(s) encontrada(s)
+            <strong>{total}</strong> disciplina(s) encontrada(s)
           </p>
           {disciplinas.length === 0 && (
-            <p className="mensagem-vazia">Nenhuma disciplina cadastrada ainda.</p>
+            <p className="mensagem-vazia">
+              {q !== "" ? "Nenhuma disciplina encontrada com essa busca." : "Nenhuma disciplina cadastrada ainda."}
+            </p>
           )}
           {disciplinas.length > 0 && (
             <div className="grade-disciplinas">
@@ -67,6 +101,7 @@ function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
               ))}
             </div>
           )}
+          <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
         </>
       )}
     </div>

@@ -1,41 +1,71 @@
 import { useEffect, useState } from "react";
 import type { Aviso } from "../types";
-import { criarAviso, excluirAviso, listarAvisos } from "../api";
+import { criarAviso, excluirAviso, listarAvisosPagina } from "../api";
+import { formatarDataBR, hojeISO } from "../formatar";
+import { useAtraso } from "../useAtraso";
 import BotaoVoltar from "./BotaoVoltar";
+import CampoBusca from "./CampoBusca";
+import Paginacao from "./Paginacao";
 
 interface TelaAvisosProps {
   aoVoltar: () => void;
 }
 
+const TAMANHO_PAGINA = 10;
+
 function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [recarregar, setRecarregar] = useState(0);
+  const [q, setQ] = useState("");
+  const qAtrasado = useAtraso(q);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
   const [titulo, setTitulo] = useState("");
   const [mensagemTexto, setMensagemTexto] = useState("");
-  const [data, setData] = useState("");
+  const [data, setData] = useState(hojeISO());
   const [mensagemErro, setMensagemErro] = useState("");
 
   useEffect(() => {
+    let cancelado = false;
+
     async function carregar() {
+      setCarregando(true);
+      setErro("");
       try {
-        const dados = await listarAvisos();
-        setAvisos(dados);
-      } catch {
-        setErro("Não foi possível carregar os avisos.");
+        const dados = await listarAvisosPagina(qAtrasado, pagina, TAMANHO_PAGINA);
+        if (cancelado) {
+          return;
+        }
+        if (dados.itens.length === 0 && pagina > 1) {
+          setPagina(pagina - 1);
+          return;
+        }
+        setAvisos(dados.itens);
+        setTotal(dados.total);
+      } catch (e) {
+        if (!cancelado) {
+          setErro((e as Error).message);
+        }
       } finally {
-        setCarregando(false);
+        if (!cancelado) {
+          setCarregando(false);
+        }
       }
     }
 
     carregar();
-  }, []);
+    return () => {
+      cancelado = true;
+    };
+  }, [qAtrasado, pagina, recarregar]);
 
   function limparCampos() {
     setTitulo("");
     setMensagemTexto("");
-    setData("");
+    setData(hojeISO());
   }
 
   async function aoEnviar(evento: React.FormEvent) {
@@ -56,8 +86,10 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
     }
 
     try {
-      const novoAviso = await criarAviso({ titulo, mensagem: mensagemTexto, data });
-      setAvisos([novoAviso, ...avisos]);
+      await criarAviso({ titulo, mensagem: mensagemTexto, data });
+      setQ("");
+      setPagina(1);
+      setRecarregar(recarregar + 1);
       limparCampos();
     } catch (erroAviso) {
       setMensagemErro((erroAviso as Error).message);
@@ -67,7 +99,7 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
   async function aoExcluir(id: number) {
     try {
       await excluirAviso(id);
-      setAvisos(avisos.filter((aviso) => aviso.id !== id));
+      setRecarregar(recarregar + 1);
     } catch (erroExclusao) {
       setErro((erroExclusao as Error).message);
     }
@@ -94,8 +126,7 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
           <label htmlFor="data-aviso">Data</label>
           <input
             id="data-aviso"
-            type="text"
-            placeholder="Ex.: 10/09/2026"
+            type="date"
             value={data}
             onChange={(evento) => setData(evento.target.value)}
           />
@@ -117,12 +148,17 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
           Publicar aviso
         </button>
       </form>
+      <CampoBusca valor={q} rotulo="Buscar aviso" placeholder="Buscar aviso pelo título..." aoMudar={(v) => { setQ(v); setPagina(1); }} />
 
       {carregando && <p className="mensagem-status">Carregando...</p>}
       {!carregando && erro !== "" && <p className="mensagem-erro">{erro}</p>}
       {!carregando && erro === "" && (
         <>
-          {avisos.length === 0 && <p className="mensagem-vazia">Nenhum aviso publicado ainda.</p>}
+          {avisos.length === 0 && (
+            <p className="mensagem-vazia">
+              {q !== "" ? "Nenhum aviso encontrado com essa busca." : "Nenhum aviso publicado ainda."}
+            </p>
+          )}
           {avisos.length > 0 && (
             <div className="grade-avisos">
               {avisos.map((aviso) => (
@@ -133,7 +169,7 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
                     </div>
                     <div className="card-aviso-info">
                       <h3>{aviso.titulo}</h3>
-                      <span className="card-aviso-data">{aviso.data}</span>
+                      <span className="card-aviso-data">{formatarDataBR(aviso.data)}</span>
                     </div>
                     <button
                       className="botao-excluir"
@@ -149,6 +185,7 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
               ))}
             </div>
           )}
+          <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
         </>
       )}
     </div>

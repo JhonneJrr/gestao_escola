@@ -1320,6 +1320,12 @@ h3 {
   color: var(--texto);
 }
 
+.campo-busca-isolado {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: var(--espaco);
+}
+
 .campo-numero {
   display: flex;
   align-items: center;
@@ -1376,6 +1382,59 @@ h3 {
 .contagem {
   margin: 0;
   font-size: 14px;
+}
+
+.paginacao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borda-fraca);
+}
+
+.paginacao-resumo {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.paginacao-botoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paginacao-posicao {
+  font-size: 13px;
+  color: var(--texto-fraco);
+}
+
+.botao-pagina {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--borda);
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  border-radius: var(--raio);
+  cursor: pointer;
+}
+
+.botao-pagina:hover:not(:disabled) {
+  border-color: var(--texto);
+}
+
+.botao-pagina:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.botao-pagina:focus-visible {
+  outline: 3px solid var(--texto);
+  outline-offset: 2px;
 }
 
 .grade-alunos {
@@ -1675,6 +1734,16 @@ h3 {
 }
 
 @media (max-width: 720px) {
+  .paginacao {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .paginacao-botoes {
+    justify-content: space-between;
+    width: 100%;
+  }
+
   .cabecalho-usuario {
     display: none;
   }
