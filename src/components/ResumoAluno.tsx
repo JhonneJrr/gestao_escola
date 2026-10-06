@@ -11,7 +11,21 @@ function ResumoAluno({ aluno, disciplinas }: ResumoAlunoProps) {
   const [situacao, setSituacao] = useState<Situacao | null>(null);
 
   useEffect(() => {
-    situacaoDoAluno(aluno.id).then(setSituacao);
+    let cancelado = false;
+    situacaoDoAluno(aluno.id)
+      .then((dados) => {
+        if (!cancelado) {
+          setSituacao(dados);
+        }
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setSituacao(null);
+        }
+      });
+    return () => {
+      cancelado = true;
+    };
   }, [aluno.id]);
 
   const cargaTotal = disciplinas.reduce((soma, disciplina) => soma + disciplina.carga_horaria, 0);

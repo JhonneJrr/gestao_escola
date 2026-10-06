@@ -12,7 +12,21 @@ function AlunoCard({ aluno, aoAbrir, aoExcluir }: AlunoCardProps) {
   const [situacao, setSituacao] = useState<Situacao | null>(null);
 
   useEffect(() => {
-    situacaoDoAluno(aluno.id).then(setSituacao);
+    let cancelado = false;
+    situacaoDoAluno(aluno.id)
+      .then((dados) => {
+        if (!cancelado) {
+          setSituacao(dados);
+        }
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setSituacao(null);
+        }
+      });
+    return () => {
+      cancelado = true;
+    };
   }, [aluno.id]);
 
   let classeSelo = "selo";
