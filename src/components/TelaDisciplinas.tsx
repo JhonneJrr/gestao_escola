@@ -24,10 +24,8 @@ function TelaDisciplinas() {
 
   // a paleta pode mudar o ?q= com a tela ja aberta
   useEffect(() => {
-    if (qParam !== null) {
-      setQ(qParam);
-      setPagina(1);
-    }
+    setQ(qParam ?? "");
+    setPagina(1);
   }, [qParam]);
 
   useEffect(() => {

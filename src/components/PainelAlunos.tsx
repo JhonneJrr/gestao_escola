@@ -30,8 +30,10 @@ function PainelAlunos() {
 
   useEffect(() => {
     if (alunoParam === null) {
+      setAlunoAberto(null);
       return;
     }
+    setErro("");
     let cancelado = false;
     buscarAluno(Number(alunoParam))
       .then((aluno) => {
@@ -41,6 +43,7 @@ function PainelAlunos() {
       })
       .catch((e) => {
         if (!cancelado) {
+          setAlunoAberto(null);
           setErro((e as Error).message);
         }
       });
@@ -182,7 +185,7 @@ function PainelAlunos() {
       <FormAluno aoCriarAluno={aoCriarAluno} />
 
       {alunoAberto && (
-        <AlunoDrawer aluno={alunoAberto} aoFechar={fecharAluno} aoExcluir={aoExcluir} />
+        <AlunoDrawer key={alunoAberto.id} aluno={alunoAberto} aoFechar={fecharAluno} aoExcluir={aoExcluir} />
       )}
     </div>
   );

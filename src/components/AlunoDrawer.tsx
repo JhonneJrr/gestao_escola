@@ -17,6 +17,7 @@ function AlunoDrawer({ aluno, aoFechar, aoExcluir }: AlunoDrawerProps) {
   const [erroCarregamento, setErroCarregamento] = useState("");
 
   useEffect(() => {
+    let cancelado = false;
     async function carregar() {
       setCarregando(true);
       setErroCarregamento("");
@@ -26,17 +27,27 @@ function AlunoDrawer({ aluno, aoFechar, aoExcluir }: AlunoDrawerProps) {
           boletimDoAluno(aluno.id),
           frequenciaDoAluno(aluno.id),
         ]);
+        if (cancelado) {
+          return;
+        }
         setSituacao(situacaoCarregada);
         setBoletim(boletimCarregado);
         setFrequencias(frequenciasCarregadas);
       } catch (erro) {
-        setErroCarregamento((erro as Error).message);
+        if (!cancelado) {
+          setErroCarregamento((erro as Error).message);
+        }
       } finally {
-        setCarregando(false);
+        if (!cancelado) {
+          setCarregando(false);
+        }
       }
     }
 
     carregar();
+    return () => {
+      cancelado = true;
+    };
   }, [aluno.id]);
 
   useEffect(() => {

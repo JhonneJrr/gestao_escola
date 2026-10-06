@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { buscaGlobal, type ResultadosDaBusca } from "../api";
 import { formatarDataBR } from "../formatar";
 import Avatar from "../ui/Avatar";
@@ -57,16 +57,29 @@ function montarItens(resultados: ResultadosDaBusca): ItemDaPaleta[] {
 
 function CommandPalette({ aoFechar }: CommandPaletteProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [q, setQ] = useState("");
   const qAtrasado = useAtraso(q.trim());
   const [itens, setItens] = useState<ItemDaPaleta[]>(PAGINAS);
   const [ativo, setAtivo] = useState(0);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const buscando = q.trim() !== qAtrasado || carregando;
+  const itensDisponiveis = buscando || erro !== "" ? [] : itens;
   const campo = useRef<HTMLInputElement>(null);
+  const caixa = useRef<HTMLDivElement>(null);
+  const navegou = useRef(false);
 
   useEffect(() => {
+    const acionador = document.activeElement;
+    const dialogo = caixa.current;
     campo.current?.focus();
+    return () => {
+      if (!navegou.current && acionador instanceof HTMLElement && acionador.isConnected &&
+          (document.activeElement === document.body || dialogo?.contains(document.activeElement))) {
+        acionador.focus();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -105,32 +118,46 @@ function CommandPalette({ aoFechar }: CommandPaletteProps) {
   }, [qAtrasado]);
 
   function abrir(item: ItemDaPaleta | undefined) {
-    if (!item) {
+    if (buscando || !item) {
       return;
     }
+    navegou.current = item.destino.split("?")[0] !== pathname;
     aoFechar();
     navigate(item.destino);
   }
 
   function aoTeclar(evento: React.KeyboardEvent) {
-    if (evento.key === "Escape") {
+    if (evento.key === "Tab") {
+      const focaveis = caixa.current?.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input, button");
+      const primeiro = focaveis?.[0];
+      const ultimo = focaveis?.[focaveis.length - 1];
+      if (evento.shiftKey && document.activeElement === primeiro) {
+        evento.preventDefault();
+        ultimo?.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primeiro?.focus();
+      }
+    } else if (evento.key === "Escape") {
       evento.preventDefault();
+      evento.stopPropagation();
+      evento.nativeEvent.stopImmediatePropagation();
       aoFechar();
     } else if (evento.key === "ArrowDown") {
       evento.preventDefault();
-      setAtivo((indice) => (itens.length === 0 ? 0 : (indice + 1) % itens.length));
+      setAtivo((indice) => (itensDisponiveis.length === 0 ? 0 : (indice + 1) % itensDisponiveis.length));
     } else if (evento.key === "ArrowUp") {
       evento.preventDefault();
-      setAtivo((indice) => (itens.length === 0 ? 0 : (indice - 1 + itens.length) % itens.length));
+      setAtivo((indice) => (itensDisponiveis.length === 0 ? 0 : (indice - 1 + itensDisponiveis.length) % itensDisponiveis.length));
     } else if (evento.key === "Enter") {
       evento.preventDefault();
-      abrir(itens[ativo]);
+      abrir(itensDisponiveis[ativo]);
     }
   }
 
   // agrupa mantendo a ordem para exibir os rotulos de grupo
   const grupos: { nome: string; itens: { item: ItemDaPaleta; indice: number }[] }[] = [];
-  itens.forEach((item, indice) => {
+  itensDisponiveis.forEach((item, indice) => {
     const ultimo = grupos[grupos.length - 1];
     if (ultimo && ultimo.nome === item.grupo) {
       ultimo.itens.push({ item, indice });
@@ -142,6 +169,7 @@ function CommandPalette({ aoFechar }: CommandPaletteProps) {
   return (
     <div className="paleta" onMouseDown={aoFechar}>
       <div
+        ref={caixa}
         className="paleta-caixa"
         role="dialog"
         aria-modal="true"
@@ -157,16 +185,20 @@ function CommandPalette({ aoFechar }: CommandPaletteProps) {
           <input
             ref={campo}
             type="text"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="paleta-resultados"
+            aria-activedescendant={itensDisponiveis[ativo] ? `paleta-${itensDisponiveis[ativo].chave}` : undefined}
             aria-label="Buscar alunos, disciplinas e avisos"
             placeholder="Buscar alunos, disciplinas e avisos..."
             value={q}
             onChange={(evento) => setQ(evento.target.value)}
           />
         </div>
-        <div className="paleta-lista" role="listbox" aria-label="Resultados">
-          {carregando && <p className="paleta-estado">Buscando...</p>}
-          {!carregando && erro !== "" && <p className="paleta-estado mensagem-erro">{erro}</p>}
-          {!carregando && erro === "" && itens.length === 0 && (
+        <div id="paleta-resultados" className="paleta-lista" role="listbox" aria-label="Resultados">
+          {buscando && <p className="paleta-estado">Buscando…</p>}
+          {!buscando && erro !== "" && <p className="paleta-estado mensagem-erro">{erro}</p>}
+          {!buscando && erro === "" && itensDisponiveis.length === 0 && (
             <p className="paleta-estado">Nada encontrado para "{qAtrasado}".</p>
           )}
           {erro === "" &&
@@ -176,10 +208,12 @@ function CommandPalette({ aoFechar }: CommandPaletteProps) {
                 {grupo.itens.map(({ item, indice }) => (
                   <button
                     key={item.chave}
+                    id={`paleta-${item.chave}`}
                     type="button"
                     role="option"
                     aria-selected={indice === ativo}
                     className={indice === ativo ? "paleta-item paleta-item-ativo" : "paleta-item"}
+                    onFocus={() => setAtivo(indice)}
                     onMouseEnter={() => setAtivo(indice)}
                     onClick={() => abrir(item)}
                   >
