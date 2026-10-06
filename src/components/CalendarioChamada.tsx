@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Aula } from "../types";
 import { aulasDaDisciplina } from "../api";
 import PainelChamadaDoDia from "./PainelChamadaDoDia";
@@ -35,30 +35,58 @@ function CalendarioChamada({ disciplinaId, aoAtualizarFrequencia }: CalendarioCh
   const [mes, setMes] = useState(hoje.getMonth());
   const [aulas, setAulas] = useState<Aula[]>([]);
   const [diaSelecionado, setDiaSelecionado] = useState<string | null>(null);
+  const [erro, setErro] = useState("");
+  const montado = useRef(false);
 
   async function carregarAulas() {
-    const dados = await aulasDaDisciplina(disciplinaId);
-    setAulas(dados);
+    try {
+      const dados = await aulasDaDisciplina(disciplinaId);
+      if (montado.current) {
+        setAulas(dados);
+        setErro("");
+      }
+    } catch (erro) {
+      if (montado.current) {
+        setErro((erro as Error).message);
+      }
+    }
   }
 
   useEffect(() => {
-    async function carregarEPosicionar() {
-      const dados = await aulasDaDisciplina(disciplinaId);
-      setAulas(dados);
-      setDiaSelecionado(null);
+    let cancelado = false;
+    montado.current = true;
+    setErro("");
 
-      // Abre o calendário no mês da última aula registrada da disciplina.
-      // Se ainda não houver aula nenhuma, fica no mês atual.
-      if (dados.length > 0) {
-        const datasOrdenadas = dados.map((aula) => aula.data).sort();
-        const ultimaData = datasOrdenadas[datasOrdenadas.length - 1];
-        const [anoUltima, mesUltima] = ultimaData.split("-").map(Number);
-        setAno(anoUltima);
-        setMes(mesUltima - 1);
+    async function carregarEPosicionar() {
+      try {
+        const dados = await aulasDaDisciplina(disciplinaId);
+        if (cancelado) {
+          return;
+        }
+        setAulas(dados);
+        setDiaSelecionado(null);
+
+        // Abre o calendário no mês da última aula registrada da disciplina.
+        // Se ainda não houver aula nenhuma, fica no mês atual.
+        if (dados.length > 0) {
+          const datasOrdenadas = dados.map((aula) => aula.data).sort();
+          const ultimaData = datasOrdenadas[datasOrdenadas.length - 1];
+          const [anoUltima, mesUltima] = ultimaData.split("-").map(Number);
+          setAno(anoUltima);
+          setMes(mesUltima - 1);
+        }
+      } catch (erro) {
+        if (!cancelado) {
+          setErro((erro as Error).message);
+        }
       }
     }
 
     carregarEPosicionar();
+    return () => {
+      cancelado = true;
+      montado.current = false;
+    };
   }, [disciplinaId]);
 
   function aoMudarMes(delta: number) {
@@ -95,6 +123,7 @@ function CalendarioChamada({ disciplinaId, aoAtualizarFrequencia }: CalendarioCh
 
   return (
     <div className="calendario-chamada">
+      {erro !== "" && <p className="mensagem-erro">{erro}</p>}
       <div className="calendario-topo">
         <button type="button" className="calendario-nav" onClick={() => aoMudarMes(-1)} aria-label="Mês anterior">
           ‹

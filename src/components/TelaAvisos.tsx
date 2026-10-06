@@ -89,7 +89,7 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
       await criarAviso({ titulo, mensagem: mensagemTexto, data });
       setQ("");
       setPagina(1);
-      setRecarregar(recarregar + 1);
+      setRecarregar((n) => n + 1);
       limparCampos();
     } catch (erroAviso) {
       setMensagemErro((erroAviso as Error).message);
@@ -99,7 +99,7 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
   async function aoExcluir(id: number) {
     try {
       await excluirAviso(id);
-      setRecarregar(recarregar + 1);
+      setRecarregar((n) => n + 1);
     } catch (erroExclusao) {
       setErro((erroExclusao as Error).message);
     }
@@ -185,8 +185,10 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
               ))}
             </div>
           )}
-          <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
         </>
+      )}
+      {erro === "" && (
+        <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
       )}
     </div>
   );

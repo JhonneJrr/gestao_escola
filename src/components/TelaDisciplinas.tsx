@@ -61,13 +61,13 @@ function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
   function aoCriarDisciplina() {
     setQ("");
     setPagina(1);
-    setRecarregar(recarregar + 1);
+    setRecarregar((n) => n + 1);
   }
 
   async function aoExcluir(id: number) {
     try {
       await excluirDisciplina(id);
-      setRecarregar(recarregar + 1);
+      setRecarregar((n) => n + 1);
     } catch (erroExclusao) {
       setErro((erroExclusao as Error).message);
     }
@@ -101,8 +101,10 @@ function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
               ))}
             </div>
           )}
-          <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
         </>
+      )}
+      {erro === "" && (
+        <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
       )}
     </div>
   );

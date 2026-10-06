@@ -95,7 +95,7 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
 
   function aoCriarAluno() {
     limparFiltros();
-    setRecarregar(recarregar + 1);
+    setRecarregar((n) => n + 1);
   }
 
   async function aoExcluir(id: number) {
@@ -104,7 +104,7 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
       if (alunoAberto?.id === id) {
         setAlunoAberto(null);
       }
-      setRecarregar(recarregar + 1);
+      setRecarregar((n) => n + 1);
     } catch (erroExclusao) {
       setErro((erroExclusao as Error).message);
     }
@@ -148,8 +148,10 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
               aoAbrir={setAlunoAberto}
               aoExcluir={aoExcluir}
             />
-            <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
           </>
+        )}
+        {erro === "" && (
+          <Paginacao pagina={pagina} tamanho={TAMANHO_PAGINA} total={total} aoMudar={setPagina} />
         )}
       </section>
 

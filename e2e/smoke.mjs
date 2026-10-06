@@ -104,6 +104,24 @@ try {
   conferir(busca.url.includes("q=S3-003") && busca.url.includes("pagina=1"), "busca por matricula vai ao servidor com q e pagina=1");
   await page.screenshot({ path: "e2e/saida/alunos-paginado.png" });
 
+  await page.getByLabel("Buscar por nome ou matrícula").fill("");
+  await page.getByText("Mostrando 1–10 de 12").waitFor();
+  const pagina2 = page.waitForResponse((r) => r.url().startsWith(`${API}/alunos?`) && r.request().method() === "GET" && new URL(r.url()).searchParams.get("pagina") === "2");
+  await page.getByRole("button", { name: "Próxima" }).click();
+  await page.getByText("Mostrando 11–12 de 12").waitFor();
+  const alunosUltimaPagina = (await (await pagina2).json()).itens;
+  conferir(alunosUltimaPagina.length === 2 && alunosUltimaPagina.every((aluno) => extras.includes(aluno.id)), "alunos: pagina 2 contem os dois extras a excluir");
+  for (const [i, aluno] of alunosUltimaPagina.entries()) {
+    const card = page.locator(".card-aluno").filter({ has: page.getByRole("heading", { name: aluno.nome, exact: true }) });
+    await card.waitFor();
+    const exclusaoAluno = page.waitForResponse((r) => r.url() === `${API}/alunos/${aluno.id}` && r.request().method() === "DELETE");
+    await card.getByRole("button", { name: `Excluir ${aluno.nome}`, exact: true }).click();
+    conferir((await exclusaoAluno).status() === 204, `alunos: ${aluno.nome} excluido pelo card`);
+    extras.splice(extras.indexOf(aluno.id), 1);
+    await page.getByText(i === 0 ? "Mostrando 11–11 de 11" : "Mostrando 1–10 de 10").waitFor();
+  }
+  conferir(await page.getByText("Mostrando 1–10 de 10").isVisible(), "alunos: excluir os dois ultimos volta automaticamente para a pagina anterior");
+
   // 10) painel: uma chamada ao /dashboard, com Bearer, sem situacao por aluno
   const antes = chamadas.length;
   await page.goto(`${FRONT}/dashboard`);
@@ -126,13 +144,31 @@ try {
   const respostaAviso = await criacao;
   conferir(respostaAviso.status() === 201, "avisos: POST /avisos com data valida responde 201");
   await page.getByText("Aviso de fumaça").first().waitFor();
-  const buscaAvisos = page.waitForResponse((r) => r.url().startsWith(`${API}/avisos?`) && r.request().method() === "GET" && new URL(r.url()).searchParams.get("q") === "fumaça");
-  await page.getByLabel("Buscar aviso").fill("fumaça");
+  const hoje = new Date();
+  const dataHoje = `${String(hoje.getDate()).padStart(2, "0")}/${String(hoje.getMonth() + 1).padStart(2, "0")}/${hoje.getFullYear()}`;
+  const cardAviso = page.locator(".card-aviso").filter({ has: page.getByRole("heading", { name: "Aviso de fumaça", exact: true }) });
+  await cardAviso.getByText(dataHoje, { exact: true }).waitFor();
+  conferir(await cardAviso.getByText(dataHoje, { exact: true }).isVisible(), "avisos: aviso criado pela UI mostra a data de hoje em DD/MM/AAAA");
+
+  await page.getByLabel("Título").fill("Tema diferente");
+  await page.getByLabel("Mensagem").fill("Outro tema para conferir a busca.");
+  const criacaoTema = page.waitForResponse((r) => r.url().endsWith("/avisos") && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Publicar aviso" }).click();
+  conferir((await criacaoTema).status() === 201, "avisos: segundo aviso criado pela UI");
+  await page.getByText("Tema diferente").waitFor();
+  conferir(await page.getByText("Tema diferente").isVisible(), "avisos: tema diferente visivel antes da busca");
+  const buscaAvisos = page.waitForResponse((r) => r.url().startsWith(`${API}/avisos?`) && r.request().method() === "GET" && new URL(r.url()).searchParams.get("q") === "fuma");
+  await page.getByLabel("Buscar aviso").fill("fuma");
   conferir((await buscaAvisos).status() === 200, "avisos: busca por titulo vai ao servidor");
+  await page.getByText("Tema diferente").waitFor({ state: "hidden" });
   await page.getByText("Aviso de fumaça").first().waitFor();
-  const avisoCriado = (await api("GET", "/avisos?q=fuma%C3%A7a", null, tokenProfessor)).corpo.itens[0];
-  const exclusao = await api("DELETE", `/avisos/${avisoCriado.id}`, null, tokenProfessor);
-  conferir(exclusao.status === 204, "avisos: criado, achado pela busca e removido");
+  conferir(await page.getByText("Aviso de fumaça").first().isVisible(), "avisos: busca 'fuma' mantem aviso de fumaca");
+  conferir(!await page.getByText("Tema diferente").isVisible(), "avisos: busca 'fuma' esconde tema diferente");
+  for (const tituloAviso of ["Aviso de fumaça", "Tema diferente"]) {
+    const avisoCriado = (await api("GET", `/avisos?q=${encodeURIComponent(tituloAviso)}`, null, tokenProfessor)).corpo.itens[0];
+    const exclusao = await api("DELETE", `/avisos/${avisoCriado.id}`, null, tokenProfessor);
+    conferir(exclusao.status === 204, `avisos: ${tituloAviso} achado pela busca e removido`);
+  }
 
   // 12) disciplinas: busca no servidor
   await page.goto(`${FRONT}/disciplinas`);
@@ -181,6 +217,8 @@ try {
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL("**/meu-painel");
   await page.getByText("Ana Souza").first().waitFor();
+  await page.locator(".card-aviso").getByText("28/09/2026", { exact: true }).waitFor();
+  conferir(await page.locator(".card-aviso").getByText("28/09/2026", { exact: true }).isVisible(), "aluna Ana: aviso do seed mostra 28/09/2026 no mural");
   await page.screenshot({ path: "e2e/saida/painel-aluno.png" });
   await page.goto(`${FRONT}/alunos`);
   await page.waitForURL("**/meu-painel");
