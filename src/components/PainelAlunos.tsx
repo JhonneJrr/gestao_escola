@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { Aluno } from "../types";
-import { excluirAluno, listarAlunosPagina } from "../api";
+import { buscarAluno, excluirAluno, listarAlunosPagina } from "../api";
 import { useAtraso } from "../useAtraso";
 import AlunoDrawer from "./AlunoDrawer";
 import Filtros from "./Filtros";
@@ -11,6 +12,8 @@ import Paginacao from "./Paginacao";
 const TAMANHO_PAGINA = 10;
 
 function PainelAlunos() {
+  const [params, setParams] = useSearchParams();
+  const alunoParam = params.get("aluno");
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -24,6 +27,34 @@ function PainelAlunos() {
   const qAtrasado = useAtraso(q);
 
   const [alunoAberto, setAlunoAberto] = useState<Aluno | null>(null);
+
+  useEffect(() => {
+    if (alunoParam === null) {
+      return;
+    }
+    let cancelado = false;
+    buscarAluno(Number(alunoParam))
+      .then((aluno) => {
+        if (!cancelado) {
+          setAlunoAberto(aluno);
+        }
+      })
+      .catch((e) => {
+        if (!cancelado) {
+          setErro((e as Error).message);
+        }
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [alunoParam]);
+
+  function fecharAluno() {
+    setAlunoAberto(null);
+    if (params.has("aluno")) {
+      setParams({}, { replace: true });
+    }
+  }
 
   useEffect(() => {
     let cancelado = false;
@@ -97,7 +128,7 @@ function PainelAlunos() {
     try {
       await excluirAluno(id);
       if (alunoAberto?.id === id) {
-        setAlunoAberto(null);
+        fecharAluno();
       }
       setRecarregar((n) => n + 1);
     } catch (erroExclusao) {
@@ -151,7 +182,7 @@ function PainelAlunos() {
       <FormAluno aoCriarAluno={aoCriarAluno} />
 
       {alunoAberto && (
-        <AlunoDrawer aluno={alunoAberto} aoFechar={() => setAlunoAberto(null)} aoExcluir={aoExcluir} />
+        <AlunoDrawer aluno={alunoAberto} aoFechar={fecharAluno} aoExcluir={aoExcluir} />
       )}
     </div>
   );

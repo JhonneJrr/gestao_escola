@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import CommandPalette from "./components/CommandPalette";
 import PainelAlunos from "./components/PainelAlunos";
 import Sidebar from "./components/Sidebar";
 import TelaAvisos from "./components/TelaAvisos";
@@ -20,6 +21,7 @@ function LayoutPortal() {
   const { pathname } = useLocation();
   const { sessao, sair } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [buscaAberta, setBuscaAberta] = useState(false);
   const ehProfessor = sessao?.perfil === "professor";
 
   useEffect(() => {
@@ -42,6 +44,20 @@ function LayoutPortal() {
     };
   }, [menuAberto]);
 
+  useEffect(() => {
+    if (!ehProfessor) {
+      return;
+    }
+    function aoTeclar(evento: KeyboardEvent) {
+      if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === "k") {
+        evento.preventDefault();
+        setBuscaAberta(true);
+      }
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [ehProfessor]);
+
   return (
     <div className="portal">
       <Sidebar
@@ -53,11 +69,12 @@ function LayoutPortal() {
         }}
       />
       <div className="portal-corpo">
-        <Topbar mostrarBusca={ehProfessor} aoAbrirMenu={() => setMenuAberto(true)} aoAbrirBusca={() => {}} />
+        <Topbar mostrarBusca={ehProfessor} aoAbrirMenu={() => setMenuAberto(true)} aoAbrirBusca={() => setBuscaAberta(true)} />
         <main className="portal-conteudo">
           <Outlet />
         </main>
       </div>
+      {buscaAberta && <CommandPalette aoFechar={() => setBuscaAberta(false)} />}
     </div>
   );
 }

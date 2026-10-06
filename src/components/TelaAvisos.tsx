@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { Aviso } from "../types";
 import { criarAviso, excluirAviso, listarAvisosPagina } from "../api";
 import { formatarDataBR, hojeISO } from "../formatar";
@@ -9,11 +10,13 @@ import Paginacao from "./Paginacao";
 const TAMANHO_PAGINA = 10;
 
 function TelaAvisos() {
+  const [params] = useSearchParams();
+  const qParam = params.get("q");
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
   const [recarregar, setRecarregar] = useState(0);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(qParam ?? "");
   const qAtrasado = useAtraso(q);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -22,6 +25,14 @@ function TelaAvisos() {
   const [mensagemTexto, setMensagemTexto] = useState("");
   const [data, setData] = useState(hojeISO());
   const [mensagemErro, setMensagemErro] = useState("");
+
+  // a paleta pode mudar o ?q= com a tela ja aberta
+  useEffect(() => {
+    if (qParam !== null) {
+      setQ(qParam);
+      setPagina(1);
+    }
+  }, [qParam]);
 
   useEffect(() => {
     let cancelado = false;

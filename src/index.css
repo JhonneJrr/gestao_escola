@@ -289,6 +289,139 @@ h3 {
   height: 32px;
 }
 
+.paleta {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.paleta-caixa {
+  width: min(640px, 92vw);
+  margin: 12vh auto 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.paleta-campo {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--borda-fraca);
+}
+
+.paleta-campo svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--texto-fraco);
+}
+
+.paleta-campo input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: 16px;
+}
+
+.paleta-campo input::placeholder {
+  color: var(--texto-fraco);
+}
+
+.paleta-campo input:focus-visible,
+.paleta-item:focus-visible {
+  outline: 2px solid var(--texto);
+  outline-offset: -2px;
+}
+
+.paleta-lista {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.paleta-grupo {
+  margin: 20px 16px 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--texto-fraco);
+}
+
+.paleta-item {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.paleta-item-ativo {
+  background: var(--sunken);
+}
+
+.paleta-item-ativo::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--texto);
+}
+
+.paleta-titulo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.paleta-detalhe {
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--texto-fraco);
+}
+
+.paleta-estado {
+  margin: 0;
+  padding: 24px 16px;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.paleta-estado.mensagem-erro {
+  color: var(--aviso);
+}
+
+.paleta-rodape {
+  margin: 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--borda-fraca);
+  font-size: 12px;
+  color: var(--texto-fraco);
+}
+
 @media (max-width: 899px) {
   .portal {
     grid-template-columns: minmax(0, 1fr);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { DisciplinaComContagem } from "../types";
 import { excluirDisciplina, listarDisciplinasPagina } from "../api";
 import { useAtraso } from "../useAtraso";
@@ -10,14 +11,24 @@ import Paginacao from "./Paginacao";
 const TAMANHO_PAGINA = 10;
 
 function TelaDisciplinas() {
+  const [params] = useSearchParams();
+  const qParam = params.get("q");
   const [disciplinas, setDisciplinas] = useState<DisciplinaComContagem[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
   const [recarregar, setRecarregar] = useState(0);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(qParam ?? "");
   const qAtrasado = useAtraso(q);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+
+  // a paleta pode mudar o ?q= com a tela ja aberta
+  useEffect(() => {
+    if (qParam !== null) {
+      setQ(qParam);
+      setPagina(1);
+    }
+  }, [qParam]);
 
   useEffect(() => {
     let cancelado = false;
