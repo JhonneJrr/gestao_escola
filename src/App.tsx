@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import AbasMoveis from "./components/AbasMoveis";
 import CommandPalette from "./components/CommandPalette";
 import PainelAlunos from "./components/PainelAlunos";
-import Sidebar from "./components/Sidebar";
 import TelaAvisos from "./components/TelaAvisos";
 import TelaBoletim from "./components/TelaBoletim";
 import TelaDashboard from "./components/TelaDashboard";
@@ -13,36 +13,30 @@ import TelaFrequencia from "./components/TelaFrequencia";
 import TelaLogin from "./components/TelaLogin";
 import TelaMatriculas from "./components/TelaMatriculas";
 import TelaModoAluno from "./components/TelaModoAluno";
-import Topbar from "./components/Topbar";
+import TopNav from "./components/TopNav";
 
-// Moldura das telas logadas: menu lateral + topo + conteudo
+function useBarraDesktop() {
+  const [desktop, setDesktop] = useState(() => window.matchMedia("(min-width: 900px)").matches);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 900px)");
+    function aoMudar() { setDesktop(media.matches); }
+    aoMudar();
+    media.addEventListener("change", aoMudar);
+    return () => media.removeEventListener("change", aoMudar);
+  }, []);
+
+  return desktop;
+}
+
+// Moldura das telas logadas: navegação + conteúdo
 function LayoutPortal() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { sessao, sair } = useAuth();
-  const [menuAberto, setMenuAberto] = useState(false);
+  const desktop = useBarraDesktop();
   const [buscaAberta, setBuscaAberta] = useState(false);
   const ehProfessor = sessao?.perfil === "professor";
-
-  useEffect(() => {
-    setMenuAberto(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!menuAberto) {
-      return;
-    }
-    function aoTeclar(evento: KeyboardEvent) {
-      if (evento.key === "Escape") {
-        setMenuAberto(false);
-      }
-    }
-    window.addEventListener("keydown", aoTeclar);
-    return () => {
-      window.removeEventListener("keydown", aoTeclar);
-      document.querySelector<HTMLButtonElement>(".botao-menu")?.focus();
-    };
-  }, [menuAberto]);
 
   useEffect(() => {
     if (!ehProfessor) {
@@ -58,22 +52,22 @@ function LayoutPortal() {
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [ehProfessor]);
 
+  const Navegacao = desktop ? TopNav : AbasMoveis;
+
   return (
     <div className="portal">
-      <Sidebar
-        aberta={menuAberto}
-        aoFechar={() => setMenuAberto(false)}
+      <Navegacao
+        aoAbrirBusca={() => setBuscaAberta(true)}
         aoSair={() => {
           sair();
           navigate("/login");
         }}
       />
-      <div className="portal-corpo">
-        <Topbar mostrarBusca={ehProfessor} aoAbrirMenu={() => setMenuAberto(true)} aoAbrirBusca={() => setBuscaAberta(true)} />
-        <main className="portal-conteudo">
+      <main className={!desktop && ehProfessor ? "portal-conteudo portal-conteudo-com-abas" : "portal-conteudo"}>
+        <div key={pathname} className="portal-entrada">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
       {buscaAberta && <CommandPalette aoFechar={() => setBuscaAberta(false)} />}
     </div>
   );
