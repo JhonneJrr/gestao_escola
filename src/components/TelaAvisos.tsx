@@ -3,17 +3,12 @@ import type { Aviso } from "../types";
 import { criarAviso, excluirAviso, listarAvisosPagina } from "../api";
 import { formatarDataBR, hojeISO } from "../formatar";
 import { useAtraso } from "../useAtraso";
-import BotaoVoltar from "./BotaoVoltar";
 import CampoBusca from "./CampoBusca";
 import Paginacao from "./Paginacao";
 
-interface TelaAvisosProps {
-  aoVoltar: () => void;
-}
-
 const TAMANHO_PAGINA = 10;
 
-function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
+function TelaAvisos() {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -107,7 +102,6 @@ function TelaAvisos({ aoVoltar }: TelaAvisosProps) {
 
   return (
     <div className="tela-avisos">
-      <BotaoVoltar aoVoltar={aoVoltar} />
       <h2>Mural de avisos</h2>
 
       <form className="form-aviso-inline" onSubmit={aoEnviar}>

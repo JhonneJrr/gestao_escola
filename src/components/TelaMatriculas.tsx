@@ -1,15 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Aluno, Disciplina } from "../types";
 import { disciplinasDoAluno, listarAlunos, listarDisciplinas, matricular } from "../api";
-import BotaoVoltar from "./BotaoVoltar";
 import ResumoAluno from "./ResumoAluno";
 import SeletorAlunos from "./SeletorAlunos";
 
-interface TelaMatriculasProps {
-  aoVoltar: () => void;
-}
-
-function TelaMatriculas({ aoVoltar }: TelaMatriculasProps) {
+function TelaMatriculas() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -94,7 +89,6 @@ function TelaMatriculas({ aoVoltar }: TelaMatriculasProps) {
 
   return (
     <div className="tela-matriculas">
-      <BotaoVoltar aoVoltar={aoVoltar} />
       <h2>Matrículas</h2>
 
       {carregando && <p className="mensagem-status">Carregando...</p>}

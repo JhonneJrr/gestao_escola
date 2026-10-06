@@ -1,99 +1,69 @@
 import { useEffect, useState } from "react";
-import { Navigate, Outlet, Route, Routes, useLocation, useNavigate, useOutletContext } from "react-router-dom";
-import type { Tela } from "./types";
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
-import Cabecalho from "./components/Cabecalho";
 import PainelAlunos from "./components/PainelAlunos";
+import Sidebar from "./components/Sidebar";
 import TelaAvisos from "./components/TelaAvisos";
 import TelaBoletim from "./components/TelaBoletim";
 import TelaDashboard from "./components/TelaDashboard";
 import TelaDisciplinas from "./components/TelaDisciplinas";
 import TelaFrequencia from "./components/TelaFrequencia";
-import TelaHome from "./components/TelaHome";
 import TelaLogin from "./components/TelaLogin";
 import TelaMatriculas from "./components/TelaMatriculas";
 import TelaModoAluno from "./components/TelaModoAluno";
+import Topbar from "./components/Topbar";
 
-interface OrigemTransicao {
-  x: number;
-  y: number;
-  largura: number;
-  altura: number;
-}
-
-interface ContextoLayout {
-  abrirComTransicao: (novaTela: Tela, evento: React.MouseEvent<HTMLButtonElement>) => void;
-}
-
-function caminhoDe(tela: Tela): string {
-  if (tela === "home") {
-    return "/";
-  }
-  if (tela === "modoAluno") {
-    return "/meu-painel";
-  }
-  return `/${tela}`;
-}
-
-// Moldura das telas logadas: cabecalho + animacao de transicao
+// Moldura das telas logadas: menu lateral + topo + conteudo
 function LayoutPortal() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { sessao, sair } = useAuth();
-  const [transicao, setTransicao] = useState<OrigemTransicao | null>(null);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const ehProfessor = sessao?.perfil === "professor";
 
-  function abrirComTransicao(novaTela: Tela, evento: React.MouseEvent<HTMLButtonElement>) {
-    const retangulo = evento.currentTarget.getBoundingClientRect();
-    setTransicao({
-      x: retangulo.left,
-      y: retangulo.top,
-      largura: retangulo.width,
-      altura: retangulo.height,
-    });
-    window.setTimeout(() => navigate(caminhoDe(novaTela)), 360);
-    window.setTimeout(() => setTransicao(null), 800);
-  }
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [pathname]);
 
-  const inicio = sessao?.perfil === "aluno" ? "/meu-painel" : "/";
+  useEffect(() => {
+    if (!menuAberto) {
+      return;
+    }
+    function aoTeclar(evento: KeyboardEvent) {
+      if (evento.key === "Escape") {
+        setMenuAberto(false);
+      }
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => {
+      window.removeEventListener("keydown", aoTeclar);
+      document.querySelector<HTMLButtonElement>(".botao-menu")?.focus();
+    };
+  }, [menuAberto]);
 
   return (
-    <div className="pagina">
-      {transicao && (
-        <div
-          className="transicao-card"
-          style={
-            {
-              "--origem-x": `${transicao.x}px`,
-              "--origem-y": `${transicao.y}px`,
-              "--origem-w": `${transicao.largura}px`,
-              "--origem-h": `${transicao.altura}px`,
-            } as React.CSSProperties
-          }
-        ></div>
-      )}
-
-      <Cabecalho
-        email={sessao?.email ?? ""}
-        aoIrParaHome={() => navigate(inicio)}
+    <div className="portal">
+      <Sidebar
+        aberta={menuAberto}
+        aoFechar={() => setMenuAberto(false)}
         aoSair={() => {
           sair();
           navigate("/login");
         }}
       />
-      <Outlet context={{ abrirComTransicao } satisfies ContextoLayout} />
+      <div className="portal-corpo">
+        <Topbar mostrarBusca={ehProfessor} aoAbrirMenu={() => setMenuAberto(true)} aoAbrirBusca={() => {}} />
+        <main className="portal-conteudo">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
 
-function HomeRota() {
-  const { abrirComTransicao } = useOutletContext<ContextoLayout>();
-  return <TelaHome aoAbrirTela={abrirComTransicao} />;
-}
-
 function App() {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
-  const irParaHome = () => navigate("/");
 
   useEffect(() => {
     if (pathname !== "/alunos") {
@@ -107,14 +77,14 @@ function App() {
 
       <Route element={<ProtectedRoute perfil="professor" />}>
         <Route element={<LayoutPortal />}>
-          <Route index element={<HomeRota />} />
-          <Route path="alunos" element={<PainelAlunos aoVoltar={irParaHome} />} />
-          <Route path="disciplinas" element={<TelaDisciplinas aoVoltar={irParaHome} />} />
-          <Route path="matriculas" element={<TelaMatriculas aoVoltar={irParaHome} />} />
-          <Route path="dashboard" element={<TelaDashboard aoVoltar={irParaHome} />} />
-          <Route path="boletim" element={<TelaBoletim aoVoltar={irParaHome} />} />
-          <Route path="frequencia" element={<TelaFrequencia aoVoltar={irParaHome} />} />
-          <Route path="avisos" element={<TelaAvisos aoVoltar={irParaHome} />} />
+          <Route index element={<TelaDashboard />} />
+          <Route path="dashboard" element={<Navigate to="/" replace />} />
+          <Route path="alunos" element={<PainelAlunos />} />
+          <Route path="disciplinas" element={<TelaDisciplinas />} />
+          <Route path="matriculas" element={<TelaMatriculas />} />
+          <Route path="boletim" element={<TelaBoletim />} />
+          <Route path="frequencia" element={<TelaFrequencia />} />
+          <Route path="avisos" element={<TelaAvisos />} />
         </Route>
       </Route>
 

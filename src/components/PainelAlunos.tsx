@@ -3,19 +3,14 @@ import type { Aluno } from "../types";
 import { excluirAluno, listarAlunosPagina } from "../api";
 import { useAtraso } from "../useAtraso";
 import AlunoDrawer from "./AlunoDrawer";
-import BotaoVoltar from "./BotaoVoltar";
 import Filtros from "./Filtros";
 import FormAluno from "./FormAluno";
 import ListaAlunos from "./ListaAlunos";
 import Paginacao from "./Paginacao";
 
-interface PainelAlunosProps {
-  aoVoltar: () => void;
-}
-
 const TAMANHO_PAGINA = 10;
 
-function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
+function PainelAlunos() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -120,10 +115,8 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
     : "Nenhum aluno cadastrado ainda.";
 
   return (
-    <main className="conteudo">
+    <div className="conteudo">
       <section className="painel">
-        <BotaoVoltar aoVoltar={aoVoltar} />
-
         <h2>Gestão de Alunos</h2>
 
         <Filtros
@@ -160,7 +153,7 @@ function PainelAlunos({ aoVoltar }: PainelAlunosProps) {
       {alunoAberto && (
         <AlunoDrawer aluno={alunoAberto} aoFechar={() => setAlunoAberto(null)} aoExcluir={aoExcluir} />
       )}
-    </main>
+    </div>
   );
 }
 

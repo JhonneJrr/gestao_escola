@@ -2,14 +2,9 @@ import { useEffect, useState } from "react";
 import type { Aluno } from "../types";
 import { boletimDoAluno, lancarNota, listarAlunos } from "../api";
 import type { BoletimDaMateria } from "../api";
-import BotaoVoltar from "./BotaoVoltar";
 import SeletorAlunos from "./SeletorAlunos";
 
-interface TelaBoletimProps {
-  aoVoltar: () => void;
-}
-
-function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
+function TelaBoletim() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -99,7 +94,6 @@ function TelaBoletim({ aoVoltar }: TelaBoletimProps) {
 
   return (
     <div className="tela-boletim">
-      <BotaoVoltar aoVoltar={aoVoltar} />
       <h2>Boletim</h2>
 
       {carregando && <p className="mensagem-status">Carregando...</p>}

@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { avaliacoesSemNotaLancada, resumoDoDashboard } from "../api";
 import type { AvaliacaoPendente, ResumoAluno, ResumoDoDashboard } from "../api";
-import BotaoVoltar from "./BotaoVoltar";
-
-interface TelaDashboardProps {
-  aoVoltar: () => void;
-}
 
 function motivosDeRisco(aluno: ResumoAluno): string[] {
   const motivos: string[] = [];
@@ -18,7 +13,7 @@ function motivosDeRisco(aluno: ResumoAluno): string[] {
   return motivos;
 }
 
-function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
+function TelaDashboard() {
   const [resumo, setResumo] = useState<ResumoDoDashboard | null>(null);
   const [pendentes, setPendentes] = useState<AvaliacaoPendente[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -46,7 +41,6 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
   if (carregando) {
     return (
       <div className="tela-dashboard">
-        <BotaoVoltar aoVoltar={aoVoltar} />
         <p className="mensagem-status">Carregando...</p>
       </div>
     );
@@ -55,7 +49,6 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
   if (erro !== "" || resumo === null) {
     return (
       <div className="tela-dashboard">
-        <BotaoVoltar aoVoltar={aoVoltar} />
         <p className="mensagem-erro">{erro !== "" ? erro : "Não foi possível carregar os indicadores."}</p>
       </div>
     );
@@ -63,8 +56,6 @@ function TelaDashboard({ aoVoltar }: TelaDashboardProps) {
 
   return (
     <div className="tela-dashboard">
-      <BotaoVoltar aoVoltar={aoVoltar} />
-
       <h2>Painel</h2>
 
       <div className="grade-indicadores">

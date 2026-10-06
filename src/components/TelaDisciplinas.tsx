@@ -2,19 +2,14 @@ import { useEffect, useState } from "react";
 import type { DisciplinaComContagem } from "../types";
 import { excluirDisciplina, listarDisciplinasPagina } from "../api";
 import { useAtraso } from "../useAtraso";
-import BotaoVoltar from "./BotaoVoltar";
 import CampoBusca from "./CampoBusca";
 import DisciplinaCard from "./DisciplinaCard";
 import FormDisciplina from "./FormDisciplina";
 import Paginacao from "./Paginacao";
 
-interface TelaDisciplinasProps {
-  aoVoltar: () => void;
-}
-
 const TAMANHO_PAGINA = 10;
 
-function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
+function TelaDisciplinas() {
   const [disciplinas, setDisciplinas] = useState<DisciplinaComContagem[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -75,8 +70,6 @@ function TelaDisciplinas({ aoVoltar }: TelaDisciplinasProps) {
 
   return (
     <div className="tela-disciplinas">
-      <BotaoVoltar aoVoltar={aoVoltar} />
-
       <h2>Disciplinas</h2>
 
       <FormDisciplina aoCriarDisciplina={aoCriarDisciplina} />

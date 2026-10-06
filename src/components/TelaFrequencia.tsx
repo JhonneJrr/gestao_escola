@@ -2,14 +2,9 @@ import { useEffect, useState } from "react";
 import type { Disciplina } from "../types";
 import { frequenciaDaTurma, listarDisciplinas } from "../api";
 import type { AlunoComFrequencia } from "../api";
-import BotaoVoltar from "./BotaoVoltar";
 import CalendarioChamada from "./CalendarioChamada";
 
-interface TelaFrequenciaProps {
-  aoVoltar: () => void;
-}
-
-function TelaFrequencia({ aoVoltar }: TelaFrequenciaProps) {
+function TelaFrequencia() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [disciplinaId, setDisciplinaId] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -61,7 +56,6 @@ function TelaFrequencia({ aoVoltar }: TelaFrequenciaProps) {
 
   return (
     <div className="tela-frequencia">
-      <BotaoVoltar aoVoltar={aoVoltar} />
       <h2>Frequência</h2>
 
       {carregando && <p className="mensagem-status">Carregando...</p>}

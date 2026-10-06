@@ -74,14 +74,3 @@ export interface AvisoEntrada {
   mensagem: string;
   data: string;
 }
-
-export type Tela =
-  | "home"
-  | "alunos"
-  | "disciplinas"
-  | "matriculas"
-  | "dashboard"
-  | "boletim"
-  | "frequencia"
-  | "avisos"
-  | "modoAluno";
