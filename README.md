@@ -24,7 +24,7 @@ na API real.
 - Tema próprio (vidro/glassmorphism, paleta violeta/âmbar), responsivo e com
   estados de carregando/erro/vazio em toda tela que busca dados.
 - Alunos, Disciplinas e Avisos com paginação e busca no servidor; painel com indicadores, alunos em risco, ranking e avaliações pendentes.
-- Menu lateral com contadores e gaveta no celular; Ctrl+K abre a busca global de alunos, disciplinas e avisos para professores.
+- Barra superior que expande por permanência do mouse, clique no nome ou Alt+M, com contadores, setas e Alt+1…7; no celular, abas embaixo e folha Mais; Ctrl+K abre a busca global de alunos, disciplinas e avisos para professores.
 
 ## Início rápido
 

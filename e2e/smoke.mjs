@@ -94,7 +94,7 @@ try {
   await page.goto(`${FRONT}/alunos`);
   await page.getByText("Mostrando 1–10 de 12").waitFor();
   conferir(true, "alunos: pagina 1 mostra 1-10 de 12");
-  await page.getByRole("button", { name: "Próxima" }).click();
+  await page.getByRole("button", { name: "Próxima", exact: true }).click();
   await page.getByText("Mostrando 11–12 de 12").waitFor();
   conferir(true, "alunos: pagina 2 mostra 11-12 de 12");
   await page.getByLabel("Buscar por nome ou matrícula").fill("S3-003");
@@ -107,7 +107,7 @@ try {
   await page.getByLabel("Buscar por nome ou matrícula").fill("");
   await page.getByText("Mostrando 1–10 de 12").waitFor();
   const pagina2 = page.waitForResponse((r) => r.url().startsWith(`${API}/alunos?`) && r.request().method() === "GET" && new URL(r.url()).searchParams.get("pagina") === "2");
-  await page.getByRole("button", { name: "Próxima" }).click();
+  await page.getByRole("button", { name: "Próxima", exact: true }).click();
   await page.getByText("Mostrando 11–12 de 12").waitFor();
   const alunosUltimaPagina = (await (await pagina2).json()).itens;
   conferir(alunosUltimaPagina.length === 2 && alunosUltimaPagina.every((aluno) => extras.includes(aluno.id)), "alunos: pagina 2 contem os dois extras a excluir");
@@ -182,75 +182,252 @@ try {
   conferir(await page.getByText("Python").first().isVisible(), "disciplinas: busca 'Pyth' mostra Python");
   conferir(await page.getByText("Banco de Dados").count() === 0, "disciplinas: busca 'Pyth' esconde as outras");
 
-  // 13) menu lateral: itens, contador e navegacao
+  // 13) barra superior: intencao, itens, contador e navegacao
   await page.goto(`${FRONT}/`);
-  const menu = page.getByRole("navigation", { name: "Menu principal" });
+  const barra = page.locator("header.topnav");
+  const nomeTela = barra.locator(".topnav-atual");
+  const menu = page.getByRole("navigation", { name: "Menu principal", includeHidden: true });
+  await nomeTela.waitFor();
+  await page.mouse.move(640, 300);
+  const caixaBarra = await barra.boundingBox();
+  await page.mouse.move(40, caixaBarra.y + caixaBarra.height / 2);
+  await page.mouse.move(640, 300);
+  await page.waitForTimeout(500);
+  conferir(await nomeTela.isVisible(), "barra: nome da tela visivel depois da passagem rapida");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: passar rapido nao expande");
+  await page.mouse.move(40, caixaBarra.y + caixaBarra.height / 2);
+  await page.waitForTimeout(500);
   await menu.getByRole("link", { name: "Painel" }).waitFor();
+  conferir(await nomeTela.getAttribute("aria-expanded") === "true", "barra: permanencia do mouse expande");
   for (const rotulo of ["Alunos", "Disciplinas", "Matrículas", "Boletim", "Frequência", "Avisos"]) {
-    conferir(await menu.getByRole("link", { name: new RegExp(`^${rotulo}`) }).isVisible(), `menu: item ${rotulo} visivel`);
+    conferir(await menu.getByRole("link", { name: new RegExp(`^${rotulo}`) }).isVisible(), `barra: item ${rotulo} visivel`);
   }
+  conferir(await menu.locator('[aria-current="page"]').count() === 1 && await menu.getByRole("link", { name: "Painel" }).getAttribute("aria-current") === "page", "barra: apenas Painel ativo em /");
+  await page.mouse.move(640, 300);
+  await menu.waitFor({ state: "hidden" });
+  conferir(await nomeTela.isVisible(), "barra: nome continua visivel ao sair com o mouse");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: sair com o mouse encolhe");
+  await nomeTela.click();
+  await menu.waitFor();
+  conferir(await nomeTela.getAttribute("aria-expanded") === "true", "barra: clique no nome expande");
   await menu.getByRole("link", { name: /^Alunos/ }).click();
   await page.waitForURL("**/alunos");
-  conferir(true, "menu: clicar em Alunos navega para /alunos");
-  await menu.getByRole("link", { name: /^Alunos/ }).locator(".sidebar-contador").waitFor();
-  conferir(/\d/.test(await menu.getByRole("link", { name: /^Alunos/ }).innerText()), "menu: contador de alunos aparece");
+  await nomeTela.click();
+  await menu.getByRole("link", { name: /^Alunos/ }).locator(".nav-contador").waitFor();
+  conferir(await menu.getByRole("link", { name: /^Alunos/ }).getAttribute("aria-current") === "page", "barra: clicar em Alunos navega e ativa /alunos");
+  conferir((await menu.getByRole("link", { name: /^Alunos/ }).locator(".nav-contador").innerText()).trim() === "10", "barra: contador mostra os 10 alunos restantes");
+  await page.mouse.move(640, 300);
+  await page.mouse.wheel(0, 400);
+  await menu.waitFor({ state: "hidden" });
+  conferir(await nomeTela.isVisible(), "barra: nome continua visivel ao rolar");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: rolar encolhe");
+  await nomeTela.click();
+  await menu.waitFor();
+  await page.getByRole("heading", { name: "Gestão de Alunos" }).click();
+  await menu.waitFor({ state: "hidden" });
+  conferir(await page.getByRole("heading", { name: "Gestão de Alunos" }).isVisible(), "barra: conteudo visivel depois do clique fora");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: clicar fora encolhe");
+  await page.keyboard.press("Alt+m");
+  await menu.waitFor();
+  conferir(await menu.getByRole("link", { name: /^Alunos/ }).evaluate((el) => el === document.activeElement), "barra: Alt+M abre e foca a tela atual");
+  await page.mouse.move(40, 28);
+  await page.mouse.move(640, 300);
+  await page.waitForTimeout(600);
+  conferir(await menu.isVisible(), "barra: foco de teclado dentro impede encolher ao sair com o mouse");
+  await page.keyboard.press("Alt+m");
+  await menu.waitFor({ state: "hidden" });
+  conferir(await nomeTela.evaluate((el) => el === document.activeElement), "barra: Alt+M devolve foco ao nome");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: Alt+M fecha sem reabrir por foco");
+  await page.keyboard.press("Tab");
+  await menu.waitFor();
+  conferir(await nomeTela.getAttribute("aria-expanded") === "true", "barra: foco vindo do teclado expande");
+  await page.keyboard.press("Escape");
+  await menu.waitFor({ state: "hidden" });
+  conferir(await nomeTela.evaluate((el) => el === document.activeElement), "barra: Esc devolve foco ao nome");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: Esc fecha sem reabrir por foco");
+  const destinos = [
+    ["Painel", "/"], ["Alunos", "/alunos"], ["Disciplinas", "/disciplinas"],
+    ["Matrículas", "/matriculas"], ["Boletim", "/boletim"], ["Frequência", "/frequencia"], ["Avisos", "/avisos"],
+  ];
+  for (const [i, [rotulo, caminho]] of destinos.entries()) {
+    await page.keyboard.press(`Alt+${i + 1}`);
+    await page.waitForURL(`${FRONT}${caminho}`);
+    await nomeTela.filter({ hasText: rotulo }).waitFor({ timeout: 3000 });
+    conferir(await nomeTela.innerText() === rotulo, `barra: Alt+${i + 1} navega para ${rotulo}`);
+  }
+  await page.getByRole("button", { name: "Próxima tela", exact: true }).click();
+  await page.waitForURL(`${FRONT}/`);
+  await nomeTela.filter({ hasText: "Painel" }).waitFor({ timeout: 3000 });
+  conferir(await nomeTela.innerText() === "Painel", "barra: proxima tela cicla de Avisos para Painel");
+  await page.getByRole("button", { name: "Tela anterior", exact: true }).click();
+  await page.waitForURL(`${FRONT}/avisos`);
+  await nomeTela.filter({ hasText: "Avisos" }).waitFor({ timeout: 3000 });
+  conferir(await nomeTela.innerText() === "Avisos", "barra: tela anterior cicla de Painel para Avisos");
   await page.goto(`${FRONT}/dashboard`);
   await page.waitForURL(`${FRONT}/`);
   conferir(true, "/dashboard redireciona para /");
 
-  // 14) Ctrl+K: abre, busca no servidor, Enter abre o painel do aluno
-  await page.getByRole("button", { name: "Buscar (Ctrl K)" }).waitFor();
-  await page.keyboard.press("Control+K");
+  // 14) paleta: foco contido, Enter durante busca e painel do aluno
+  await page.goto(`${FRONT}/alunos`);
+  await page.getByRole("heading", { name: "Gestão de Alunos" }).waitFor();
+  const botaoBusca = page.getByRole("button", { name: "Buscar (Ctrl K)" });
+  await botaoBusca.click();
   const dialogo = page.getByRole("dialog", { name: "Busca global" });
+  const campoGlobal = dialogo.getByRole("combobox", { name: "Buscar alunos, disciplinas e avisos" });
+  await dialogo.waitFor();
+  conferir(await campoGlobal.evaluate((el) => el === document.activeElement), "paleta: abrir foca o campo de busca");
+  conferir(await dialogo.getByRole("option").count() === 7, "paleta: estado vazio mostra os sete atalhos de paginas");
+  const focaveisPaleta = dialogo.locator("input, button");
+  for (let i = 1; i <= 8; i++) {
+    await page.keyboard.press("Tab");
+    conferir(await focaveisPaleta.nth(i % 8).evaluate((el) => el === document.activeElement), `paleta: Tab ${i} cicla dentro do dialogo`);
+  }
+  await page.keyboard.press("Shift+Tab");
+  conferir(await dialogo.getByRole("option", { name: /^Avisos/ }).evaluate((el) => el === document.activeElement), "paleta: Shift+Tab cicla para a ultima opcao");
+  await page.keyboard.press("Escape");
+  await dialogo.waitFor({ state: "hidden" });
+  conferir(await botaoBusca.evaluate((el) => el === document.activeElement), "paleta: Esc devolve foco ao botao de busca");
+  conferir(await dialogo.count() === 0, "paleta: Esc fecha o dialogo");
+  await page.keyboard.press("Control+K");
   await dialogo.waitFor();
   conferir(await dialogo.getByRole("option", { name: /Alunos/ }).count() >= 1, "paleta: estado vazio mostra atalhos de paginas");
-  await page.getByLabel("Buscar alunos, disciplinas e avisos").fill("Ana");
+  const painelAna = page.getByRole("complementary", { name: "Detalhes de Ana Souza" });
+  let liberarBusca;
+  const buscaPendente = new Promise((resolve) => { liberarBusca = resolve; });
+  const segurarBusca = async (rota) => {
+    if (new URL(rota.request().url()).searchParams.get("q") === "Ana") {
+      await buscaPendente;
+    }
+    await rota.continue();
+  };
+  await page.route(`${API}/alunos?**`, segurarBusca);
+  try {
+    await campoGlobal.fill("Ana");
+    await dialogo.getByText("Buscando…", { exact: true }).waitFor();
+    conferir(await campoGlobal.inputValue() === "Ana", "paleta: termo Ana presente enquanto busca");
+    conferir(await dialogo.getByRole("option").count() === 0, "paleta: resultados anteriores nao sao selecionaveis durante busca");
+    await page.keyboard.press("Enter");
+    conferir(await dialogo.getByText("Buscando…", { exact: true }).isVisible() && page.url() === `${FRONT}/alunos`, "paleta: Enter antes do resultado mantem a busca e a rota");
+    conferir(await painelAna.count() === 0, "paleta: Enter antes do resultado nao abre painel");
+  } finally {
+    liberarBusca();
+  }
   await dialogo.getByRole("option", { name: /Ana Souza/ }).waitFor();
+  await page.unroute(`${API}/alunos?**`, segurarBusca);
   const buscaGlobalChamada = chamadas.filter((c) => c.url.includes("/alunos?") && c.url.includes("q=Ana")).pop();
   conferir(buscaGlobalChamada?.auth?.startsWith("Bearer "), "paleta: busca vai ao servidor com q=Ana e Bearer");
   await page.keyboard.press("Enter");
   await page.waitForURL(/\/alunos\?aluno=\d+/);
-  const painelAna = page.getByRole("complementary", { name: "Detalhes de Ana Souza" });
   await painelAna.getByText("2026001", { exact: true }).waitFor();
   conferir(true, "paleta: Enter em Ana Souza abre /alunos?aluno=ID com o painel do aluno");
   await page.screenshot({ path: "e2e/saida/alunos-painel-aberto.png" });
+  const urlPainelAna = page.url();
+  await page.keyboard.press("Control+K");
+  await dialogo.waitFor();
+  conferir(await campoGlobal.evaluate((el) => el === document.activeElement), "paleta: Ctrl+K sobre o painel foca a busca");
+  await page.keyboard.press("Escape");
+  await dialogo.waitFor({ state: "hidden" });
+  conferir(await painelAna.getByText("2026001", { exact: true }).isVisible() && page.url() === urlPainelAna, "paleta: Esc preserva o painel do aluno e sua URL");
+  conferir(await dialogo.count() === 0, "paleta: Esc sobre o painel fecha somente a paleta");
+  await page.goBack();
+  await page.waitForURL(`${FRONT}/alunos`);
+  await painelAna.waitFor({ state: "hidden" });
+  conferir(await page.getByRole("heading", { name: "Gestão de Alunos" }).isVisible(), "historico: voltar mostra a lista sem parametro aluno");
+  conferir(await painelAna.count() === 0, "historico: remover ?aluno= fecha o painel");
+  await botaoBusca.click();
+  await dialogo.waitFor();
+  await campoGlobal.fill("Ana");
+  await dialogo.getByRole("option", { name: /Ana Souza/ }).waitFor();
+  await page.keyboard.press("Enter");
+  await page.waitForURL(/\/alunos\?aluno=\d+/);
+  await painelAna.getByText("2026001", { exact: true }).waitFor();
   await painelAna.getByRole("button", { name: "Fechar", exact: true }).click();
   await page.waitForURL(`${FRONT}/alunos`);
 
   // 15) Esc fecha a paleta; busca sem resultado
-  await page.keyboard.press("Control+K");
+  await botaoBusca.click();
   await dialogo.waitFor();
   await page.getByLabel("Buscar alunos, disciplinas e avisos").fill("zzzzzz");
   await dialogo.getByText(/Nada encontrado/).waitFor();
   conferir(await dialogo.getByText(/Nada encontrado/).isVisible(), "paleta: busca sem resultado mostra mensagem");
   await page.keyboard.press("Escape");
   await dialogo.waitFor({ state: "hidden" });
-  conferir(await page.getByRole("button", { name: "Buscar (Ctrl K)" }).isVisible(), "paleta: topo continua visivel depois de Esc");
+  conferir(await botaoBusca.evaluate((el) => el === document.activeElement), "paleta: busca sem resultado devolve foco ao botao depois de Esc");
   conferir(await dialogo.count() === 0, "paleta: busca sem resultado e Esc fecha");
 
-  // 16) celular: menu vira gaveta
+  await page.goto(`${FRONT}/disciplinas?q=Python`);
+  await page.getByText("Python", { exact: true }).first().waitFor();
+  conferir(await page.getByLabel("Buscar disciplina").inputValue() === "Python", "disciplinas: ?q=Python preenche o filtro");
+  await nomeTela.click();
+  await menu.getByRole("link", { name: /^Disciplinas/ }).click();
+  await page.waitForURL(`${FRONT}/disciplinas`);
+  await page.getByText("Banco de Dados", { exact: true }).first().waitFor();
+  conferir(await page.getByText("Banco de Dados", { exact: true }).first().isVisible() && await page.getByText("Python", { exact: true }).first().isVisible(), "disciplinas: clicar na aba restaura a lista sem filtro");
+  conferir(await page.getByLabel("Buscar disciplina").inputValue() === "", "disciplinas: clicar em Disciplinas remove ?q= e limpa o campo");
+
+  // 16) celular: abas embaixo e folha Mais com foco contido
   const celular = await browser.newPage({ viewport: { width: 390, height: 800 } });
   await celular.goto(`${FRONT}/login`);
   await celular.getByLabel("E-mail").fill("prof@escola.com");
   await celular.getByLabel("Senha").fill("escola123");
   await celular.getByRole("button", { name: "Entrar" }).click();
   await celular.waitForURL(`${FRONT}/`);
-  const menuCelular = celular.getByRole("navigation", { name: "Menu principal", includeHidden: true });
-  const alunosCelular = menuCelular.getByRole("link", { name: /^Alunos/, includeHidden: true });
-  const disciplinasCelular = menuCelular.getByRole("link", { name: /^Disciplinas/, includeHidden: true });
-  await celular.getByRole("button", { name: "Abrir menu" }).waitFor();
-  conferir(await alunosCelular.count() === 1, "celular: link Alunos existe na gaveta");
-  conferir(!(await alunosCelular.isVisible()), "celular: menu comeca fechado");
-  await celular.getByRole("button", { name: "Abrir menu" }).click();
-  await alunosCelular.waitFor();
-  conferir(await disciplinasCelular.isVisible(), "celular: abrir menu mostra Disciplinas");
-  await alunosCelular.click();
+  const menuCelular = celular.getByRole("navigation", { name: "Menu principal" });
+  const mais = menuCelular.getByRole("button", { name: "Mais", exact: true });
+  const folha = celular.getByRole("dialog", { name: "Mais telas", includeHidden: true });
+  await menuCelular.waitFor();
+  for (const rotulo of ["Painel", "Alunos", "Disciplinas", "Matrículas"]) {
+    conferir(await menuCelular.getByRole("link", { name: new RegExp(`^${rotulo}`) }).isVisible(), `celular: aba ${rotulo} visivel`);
+  }
+  const caixaAbas = await menuCelular.boundingBox();
+  conferir(Math.abs(caixaAbas.y + caixaAbas.height - 800) <= 1, "celular: abas fixas embaixo");
+  conferir(await mais.isVisible(), "celular: botao Mais visivel");
+  conferir(!(await folha.isVisible()), "celular: folha Mais comeca fechada");
+  await menuCelular.getByRole("link", { name: /^Alunos/ }).click();
   await celular.waitForURL("**/alunos");
-  await disciplinasCelular.waitFor({ state: "hidden" });
+  await celular.getByRole("heading", { name: "Gestão de Alunos" }).waitFor();
   conferir(await celular.getByRole("heading", { name: "Gestão de Alunos" }).isVisible(), "celular: navegacao mostra a tela de alunos");
-  conferir(await disciplinasCelular.count() === 1, "celular: link Disciplinas continua na gaveta");
-  conferir(!(await disciplinasCelular.isVisible()), "celular: gaveta fecha ao navegar");
+  conferir(await menuCelular.getByRole("link", { name: /^Disciplinas/ }).isVisible(), "celular: abas continuam visiveis ao navegar");
   await celular.screenshot({ path: "e2e/saida/celular-alunos.png" });
+  await mais.click();
+  await folha.waitFor();
+  conferir(await folha.getByRole("link", { name: "Boletim", exact: true }).evaluate((el) => el === document.activeElement), "celular: Mais foca o primeiro link, Boletim");
+  const itensMais = folha.locator("a[href], button");
+  conferir(await itensMais.count() === 4, "celular: Mais contem Boletim, Frequencia, Avisos e Sair");
+  for (const rotulo of ["Boletim", "Frequência", "Avisos"]) {
+    conferir(await folha.getByRole("link", { name: new RegExp(`^${rotulo}`) }).isVisible(), `celular: Mais mostra ${rotulo}`);
+  }
+  for (let i = 1; i <= 4; i++) {
+    await celular.keyboard.press("Tab");
+    conferir(await itensMais.nth(i % 4).evaluate((el) => el === document.activeElement), `celular: Tab ${i} cicla dentro de Mais`);
+  }
+  await celular.keyboard.press("Shift+Tab");
+  conferir(await folha.getByRole("button", { name: "Sair", exact: true }).evaluate((el) => el === document.activeElement), "celular: Shift+Tab cicla para Sair");
+  await celular.keyboard.press("Escape");
+  await folha.waitFor({ state: "hidden" });
+  conferir(await mais.evaluate((el) => el === document.activeElement), "celular: Esc devolve foco a Mais");
+  conferir(!(await folha.isVisible()), "celular: Esc fecha a folha Mais");
+  await mais.click();
+  await folha.waitFor();
+  await celular.locator(".mais-fundo").click({ position: { x: 10, y: 100 } });
+  await folha.waitFor({ state: "hidden" });
+  conferir(await mais.evaluate((el) => el === document.activeElement), "celular: clique no fundo devolve foco a Mais");
+  conferir(!(await folha.isVisible()), "celular: clique no fundo fecha Mais");
+  await mais.click();
+  await folha.getByRole("link", { name: "Boletim", exact: true }).click();
+  await celular.waitForURL(`${FRONT}/boletim`);
+  await folha.waitFor({ state: "hidden" });
+  conferir(await mais.evaluate((el) => el === document.activeElement), "celular: navegar por Mais devolve foco ao botao");
+  conferir(!(await folha.isVisible()), "celular: ativar link fecha Mais");
+  await mais.click();
+  await folha.getByRole("link", { name: "Boletim", exact: true }).click();
+  await folha.waitFor({ state: "hidden" });
+  conferir(celular.url() === `${FRONT}/boletim` && await mais.evaluate((el) => el === document.activeElement), "celular: link da rota atual mantem Boletim e devolve foco");
+  conferir(!(await folha.isVisible()), "celular: ativar link da rota atual tambem fecha Mais");
+  await mais.click();
+  await folha.getByRole("button", { name: "Sair", exact: true }).click();
+  await celular.waitForURL(`${FRONT}/login`);
+  conferir(await celular.getByRole("button", { name: "Entrar" }).isVisible(), "celular: Sair na folha Mais encerra a sessao");
   await celular.close();
 
   await page.goto(`${FRONT}/alunos`);
@@ -262,7 +439,7 @@ try {
   conferir(page.url().endsWith("/alunos"), "F5 em /alunos mantem sessao e rota");
 
   // 5) Sair limpa a sessao
-  await page.locator(".sidebar-rodape").getByRole("button", { name: "Sair", exact: true }).click();
+  await barra.getByRole("button", { name: "Sair", exact: true }).click();
   await page.waitForURL("**/login");
   await page.goto(`${FRONT}/alunos`);
   await page.waitForURL("**/login");
@@ -291,12 +468,24 @@ try {
   await page.getByText("Ana Souza").first().waitFor();
   await page.locator(".card-aviso").getByText("28/09/2026", { exact: true }).waitFor();
   conferir(await page.locator(".card-aviso").getByText("28/09/2026", { exact: true }).isVisible(), "aluna Ana: aviso do seed mostra 28/09/2026 no mural");
-  conferir(await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Meu painel", exact: true }).isVisible(), "aluna: Meu painel visivel no menu");
+  conferir(await barra.getByText("Meu painel", { exact: true }).isVisible(), "aluna: Meu painel visivel no topo");
   conferir(await page.getByRole("button", { name: "Buscar (Ctrl K)" }).count() === 0, "aluna: sem botao de busca");
+  conferir(await barra.getByRole("button", { name: "Sair", exact: true }).isVisible(), "aluna: Sair visivel no topo");
+  conferir(await barra.getByRole("button", { name: /^(Tela anterior|Próxima tela)$/ }).count() === 0, "aluna: sem setas");
+  conferir(await barra.getByText("Meu painel", { exact: true }).isVisible(), "aluna: titulo visivel sem expansao");
+  conferir(await barra.locator("[aria-expanded]").count() === 0 && await page.getByRole("navigation", { name: "Menu principal", includeHidden: true }).count() === 0, "aluna: sem expansao nem abas de professor");
+  const historicoAluna = await page.evaluate(() => history.length);
   await page.keyboard.press("Control+K");
   conferir(await page.getByText("Ana Souza").first().isVisible(), "aluna: painel continua visivel depois de Ctrl+K");
   conferir(await page.getByRole("dialog", { name: "Busca global" }).count() === 0, "aluna: Ctrl+K nao abre a paleta");
-  conferir(await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link").count() === 1, "aluna: menu so tem Meu painel");
+  await page.keyboard.press("Alt+m");
+  conferir(await barra.getByText("Meu painel", { exact: true }).isVisible(), "aluna: Alt+M mantem o topo minimo");
+  conferir(await barra.locator("[aria-expanded]").count() === 0, "aluna: Alt+M nao abre abas");
+  for (let i = 1; i <= 7; i++) {
+    await page.keyboard.press(`Alt+${i}`);
+    conferir(page.url() === `${FRONT}/meu-painel` && await page.getByText("Ana Souza").first().isVisible(), `aluna: Alt+${i} mantem Meu painel`);
+    conferir(await page.evaluate(() => history.length) === historicoAluna, `aluna: Alt+${i} nao cria navegacao no historico`);
+  }
   await page.screenshot({ path: "e2e/saida/painel-aluno.png" });
   await page.goto(`${FRONT}/alunos`);
   await page.waitForURL("**/meu-painel");
