@@ -13,3 +13,14 @@ export function hojeISO(): string {
   const dia = String(hoje.getDate()).padStart(2, "0");
   return `${hoje.getFullYear()}-${mes}-${dia}`;
 }
+
+// Duas letras para o avatar: primeira da primeira palavra + primeira da ultima
+export function iniciais(texto: string): string {
+  const palavras = texto.trim().split(/\s+/).filter((palavra) => palavra !== "");
+  if (palavras.length === 0) {
+    return "?";
+  }
+  const primeira = palavras[0][0];
+  const ultima = palavras.length > 1 ? palavras[palavras.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}

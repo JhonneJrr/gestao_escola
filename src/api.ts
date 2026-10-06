@@ -321,3 +321,45 @@ export async function resumoDoDashboard(): Promise<ResumoDoDashboard> {
     ranking: data.ranking.map(converterResumo),
   };
 }
+
+// ----------------------------- menu e busca global -----------------------------
+
+export interface ContadoresDoMenu {
+  alunos: number;
+  disciplinas: number;
+  avisos: number;
+}
+
+async function totalDe(caminho: string): Promise<number> {
+  const { data } = await http.get<Pagina<unknown>>(caminho, { params: { pagina: 1, tamanho: 1 } });
+  return data.total;
+}
+
+export async function contadoresDoMenu(): Promise<ContadoresDoMenu> {
+  const [alunos, disciplinas, avisos] = await Promise.all([
+    totalDe("/alunos"),
+    totalDe("/disciplinas"),
+    totalDe("/avisos"),
+  ]);
+  return { alunos, disciplinas, avisos };
+}
+
+export interface ResultadosDaBusca {
+  alunos: Aluno[];
+  disciplinas: Disciplina[];
+  avisos: Aviso[];
+}
+
+export async function buscaGlobal(q: string): Promise<ResultadosDaBusca> {
+  const params = { q, pagina: 1, tamanho: 5 };
+  const [alunos, disciplinas, avisos] = await Promise.all([
+    http.get<Pagina<Aluno>>("/alunos", { params }),
+    http.get<Pagina<Disciplina>>("/disciplinas", { params }),
+    http.get<Pagina<Aviso>>("/avisos", { params }),
+  ]);
+  return {
+    alunos: alunos.data.itens,
+    disciplinas: disciplinas.data.itens,
+    avisos: avisos.data.itens,
+  };
+}
