@@ -105,8 +105,8 @@ function TopNav({ aoAbrirBusca, aoSair }: TopNavProps) {
         }, 500);
       }
     }
-    function aoFocar() {
-      if (teclado && !suprimir) {
+    function aoFocar(evento: FocusEvent) {
+      if (teclado && !suprimir && evento.relatedTarget !== null) {
         expandir();
       }
     }
@@ -131,6 +131,9 @@ function TopNav({ aoAbrirBusca, aoSair }: TopNavProps) {
     }
     function registrarTeclado() { teclado = true; }
     function aoTeclar(evento: KeyboardEvent) {
+      if ((evento.target as Element | null)?.closest?.(".paleta") || document.querySelector(".paleta") !== null) {
+        return;
+      }
       if (evento.altKey && /^[1-7]$/.test(evento.key)) {
         if (evento.target instanceof HTMLElement && evento.target.matches("input, textarea, select")) {
           return;

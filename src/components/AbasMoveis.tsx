@@ -50,6 +50,9 @@ function AbasMoveis({ aoAbrirBusca, aoSair }: AbasMoveisProps) {
       return;
     }
     function aoTeclar(evento: KeyboardEvent) {
+      if ((evento.target as Element | null)?.closest?.(".paleta") || document.querySelector(".paleta") !== null) {
+        return;
+      }
       if (evento.altKey && /^[1-7]$/.test(evento.key)) {
         if (evento.target instanceof HTMLElement && evento.target.matches("input, textarea, select")) {
           return;
@@ -71,6 +74,9 @@ function AbasMoveis({ aoAbrirBusca, aoSair }: AbasMoveisProps) {
     const itens = Array.from(elemento.querySelectorAll<HTMLAnchorElement | HTMLButtonElement>("a[href], button"));
     itens[0].focus();
     function aoTeclar(evento: KeyboardEvent) {
+      if ((evento.target as Element | null)?.closest?.(".paleta") || document.querySelector(".paleta") !== null) {
+        return;
+      }
       if (evento.key === "Escape") {
         evento.preventDefault();
         setMaisAberto(false);

@@ -216,6 +216,16 @@ try {
   await menu.getByRole("link", { name: /^Alunos/ }).locator(".nav-contador").waitFor();
   conferir(await menu.getByRole("link", { name: /^Alunos/ }).getAttribute("aria-current") === "page", "barra: clicar em Alunos navega e ativa /alunos");
   conferir((await menu.getByRole("link", { name: /^Alunos/ }).locator(".nav-contador").innerText()).trim() === "10", "barra: contador mostra os 10 alunos restantes");
+  for (const largura of [1000, 1280]) {
+    await page.setViewportSize({ width: largura, height: 800 });
+    await page.waitForTimeout(500);
+    conferir(await menu.isVisible() && await nomeTela.getAttribute("aria-expanded") === "true", `barra: continua expandida depois de redimensionar para ${largura}px`);
+    conferir(await menu.evaluate((el) => {
+      const marcador = el.querySelector(".nav-marcador").getBoundingClientRect();
+      const ativa = el.querySelector('[aria-current="page"]').getBoundingClientRect();
+      return Math.abs(marcador.left - ativa.left) <= 2 && Math.abs(marcador.right - ativa.right) <= 2;
+    }), `barra: marcador alinhado com a aba ativa depois de redimensionar para ${largura}px`);
+  }
   await page.mouse.move(640, 300);
   await page.mouse.wheel(0, 400);
   await menu.waitFor({ state: "hidden" });
@@ -245,6 +255,19 @@ try {
   await menu.waitFor({ state: "hidden" });
   conferir(await nomeTela.evaluate((el) => el === document.activeElement), "barra: Esc devolve foco ao nome");
   conferir(await nomeTela.getAttribute("aria-expanded") === "false", "barra: Esc fecha sem reabrir por foco");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press("Alt+m");
+  await menu.waitFor();
+  conferir(await menu.isVisible() && await nomeTela.getAttribute("aria-expanded") === "true", "barra: abre com movimento reduzido");
+  const movimentoAbas = await menu.evaluate((el) => {
+    const estilo = getComputedStyle(el);
+    return { transform: estilo.transform, duracao: estilo.transitionDuration };
+  });
+  conferir(movimentoAbas.transform === "none", "barra: movimento reduzido deixa a linha de abas sem transform");
+  conferir(movimentoAbas.duracao === "0s", "barra: movimento reduzido deixa a linha de abas sem transicao");
+  await page.keyboard.press("Escape");
+  await menu.waitFor({ state: "hidden" });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   const destinos = [
     ["Painel", "/"], ["Alunos", "/alunos"], ["Disciplinas", "/disciplinas"],
     ["Matrículas", "/matriculas"], ["Boletim", "/boletim"], ["Frequência", "/frequencia"], ["Avisos", "/avisos"],
@@ -287,7 +310,27 @@ try {
   await page.keyboard.press("Escape");
   await dialogo.waitFor({ state: "hidden" });
   conferir(await botaoBusca.evaluate((el) => el === document.activeElement), "paleta: Esc devolve foco ao botao de busca");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "paleta: Esc mantem a barra compacta");
   conferir(await dialogo.count() === 0, "paleta: Esc fecha o dialogo");
+  await page.keyboard.press("Alt+m");
+  await menu.waitFor();
+  conferir(await menu.getByRole("link", { name: /^Alunos/ }).evaluate((el) => el === document.activeElement), "paleta sobre a barra: Alt+M abre e foca Alunos");
+  await page.keyboard.press("Control+K");
+  await dialogo.waitFor();
+  conferir(await campoGlobal.evaluate((el) => el === document.activeElement), "paleta sobre a barra: Ctrl+K foca a busca");
+  await campoGlobal.click();
+  await menu.waitFor({ state: "hidden" });
+  conferir(await campoGlobal.evaluate((el) => el === document.activeElement), "paleta sobre a barra: clicar na busca mantem o foco no dialogo");
+  conferir(await nomeTela.getAttribute("aria-expanded") === "false", "paleta sobre a barra: clique na busca compacta a barra");
+  for (const tecla of ["Alt+m", "Tab", "Shift+Tab"]) {
+    await page.keyboard.press(tecla);
+    conferir(await dialogo.isVisible() && await dialogo.evaluate((el) => el.contains(document.activeElement)), `paleta sobre a barra: ${tecla} mantem foco dentro de Busca global`);
+    conferir(await nomeTela.getAttribute("aria-expanded") === "false", `paleta sobre a barra: ${tecla} nao reabre a barra`);
+  }
+  await page.keyboard.press("Escape");
+  await dialogo.waitFor({ state: "hidden" });
+  conferir(await nomeTela.isVisible(), "paleta sobre a barra: nome da tela continua visivel depois de Esc");
+  conferir(await dialogo.count() === 0, "paleta sobre a barra: Esc fecha a paleta");
   await page.keyboard.press("Control+K");
   await dialogo.waitFor();
   conferir(await dialogo.getByRole("option", { name: /Alunos/ }).count() >= 1, "paleta: estado vazio mostra atalhos de paginas");
@@ -403,6 +446,18 @@ try {
   }
   await celular.keyboard.press("Shift+Tab");
   conferir(await folha.getByRole("button", { name: "Sair", exact: true }).evaluate((el) => el === document.activeElement), "celular: Shift+Tab cicla para Sair");
+  await celular.keyboard.press("Control+K");
+  const dialogoCelular = celular.getByRole("dialog", { name: "Busca global" });
+  await dialogoCelular.waitFor();
+  conferir(await folha.isVisible() && await dialogoCelular.getByRole("combobox", { name: "Buscar alunos, disciplinas e avisos" }).evaluate((el) => el === document.activeElement), "celular: Ctrl+K sobre Mais abre a paleta e foca a busca");
+  for (const tecla of ["Tab", "Shift+Tab"]) {
+    await celular.keyboard.press(tecla);
+    conferir(await dialogoCelular.isVisible() && await dialogoCelular.evaluate((el) => el.contains(document.activeElement)), `celular: ${tecla} sobre Mais mantem foco dentro da paleta`);
+  }
+  await celular.keyboard.press("Escape");
+  await dialogoCelular.waitFor({ state: "hidden" });
+  conferir(await folha.isVisible() && await folha.getByRole("button", { name: "Sair", exact: true }).evaluate((el) => el === document.activeElement), "celular: Esc da paleta preserva Mais e devolve o foco a Sair");
+  conferir(await dialogoCelular.count() === 0, "celular: Esc sobre Mais fecha somente a paleta");
   await celular.keyboard.press("Escape");
   await folha.waitFor({ state: "hidden" });
   conferir(await mais.evaluate((el) => el === document.activeElement), "celular: Esc devolve foco a Mais");
