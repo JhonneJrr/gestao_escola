@@ -124,7 +124,8 @@ try {
 
   // 10) painel: uma chamada ao /dashboard, com Bearer, sem situacao por aluno
   const antes = chamadas.length;
-  await page.goto(`${FRONT}/dashboard`);
+  await page.goto(`${FRONT}/`);
+  await page.waitForURL(`${FRONT}/`);
   await page.getByRole("heading", { name: "Painel" }).waitFor();
   await page.getByText("Ranking — top 5").waitFor();
   const novas = chamadas.slice(antes);
@@ -181,6 +182,77 @@ try {
   conferir(await page.getByText("Python").first().isVisible(), "disciplinas: busca 'Pyth' mostra Python");
   conferir(await page.getByText("Banco de Dados").count() === 0, "disciplinas: busca 'Pyth' esconde as outras");
 
+  // 13) menu lateral: itens, contador e navegacao
+  await page.goto(`${FRONT}/`);
+  const menu = page.getByRole("navigation", { name: "Menu principal" });
+  await menu.getByRole("link", { name: "Painel" }).waitFor();
+  for (const rotulo of ["Alunos", "Disciplinas", "Matrículas", "Boletim", "Frequência", "Avisos"]) {
+    conferir(await menu.getByRole("link", { name: new RegExp(`^${rotulo}`) }).isVisible(), `menu: item ${rotulo} visivel`);
+  }
+  await menu.getByRole("link", { name: /^Alunos/ }).click();
+  await page.waitForURL("**/alunos");
+  conferir(true, "menu: clicar em Alunos navega para /alunos");
+  await menu.getByRole("link", { name: /^Alunos/ }).locator(".sidebar-contador").waitFor();
+  conferir(/\d/.test(await menu.getByRole("link", { name: /^Alunos/ }).innerText()), "menu: contador de alunos aparece");
+  await page.goto(`${FRONT}/dashboard`);
+  await page.waitForURL(`${FRONT}/`);
+  conferir(true, "/dashboard redireciona para /");
+
+  // 14) Ctrl+K: abre, busca no servidor, Enter abre o painel do aluno
+  await page.getByRole("button", { name: "Buscar (Ctrl K)" }).waitFor();
+  await page.keyboard.press("Control+K");
+  const dialogo = page.getByRole("dialog", { name: "Busca global" });
+  await dialogo.waitFor();
+  conferir(await dialogo.getByRole("option", { name: /Alunos/ }).count() >= 1, "paleta: estado vazio mostra atalhos de paginas");
+  await page.getByLabel("Buscar alunos, disciplinas e avisos").fill("Ana");
+  await dialogo.getByRole("option", { name: /Ana Souza/ }).waitFor();
+  const buscaGlobalChamada = chamadas.filter((c) => c.url.includes("/alunos?") && c.url.includes("q=Ana")).pop();
+  conferir(buscaGlobalChamada?.auth?.startsWith("Bearer "), "paleta: busca vai ao servidor com q=Ana e Bearer");
+  await page.keyboard.press("Enter");
+  await page.waitForURL(/\/alunos\?aluno=\d+/);
+  const painelAna = page.getByRole("complementary", { name: "Detalhes de Ana Souza" });
+  await painelAna.getByText("2026001", { exact: true }).waitFor();
+  conferir(true, "paleta: Enter em Ana Souza abre /alunos?aluno=ID com o painel do aluno");
+  await page.screenshot({ path: "e2e/saida/alunos-painel-aberto.png" });
+  await painelAna.getByRole("button", { name: "Fechar", exact: true }).click();
+  await page.waitForURL(`${FRONT}/alunos`);
+
+  // 15) Esc fecha a paleta; busca sem resultado
+  await page.keyboard.press("Control+K");
+  await dialogo.waitFor();
+  await page.getByLabel("Buscar alunos, disciplinas e avisos").fill("zzzzzz");
+  await dialogo.getByText(/Nada encontrado/).waitFor();
+  conferir(await dialogo.getByText(/Nada encontrado/).isVisible(), "paleta: busca sem resultado mostra mensagem");
+  await page.keyboard.press("Escape");
+  await dialogo.waitFor({ state: "hidden" });
+  conferir(await page.getByRole("button", { name: "Buscar (Ctrl K)" }).isVisible(), "paleta: topo continua visivel depois de Esc");
+  conferir(await dialogo.count() === 0, "paleta: busca sem resultado e Esc fecha");
+
+  // 16) celular: menu vira gaveta
+  const celular = await browser.newPage({ viewport: { width: 390, height: 800 } });
+  await celular.goto(`${FRONT}/login`);
+  await celular.getByLabel("E-mail").fill("prof@escola.com");
+  await celular.getByLabel("Senha").fill("escola123");
+  await celular.getByRole("button", { name: "Entrar" }).click();
+  await celular.waitForURL(`${FRONT}/`);
+  const menuCelular = celular.getByRole("navigation", { name: "Menu principal", includeHidden: true });
+  const alunosCelular = menuCelular.getByRole("link", { name: /^Alunos/, includeHidden: true });
+  const disciplinasCelular = menuCelular.getByRole("link", { name: /^Disciplinas/, includeHidden: true });
+  await celular.getByRole("button", { name: "Abrir menu" }).waitFor();
+  conferir(await alunosCelular.count() === 1, "celular: link Alunos existe na gaveta");
+  conferir(!(await alunosCelular.isVisible()), "celular: menu comeca fechado");
+  await celular.getByRole("button", { name: "Abrir menu" }).click();
+  await alunosCelular.waitFor();
+  conferir(await disciplinasCelular.isVisible(), "celular: abrir menu mostra Disciplinas");
+  await alunosCelular.click();
+  await celular.waitForURL("**/alunos");
+  await disciplinasCelular.waitFor({ state: "hidden" });
+  conferir(await celular.getByRole("heading", { name: "Gestão de Alunos" }).isVisible(), "celular: navegacao mostra a tela de alunos");
+  conferir(await disciplinasCelular.count() === 1, "celular: link Disciplinas continua na gaveta");
+  conferir(!(await disciplinasCelular.isVisible()), "celular: gaveta fecha ao navegar");
+  await celular.screenshot({ path: "e2e/saida/celular-alunos.png" });
+  await celular.close();
+
   await page.goto(`${FRONT}/alunos`);
   await page.getByText("Ana Souza").first().waitFor();
 
@@ -190,7 +262,7 @@ try {
   conferir(page.url().endsWith("/alunos"), "F5 em /alunos mantem sessao e rota");
 
   // 5) Sair limpa a sessao
-  await page.getByRole("button", { name: "Sair" }).click();
+  await page.locator(".sidebar-rodape").getByRole("button", { name: "Sair", exact: true }).click();
   await page.waitForURL("**/login");
   await page.goto(`${FRONT}/alunos`);
   await page.waitForURL("**/login");
@@ -219,6 +291,12 @@ try {
   await page.getByText("Ana Souza").first().waitFor();
   await page.locator(".card-aviso").getByText("28/09/2026", { exact: true }).waitFor();
   conferir(await page.locator(".card-aviso").getByText("28/09/2026", { exact: true }).isVisible(), "aluna Ana: aviso do seed mostra 28/09/2026 no mural");
+  conferir(await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Meu painel", exact: true }).isVisible(), "aluna: Meu painel visivel no menu");
+  conferir(await page.getByRole("button", { name: "Buscar (Ctrl K)" }).count() === 0, "aluna: sem botao de busca");
+  await page.keyboard.press("Control+K");
+  conferir(await page.getByText("Ana Souza").first().isVisible(), "aluna: painel continua visivel depois de Ctrl+K");
+  conferir(await page.getByRole("dialog", { name: "Busca global" }).count() === 0, "aluna: Ctrl+K nao abre a paleta");
+  conferir(await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link").count() === 1, "aluna: menu so tem Meu painel");
   await page.screenshot({ path: "e2e/saida/painel-aluno.png" });
   await page.goto(`${FRONT}/alunos`);
   await page.waitForURL("**/meu-painel");
