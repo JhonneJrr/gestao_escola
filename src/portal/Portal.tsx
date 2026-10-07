@@ -2,15 +2,9 @@
 import React from "react";
 import { DCLogic, criarDC } from "./dc";
 import Template from "./template";
+import { montarEstado, fmt, pct, AVISO, TINTA } from "./adaptador";
+import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
 
-const ALUNOS0 = [
-  { id: 1, nome: 'Ana Souza', mat: '2026001', idade: 20, media: 9.0, email: 'ana@escola.com', hist: '2026.1' },
-  { id: 2, nome: 'Bruno Lima', mat: '2026002', idade: 22, media: 6.0, email: 'bruno@escola.com', hist: '2026.1' },
-  { id: 3, nome: 'Carla Dias', mat: '2026003', idade: 19, media: 3.8, email: null },
-  { id: 4, nome: 'Diego Alves', mat: '2026004', idade: 21, media: 8.5, email: 'diego@escola.com' },
-  { id: 5, nome: 'Eva Rocha', mat: '2026005', idade: 23, media: 6.3, email: null },
-  { id: 6, nome: 'Fabio Neri', mat: '2026006', idade: 20, media: 4.8, email: null }
-];
 const HOJE = '2026-10-06';
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const DIA_C = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -35,28 +29,17 @@ const gerarAulas = (d, de, ate) => {
   for (let s = de; s <= ate; s = addD(s, 1)) { const w = dsem(s); (d.grade || []).forEach(h => { if (h.dia_semana === w) r.push({ aula_id: AID++, disciplina_id: d.id, data: s, hora_inicio: h.hora_inicio, hora_fim: h.hora_fim, status: 'agendada', origem: 'grade', chamada: null }); }); }
   return r;
 };
-const DISC0 = [
-  { id: 1, nome: 'Python', carga_horaria: 40, professor_id: 1, grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }, { dia_semana: 4, hora_inicio: '08:00', hora_fim: '09:40' }] },
-  { id: 2, nome: 'Banco de Dados', carga_horaria: 60, professor_id: 1, grade: [{ dia_semana: 2, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 3, hora_inicio: '08:00', hora_fim: '09:40' }] },
-  { id: 3, nome: 'Algoritmos', carga_horaria: 80, professor_id: 2, grade: [{ dia_semana: 3, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40' }] },
-  { id: 4, nome: 'Redes', carga_horaria: 30, professor_id: null, grade: [] }
-];
-const SEM0 = { id: 2, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null };
 const TELAS_POR = {
   escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Agenda' }, { id: 'avisos', label: 'Avisos' }],
   prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
   aluno: []
 };
 const TELAS = TELAS_POR.escola;
-const PROFS0 = [{ id: 1, nome: 'Carlos Mendes', email: 'prof@escola.com' }, { id: 2, nome: 'Marta Ribeiro', email: 'marta@escola.com' }, { id: 3, nome: 'Paulo Antunes', email: 'paulo@escola.com' }];
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const EXTRAS = 'Gabriel Costa,Helena Martins,Igor Pereira,Julia Ramos,Kaique Santos,Larissa Melo,Mateus Freitas,Natália Cunha,Otávio Barros,Paula Teixeira,Rafael Moura,Sofia Carvalho,Tiago Nunes,Valéria Pinto,Wagner Azevedo,Yasmin Duarte,Breno Farias,Cecília Rocha,Danilo Prado,Elisa Campos,Felipe Araújo,Giovana Lopes,Heitor Vieira,Isadora Reis,João Batista,Lívia Monteiro,Marcelo Dantas,Nina Albuquerque'.split(',');
 const MOLAS = { fast: { k: 1500, z: 1 }, moderate: { k: 620, z: 0.82 }, slow: { k: 320, z: 0.78 } };
-const fmt = n => n.toFixed(1).replace('.', ',');
-const pct = f => Math.round(f * 100) + '%';
 const ini = n => n.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
 const br = d => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : '—'; };
-const AVISO = 'var(--aviso)', TINTA = 'var(--texto)';
 const FUNCOES = [
   { nome: 'Agenda e chamada', curto: 'As aulas do dia, por horário', titulo: 'A chamada sai da agenda do dia.', desc: 'A grade semanal de cada disciplina gera as aulas do semestre. Toda manhã a agenda mostra as aulas de hoje, de todas as disciplinas, com o status de cada uma: agendada, chamada feita ou cancelada.',
     passos: ['Abra a aula de hoje na agenda.', 'Toque em Todos presentes e marque só quem faltou.', 'Salve. A frequência de cada aluno recalcula na hora.'],
@@ -80,38 +63,6 @@ const FUNCOES = [
     passos: ['Cadastre o aluno com o e-mail da escola.', 'Entregue a senha provisória, que aparece uma vez só.', 'No primeiro acesso, ele troca a senha e entra.'],
     prof: 'Redefine a senha quando o aluno esquece, pelo painel do aluno.', aluno: 'Troca a própria senha quando quiser, pelo menu do avatar.' }
 ];
-const HIST0 = [{ id: 1, nome: '2026.1', inicio: '2026-02-09', fim: '2026-06-26', encerrado_em: '2026-07-01', resumo: [
-  ['Lógica de Programação', 6, '7,2', '88%', 5, 1], ['Matemática Discreta', 6, '6,4', '81%', 4, 2], ['Introdução à Computação', 6, '7,8', '92%', 6, 0]
-].map(r => ({ disc: r[0], alunos: String(r[1]), media: r[2], mediaCor: TINTA, freq: r[3], freqCor: TINTA, aprov: String(r[4]), reprov: String(r[5]), reprovCor: r[5] ? AVISO : TINTA })) }];
-
-function seed() {
-  const notas = {}, mats = {}, avals = [];
-  const off = { 1: 0.3, 2: -0.3, 3: 0 };
-  DISC0.forEach(d => avals.push({ id: d.id * 10 + 1, did: d.id, nome: 'P1', peso: 50 }, { id: d.id * 10 + 2, did: d.id, nome: 'P2', peso: 50 }));
-  ALUNOS0.forEach(a => {
-    [1, 2, 3].forEach(did => {
-      mats[a.id + '-' + did] = true;
-      const m = a.media + off[did];
-      notas[a.id + '-' + (did * 10 + 1)] = Math.round((m - 0.5) * 10) / 10;
-      notas[a.id + '-' + (did * 10 + 2)] = Math.round((m + 0.5) * 10) / 10;
-    });
-    if ([1, 2, 4, 5].includes(a.id)) mats[a.id + '-4'] = true;
-  });
-  let aulas = [];
-  DISC0.forEach(d => { aulas = aulas.concat(gerarAulas(d, SEM0.inicio, SEM0.fim)); });
-  aulas.sort((x, y) => x.data.localeCompare(y.data) || hm(x.hora_inicio) - hm(y.hora_inicio));
-  const cont = {};
-  aulas.forEach(au => {
-    if (au.data === '2026-10-01' && au.disciplina_id === 3) return;
-    if (!(au.data < HOJE || (au.data === HOJE && au.hora_inicio === '08:00'))) return;
-    const i = cont[au.disciplina_id] = (cont[au.disciplina_id] ?? -1) + 1;
-    au.chamada = {};
-    ALUNOS0.forEach(a => { if (mats[a.id + '-' + au.disciplina_id]) au.chamada[a.id] = a.id === 3 ? i % 3 === 0 : a.id === 6 ? i % 4 !== 2 : true; });
-  });
-  aulas.forEach(au => { if (au.data === '2026-10-08' && au.disciplina_id === 3) au.status = 'cancelada'; });
-  aulas.push({ aula_id: AID++, disciplina_id: 3, data: '2026-10-09', hora_inicio: '10:00', hora_fim: '11:40', status: 'agendada', origem: 'extra', chamada: null });
-  return { notas, mats, avals, aulas };
-}
 function molaLinear(k, z, ms) {
   const w = Math.sqrt(k), pts = [], N = 40;
   for (let i = 0; i <= N; i++) {
@@ -123,6 +74,8 @@ function molaLinear(k, z, ms) {
   pts[N] = 1;
   return 'linear(' + pts.join(',') + ')';
 }
+
+const VISITANTE = { usuario: null, profs: [], profId: null, alunos: [], discs: [], semestre: null, historico: [], avisos: [], mats: {}, avals: [], notas: {}, aulas: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '' };
 
 class Component extends DCLogic {
   frameRef = React.createRef();
@@ -145,21 +98,16 @@ class Component extends DCLogic {
     const al = new Set(Object.keys(mats).map(k => +k.split('-')[0]));
     return Object.assign({}, S, { discs: S.discs.filter(d => ids.has(d.id)), aulas: S.aulas.filter(a => ids.has(a.disciplina_id)), avals: S.avals.filter(a => ids.has(a.did)), mats, alunos: S.alunos.filter(a => al.has(a.id)), avisos: S.avisos.filter(a => !a.disciplina_id || ids.has(a.disciplina_id)) });
   }
-  state = Object.assign(seed(), {
+  state = Object.assign({}, VISITANTE, {
     logado: false, papel: null, tela: 'inicio', papelEscolhido: 'prof', faqAberta: 0, loginEmail: '', loginSenha: '', loginErro: '',
-    funcSel: 0, navAberta: false, profs: PROFS0, profId: null, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, semPerm: null, rotaAviso: '', alunoErro: '', alunos: ALUNOS0, discs: DISC0, semestre: SEM0, historico: HIST0,
-    avisos: [
-      { id: 3, titulo: 'Lista de grafos', data: '2026-10-02', msg: 'A lista 3 de grafos está no mural da sala. Entrega na aula de quinta.', disciplina_id: 3, autor_id: 2, autor_nome: 'Marta Ribeiro' },
-      { id: 2, titulo: 'Prova de Python', data: '2026-09-28', msg: 'A P1 de Python será na aula de terça, 29/09. O conteúdo vai até funções e listas.', disciplina_id: 1, autor_id: 1, autor_nome: 'Carlos Mendes' },
-      { id: 1, titulo: 'Bem-vindos ao semestre', data: '2026-09-20', msg: 'Confiram o calendário de aulas de cada disciplina e mantenham a frequência acima de 75%.', disciplina_id: null, autor_id: 'escola', autor_nome: 'Secretaria' }
-    ],
+    funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, semPerm: null, rotaAviso: '', alunoErro: '',
     q: '', idadeMin: '', mediaMin: '', ordem: 'nome', pagina: 1,
     painel: null, painelUlt: null, fNome: '', fIdade: '', fMat: '', fErro: '',
     fEmail: '', fOk: '', fGrade: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
     cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuUser: false, menuAula: null, limpar: null, exportando: null, exportOk: null,
     semConfirm: false, semMsg: '', nsNome: '', nsInicio: '', nsFim: '', nsErro: '',
-    discQ: '', selAluno: 1, selDisc: 1, matAluno: '', matMsg: null,
-    notaDisc: 1, notaAval: 11, notaValor: '', notaMsg: null, avalNome: '', avalPeso: '', avalMsg: null,
+    discQ: '', matAluno: '', matMsg: null,
+    notaValor: '', notaMsg: null, avalNome: '', avalPeso: '', avalMsg: null,
     agDia: HOJE, agMes: HOJE.slice(0, 7),
     avisoQ: '', avisoPagina: 1, avTitulo: '', avData: '2026-10-05', avMsg: '', avErro: '',
     largura: 1280
@@ -169,6 +117,8 @@ class Component extends DCLogic {
     this.aplicarMovimento();
     this.aplicarFonte();
     this.aplicarInicio();
+    aoExpirar(() => this.sair());
+    if (lerToken()) this.restaurarSessao();
     this.anims = new Map();
     const f = this.frameRef.current;
     f.addEventListener('pointermove', this.onMove);
@@ -186,7 +136,7 @@ class Component extends DCLogic {
     this.ro.observe(f);
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => this.syncSel());
   }
-  componentWillUnmount() { document.removeEventListener('keydown', this.onGlobalKey); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
+  componentWillUnmount() { aoExpirar(null); document.removeEventListener('keydown', this.onGlobalKey); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
   aplicarFonte() {
     const f = this.props.fonte ?? 'Apple · SF + New York', de = document.documentElement.style;
     const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -216,26 +166,68 @@ class Component extends DCLogic {
     if (i === 'Primeiro acesso') return this.setState({ logado: false, papel: null, tela: 'primeiro-acesso', painel: null, sNova: '', sConf: '', fErro: '' });
     if (i === 'Apresentação') this.setState({ logado: false, papel: null, tela: 'inicio', painel: null });
     else if (i === 'Login') this.setState({ logado: false, papel: null, tela: 'login', painel: null });
-    else if (i === 'Professor') this.entrarComo('prof', 1);
-    else if (i === 'Professor · sem permissão') { this.entrarComo('prof', 1); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
+    else if (i === 'Professor') this.entrarComo('prof');
+    else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
   }
+  async carregarEstado(usuario) {
+    this.setState({ carregando: true });
+    const dados = await estado();
+    this.setState(Object.assign(montarEstado(usuario, dados), { carregando: false }));
+    return true;
+  }
+  primeiroAcesso(usuario) {
+    this.limparMg();
+    this.setState({ mg: null, saindo: false, logado: false, tela: 'primeiro-acesso', primeiroEmail: usuario.email, primeiroPapel: this.state.papel, sNova: '', sConf: '', fErro: '', loginErro: '' });
+  }
+  falhaLogin(erro) {
+    this.limparMg();
+    this.setState({ carregando: false, saindo: false, loginErro: erro.detalhe, mg: this.state.mg ? { ...this.state.mg, fase: 'aberto' } : null });
+    this.animarCartao(true);
+  }
+  async entrar(e) {
+    e.preventDefault();
+    this.setState({ loginErro: '' });
+    try {
+      const sessao = await login(this.state.loginEmail.trim().toLowerCase(), this.state.loginSenha);
+      guardarToken(sessao.access_token);
+      const usuario = await me();
+      this.carregamento = this.carregarEstado(usuario);
+      if (usuario.senha_provisoria) { await this.carregamento; return this.primeiroAcesso(usuario); }
+      this.entrarAnimado(usuario.perfil === 'professor' ? 'prof' : usuario.perfil);
+    } catch (erro) { this.falhaLogin(erro); }
+  }
+  async restaurarSessao() {
+    try {
+      const usuario = await me();
+      await this.carregarEstado(usuario);
+      if (usuario.senha_provisoria) return this.primeiroAcesso(usuario);
+      this.entrarComo(this.state.papel);
+    } catch (erro) {
+      if (erro.status === 401) this.sair('inicio');
+      else this.setState({ carregando: false, loginErro: erro.detalhe });
+    }
+  }
+  sair(tela = 'login') {
+    apagarToken(); this.limparMg();
+    this.setState(Object.assign({}, VISITANTE, { logado: false, papel: null, tela, painel: null, painelUlt: null, loginSenha: '', menuUser: false, navAberta: false, carregando: false, saindo: false, mg: null, primeiroEmail: '', primeiroPapel: null, sAtual: '', sNova: '', sConf: '', fErro: '', senhaOk: false, senhaProv: null, gnDraft: {} }));
+  }
   preCarregar(papel) {
-    // ponto de integração: aqui entram as requisições reais (turmas, notas, avisos) do usuário
-    return new Promise(r => setTimeout(r, 450));
+    return this.carregamento;
   }
   entrarAnimado(papel) {
     const ctl = this.ringCtl, mg = this.state.mg;
-    if (!ctl || !mg || this.state.saindo) return this.entrarComo(papel);
+    const dados = this.preCarregar(papel).catch(erro => { this.falhaLogin(erro); return false; });
+    if (!ctl || !mg || this.state.saindo) return dados.then(ok => { if (ok) this.entrarComo(papel); });
     this.limparMg();
-    const dados = this.preCarregar(papel), sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
     this.animarCartao(false);
     this.setState({ saindo: true, mg: { ...mg, fase: 'entrando' } });
     if (document.activeElement) document.activeElement.blur();
     const cx = mg.W / 2, cy = mg.H / 2, Z0 = 1.3, LN = Math.log(10);
     const carregar = () => {
       ctl.esc = null; let pronto = false, fim = 0;
-      dados.then(() => { pronto = true; });
+      dados.then(ok => { pronto = ok; });
       ctl.dive = { dur: 1e9, passo: (t, dt) => {
         const el = t * 1e9 / 1000;
         if (!fim && pronto && el > (this.rm ? 0.6 : 1.1)) fim = el;
@@ -264,7 +256,7 @@ class Component extends DCLogic {
     });
   }
   veuRef = React.createRef();
-  entrarComo(papel, profId) { this.limparMg(); this.setState({ mg: null, logado: true, papel, profId: papel === 'prof' ? (profId || this.state.profId || 1) : null, semPerm: null, rotaAviso: '', subAba: 'alunos', selDisc: papel === 'prof' ? ((this.state.discs.find(d => d.professor_id === (profId || this.state.profId || 1)) || {}).id || this.state.selDisc) : this.state.selDisc, tela: papel === 'aluno' ? 'meu-painel' : 'painel', loginErro: '', painel: null }); }
+  entrarComo(papel, profId) { this.limparMg(); this.setState({ mg: null, logado: true, papel, profId: papel === 'prof' ? (profId || this.state.profId || null) : null, semPerm: null, rotaAviso: '', subAba: 'alunos', selDisc: papel === 'prof' ? ((this.state.discs.find(d => d.professor_id === (profId || this.state.profId || null)) || {}).id || this.state.selDisc) : this.state.selDisc, tela: papel === 'aluno' ? 'meu-painel' : 'painel', loginErro: '', painel: null }); }
 
   // ---------- Fluid engine ----------
   anim(g, kind) {
@@ -631,23 +623,31 @@ class Component extends DCLogic {
     if (st.avisos.some(a => a.id !== id && a.titulo.trim().toLowerCase() === t.toLowerCase() && a.data === st.fData)) return erro('Já existe um aviso com esse título nessa data.');
     this.setState(s => ({ avisos: s.avisos.map(a => a.id === id ? Object.assign({}, a, { titulo: t, data: s.fData, msg: s.fTexto.trim() }) : a), painel: null }));
   }
-  trocarSenha(e) {
+  async trocarSenha(e) {
     e.preventDefault();
     const st = this.state, erro = t => this.setState({ fErro: t });
     if (!st.sAtual) return erro('Informe a senha atual.');
     if (st.sNova.length < 8) return erro('A nova senha precisa de pelo menos 8 caracteres.');
     if (st.sNova === st.sAtual) return erro('A nova senha precisa ser diferente da atual.');
     if (st.sNova !== st.sConf) return erro('A confirmação não confere com a nova senha.');
-    this.setState({ senhaOk: true, sAtual: '', sNova: '', sConf: '', fErro: '' });
+    try {
+      await trocarSenhaAPI(st.sAtual, st.sNova);
+      this.setState({ senhaOk: true, sAtual: '', sNova: '', sConf: '', fErro: '' });
+    } catch (falha) { erro(falha.detalhe); }
   }
-  salvarPrimeiro(e) {
+  async salvarPrimeiro(e) {
     e.preventDefault();
     const st = this.state, erro = t => this.setState({ fErro: t });
     if (st.sNova.length < 8) return erro('A nova senha precisa de pelo menos 8 caracteres.');
     if (st.sNova !== st.sConf) return erro('A confirmação não confere com a nova senha.');
-    const em = st.primeiroEmail, papel = st.primeiroPapel || 'aluno';
-    this.setState(s => ({ sNova: '', sConf: '', fErro: '', profs: s.profs.map(p => p.email === em ? Object.assign({}, p, { provisoria: false }) : p), alunos: s.alunos.map(a => a.email === em ? Object.assign({}, a, { provisoria: false }) : a) }));
-    this.entrarComo(papel, papel === 'prof' ? st.profId : null);
+    try {
+      await trocarSenhaAPI(st.loginSenha, st.sNova);
+      const usuario = await me();
+      this.setState({ sNova: '', sConf: '', fErro: '', loginSenha: '' });
+      this.carregamento = this.carregarEstado(usuario);
+      await this.carregamento;
+      this.entrarAnimado(st.primeiroPapel);
+    } catch (falha) { erro(falha.detalhe); }
   }
   discMedia(aid, did) {
     const av = this.state.avals.filter(v => v.did === did); let s = 0, p = 0, falta = 0;
@@ -1024,7 +1024,7 @@ class Component extends DCLogic {
     this.funcSticky = !this.rm && (this.props.dispositivo ?? 'Desktop') !== 'Celular' && st.largura >= 1060 && (st.altura || 800) >= 600 && !st.funcNaoCabe;
     const escolher = p => this.setState({ papelEscolhido: p, loginErro: '' });
     const irLogin = (p, e) => this.abrirMergulho(p, e);
-    const me = reais.find(a => a.id === 1);
+    const me = reais.find(a => a.id === st.usuario?.aluno_id);
     const AV = 'var(--aviso)', TI = 'var(--texto)';
     const recP = [
       ['Painel', 'Quem está em risco, primeiro', 'O painel abre pelos alunos com média abaixo de 6 ou frequência abaixo de 75%, com o motivo escrito ao lado.'],
@@ -1093,7 +1093,7 @@ class Component extends DCLogic {
     const celular = (P.dispositivo ?? 'Desktop') === 'Celular';
     const compact = celular || st.largura < 720;
     const estadoP = P.estado ?? 'Normal';
-    const E = { Vazio: 'vazio', Carregando: 'carregando', Erro: 'erro' }[estadoP] || null;
+    const E = st.carregando ? 'carregando' : { Vazio: 'vazio', Carregando: 'carregando', Erro: 'erro' }[estadoP] || null;
     const muitos = estadoP === 'Muitos itens';
     const sistema = (P.vista ?? 'Protótipo') === 'Sistema';
     const ehEscola = st.papel === 'escola', ehProf = ehEscola || st.papel === 'prof', tela = st.tela;
@@ -1225,7 +1225,8 @@ class Component extends DCLogic {
         exportTxt: expTxt('disc'), exportO: st.exportando === 'disc' ? 0.6 : 1 };
     }
     // meu painel
-    const me = reais.find(a => a.id === 1) || reais[0] || this.vis(ALUNOS0[0]);
+    const me = reais.find(a => a.id === st.usuario?.aluno_id) || this.vis({ id: null, nome: '', mat: '' });
+    const usuarioNome = st.papel === 'aluno' ? me.nome : st.usuario?.nome || st.usuario?.email || '';
     const meBol = E === 'vazio' ? [] : this.boletim(me.id);
     const proximas = st.aulas.filter(a => a.data >= HOJE && a.status !== 'cancelada' && st.mats[me.id + '-' + a.disciplina_id]).sort((x, y) => x.data.localeCompare(y.data) || ordH(x, y)).slice(0, 5)
       .map(a => ({ quando: a.data === HOJE ? 'Hoje' : DIA_C[dsem(a.data)] + ' ' + ddmm(a.data), hora: a.hora_inicio ? a.hora_inicio + '–' + a.hora_fim : 'sem horário', nome: discNome(a.disciplina_id), extra: a.origem === 'extra' }));
@@ -1249,10 +1250,10 @@ class Component extends DCLogic {
       irSemestre: () => this.ir('semestre'), bloqueado: bloqueado && st.logado, podeEditar: !bloqueado,
       bloqueioTxt: sem && sem.encerrado_em ? 'Semestre encerrado em ' + br(sem.encerrado_em) + ': somente leitura.' : 'Sem semestre ativo.',
       menuUser: !!st.menuUser, alternarMenuUser: () => this.setState(s => ({ menuUser: !s.menuUser })), abrirTrocarSenha: () => this.abrirPainel({ tipo: 'senha' }), popRef: this.popRef,
-      usuarioEmail: ehEscola ? 'escola@escola.com' : meuProf ? meuProf.email : 'ana@escola.com', usuarioIniciais: ehEscola ? 'SE' : meuProf ? ini(meuProf.nome) : 'AS',
-      usuarioNome: ehEscola ? 'Secretaria' : meuProf ? meuProf.nome : 'Ana Souza', rotuloPerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno',
+      usuarioEmail: st.usuario?.email || '', usuarioIniciais: ini(usuarioNome),
+      usuarioNome, rotuloPerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno',
       telaAnterior: () => this.ir(this.telas()[(idx + this.telas().length - 1) % this.telas().length].id), telaProxima: () => this.ir(this.telas()[(idx + 1) % this.telas().length].id),
-      sair: () => this.setState({ logado: false, papel: null, tela: 'login', painel: null, loginSenha: '', menuUser: false }),
+      sair: () => this.sair(),
       abrirNav: () => this.setState({ navAberta: true }), fecharNav: () => this.setState({ navAberta: false }),
       navO: st.navAberta ? 1 : 0, navT: st.navAberta || this.rm ? 'none' : 'translateY(-6px)', navPE: st.navAberta ? 'auto' : 'none',
       abas: this.telas().map((t, i) => ({ label: t.label, atalho: 'Alt ' + (i + 1), on: t.id === tela, peso: peso(t.id === tela), ir: () => this.ir(t.id) })),
@@ -1319,11 +1320,7 @@ class Component extends DCLogic {
       // login
       loginEmail: st.loginEmail, loginSenha: st.loginSenha, loginErro: st.loginErro || ' ', loginErroO: st.loginErro ? 1 : 0,
       setLoginEmail: set('loginEmail'), setLoginSenha: set('loginSenha'),
-      entrar: e => { e.preventDefault(); const em = st.loginEmail.trim().toLowerCase(), pf = st.profs.find(p => p.email === em);
-        const papel = em === 'escola@escola.com' ? 'escola' : pf ? 'prof' : st.alunos.some(a => a.email && a.email === em) ? 'aluno' : st.papelEscolhido;
-        const al = st.alunos.find(a => a.email && a.email === em);
-        if ((pf && pf.provisoria) || (papel === 'aluno' && al && al.provisoria)) { this.limparMg(); return this.setState({ mg: null, tela: 'primeiro-acesso', primeiroEmail: em, primeiroPapel: papel, profId: pf ? pf.id : null, sNova: '', sConf: '', fErro: '', loginErro: '' }); }
-        this.setState({ profId: pf ? pf.id : papel === 'prof' ? 1 : null }, () => this.entrarAnimado(papel)); },
+      entrar: e => this.entrar(e),
       demos: [{ papel: 'Escola', email: 'escola@escola.com', p: 'escola' }, { papel: 'Prof. Carlos', email: 'prof@escola.com', p: 'prof' }, { papel: 'Profa. Marta', email: 'marta@escola.com', p: 'prof' }, { papel: 'Aluna', email: 'ana@escola.com', p: 'aluno' }].map(d => ({ papel: d.papel, email: d.email, usar: () => this.setState({ loginEmail: d.email, loginSenha: 'escola123', loginErro: '', papelEscolhido: d.p }) })),
 
       // painel
@@ -1547,7 +1544,7 @@ class Component extends DCLogic {
       setSAtual: e => this.setState({ sAtual: e.target.value, fErro: '' }), setSNova: e => this.setState({ sNova: e.target.value, fErro: '' }), setSConf: e => this.setState({ sConf: e.target.value, fErro: '' }), trocarSenha: e => this.trocarSenha(e),
       sNovaHint: st.sNova.length >= 8 ? 'Tamanho ok' : st.sNova.length + '/8 caracteres', sNovaHintCor: st.sNova.length >= 8 ? TINTA : 'var(--texto-suave)',
       pa8: st.sNova.length >= 8 ? '✓' : '·', pa8Cor: st.sNova.length >= 8 ? TINTA : 'var(--texto-suave)', paIg: st.sNova && st.sNova === st.sConf ? '✓' : '·', paIgCor: st.sNova && st.sNova === st.sConf ? TINTA : 'var(--texto-suave)',
-      salvarPrimeiro: e => this.salvarPrimeiro(e), primeiroEmail: st.primeiroEmail || 'ana@escola.com', voltarApresentacao: () => this.setState({ tela: 'inicio', fErro: '', sNova: '', sConf: '' }),
+      salvarPrimeiro: e => this.salvarPrimeiro(e), primeiroEmail: st.primeiroEmail || st.usuario?.email || '', voltarApresentacao: () => this.sair('inicio'),
       spAluno: !!st.senhaProv && !st.senhaProv.criado, spNovo: !!st.senhaProv && !!st.senhaProv.criado, novoForm: !(st.senhaProv && st.senhaProv.criado),
       sp: st.senhaProv ? { email: st.senhaProv.email, senha: st.senhaProv.senha, copiarTxt: st.senhaProv.copiado ? 'Copiada' : 'Copiar', copiar: () => this.copiar(st.senhaProv.senha), criadoTxt: st.senhaProv.criado ? st.senhaProv.criado + ' cadastrado.' : '' } : {},
       alunoErro: st.alunoErro || '', paVer: !st.editando, paEditando: !!st.editando, salvarAluno: e => this.salvarAluno(e), cancelarEdicao: () => this.setState({ editando: false, fErro: '' }),
