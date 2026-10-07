@@ -39,6 +39,7 @@ export function montarEstado(usuario: any, estado: any) {
     profs: estado.professores.map((p: any) => ({ id: p.id, nome: p.nome, email: p.email, ocupados: (p.ocupacoes || []).map((o: any) => ({ dia_semana: o.dia_semana, hora_inicio: o.hora_inicio, hora_fim: o.hora_fim, motivo: o.motivo || '' })) })),
     alunos: estado.alunos.map((a: any) => ({
       id: a.id, nome: a.nome, mat: a.matricula, idade: a.idade, media: a.media, email: a.email, hist: a.semestre_historico,
+      turma: a.turma_id == null ? null : String(a.turma_id), turma_nome: a.turma_nome ?? null,
       ...(a.id === usuario.aluno_id && usuario.senha_provisoria ? { provisoria: true } : {}),
     })),
     discs,

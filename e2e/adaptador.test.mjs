@@ -313,7 +313,7 @@ const turma = {
 const esperadoTurma = {
   turmas: [], salas: [], eventos: [], pedidos: [],
   semestre: { id: 9, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null },
-  alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1' }],
+  alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', turma: null, turma_nome: null }],
   discs: [{ id: 13, nome: 'Python', carga_horaria: 40, professor_id: 42, turma: '', sala: '', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '', sala_id: null }] }],
   mats: { '27-13': true }, avals: [{ id: 88, did: 13, nome: 'P1', peso: 100 }], notas: { '27-88': 0 },
   aulas: [
@@ -353,12 +353,12 @@ test('professor usa o id autenticado e conserva o recorte recebido', () => {
 test('aluno usa aluno_id e marca provisória somente na própria conta', () => {
   assert.deepEqual(montarEstado(aluno, turma), {
     ...esperadoTurma, papel: 'aluno', profId: null, usuario: aluno, profs: [], historico: [],
-    alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', provisoria: true }],
+    alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', turma: null, turma_nome: null, provisoria: true }],
   });
   const resultado = montarEstado(aluno, { ...turma, alunos: [...turma.alunos, { id: 28, nome: 'Colega', matricula: 'A028', idade: 20, media: 0, email: null, semestre_historico: null }] });
   assert.deepEqual(resultado.alunos, [
-    { id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', provisoria: true },
-    { id: 28, nome: 'Colega', mat: 'A028', idade: 20, media: 0, email: null, hist: null },
+    { id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', turma: null, turma_nome: null, provisoria: true },
+    { id: 28, nome: 'Colega', mat: 'A028', idade: 20, media: 0, email: null, hist: null, turma: null, turma_nome: null },
   ]);
 });
 
@@ -426,4 +426,18 @@ test('canvas devolve campos da API com ids inteiros e vazios nulos', () => {
   assert.deepEqual(disciplinaAPI({ nome: 'Lógica', carga: 40, prof: '', turma: '', sala: '' }), { nome: 'Lógica', carga_horaria: 40, professor_id: null, turma_id: null, sala_id: null });
   assert.deepEqual(itensGradeAPI([{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '7' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala: '' }]),
     [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala_id: 7 }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala_id: null }]);
+});
+
+test('aluno com turma vira id em texto e nome; sem turma vira nulo, sem alterar a entrada', () => {
+  const entrada = { ...turma, turmas: [{ id: 5, nome: '1º A' }], alunos: [
+    { ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' },
+    { id: 28, nome: 'Colega', matricula: 'A028', idade: 20, media: 0, email: null, semestre_historico: null, turma_id: null, turma_nome: null },
+  ] };
+  const copia = structuredClone(entrada), r = montarEstado(escola, entrada);
+  assert.deepEqual(r.alunos.map(a => [a.id, a.turma, a.turma_nome]), [[27, '5', '1º A'], [28, null, null]]);
+  assert.equal(r.alunos[0].nome, 'Bia'); assert.equal(r.alunos[0].mat, 'A027'); assert.equal(r.alunos[0].media, 7.5);
+  assert.deepEqual(entrada, copia);
+  // Id 0 não existe, mas o teste garante que só nulo e indefinido contam como sem turma.
+  assert.equal(montarEstado(escola, { ...turma, alunos: [{ ...turma.alunos[0], turma_id: 0, turma_nome: 'Zero' }] }).alunos[0].turma, '0');
+  assert.equal(montarEstado(aluno, { ...turma, alunos: [{ ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' }] }).alunos[0].turma, '5');
 });
