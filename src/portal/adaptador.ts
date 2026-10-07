@@ -1,6 +1,7 @@
 export const fmt = (n: number) => n.toFixed(1).replace('.', ',');
 export const pct = (f: number) => Math.round(f * 100) + '%';
 export const AVISO = 'var(--aviso)', TINTA = 'var(--texto)';
+export const dataHoje = (d: Date, demo: boolean) => demo ? '2026-10-06' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 
 export const itensGradeAPI = (grade: any[]) => grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala_id: g.sala ? Number(g.sala) : null }));
 export const disciplinaAPI = (d: any) => ({ nome: d.nome, carga_horaria: Number(d.carga), professor_id: d.prof ? Number(d.prof) : null, turma_id: d.turma ? Number(d.turma) : null, sala_id: d.sala ? Number(d.sala) : null });
@@ -16,7 +17,7 @@ const semestre = (s: any) => s == null ? null : ({
 
 export function montarEstado(usuario: any, estado: any) {
   const discs = estado.disciplinas.map((d: any) => ({ id: d.id, nome: d.nome, carga_horaria: d.carga_horaria, professor_id: d.professor_id,
-    turma: String(d.turma_id ?? ''), sala: String(d.sala_id ?? ''), grade: d.grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: String(g.sala_id ?? d.sala_id ?? '') })) }));
+    turma: String(d.turma_id ?? ''), sala: String(d.sala_id ?? ''), grade: d.grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: String(g.sala_id ?? d.sala_id ?? ''), sala_id: g.sala_id ?? null })) }));
   const avals = estado.avaliacoes.map((a: any) => ({ id: a.id, did: a.disciplina_id, nome: a.nome, peso: a.peso }));
   return {
     papel: usuario.perfil === 'professor' ? 'prof' : usuario.perfil,

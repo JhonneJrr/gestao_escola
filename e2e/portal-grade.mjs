@@ -1,11 +1,12 @@
-// Usa o seed e os serviços locais. Ocupações e evento são limpos no finally.
+// Usa o seed e os serviços locais. Ocupações, evento e disciplina são limpos no finally.
 // O pedido criado fica no banco (não há DELETE); o reseed limpa esse pedido.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
 const API = 'http://localhost:8000', FRONT = 'http://localhost:5173';
-let browser, token, carlos, originais, eventoId, pedidoId;
+let browser, token, carlos, originais, eventoId, pedidoId, disciplinaId;
 const tituloEvento = 'Conferência F5b ' + Date.now();
+const nomeDisciplina = 'Conferência F5c sem turma ' + Date.now();
 async function api(caminho, method = 'GET', corpo, tokenReq = token) {
   const r = await fetch(API + caminho, {
     method, headers: { ...(tokenReq ? { Authorization: 'Bearer ' + tokenReq } : {}), ...(corpo ? { 'Content-Type': 'application/json' } : {}) },
@@ -90,6 +91,22 @@ try {
     assert.ok(ds.length);
     for (const d of ds) assert.ok(await quadro.getByRole('button', { name: new RegExp('^' + d.nome + ' · ') }).count(), d.nome);
   });
+  await conferir('disciplina criada sem turma aparece no último grupo e abre o editor', async () => {
+    const criada = await api('/disciplinas', 'POST', { nome: nomeDisciplina, carga_horaria: 40, professor_id: carlos.id, turma_id: null, sala_id: null });
+    if (criada.status === 201) disciplinaId = criada.corpo.id;
+    assert.equal(criada.status, 201, JSON.stringify(criada.corpo)); assert.ok(disciplinaId);
+    assert.equal(criada.corpo.turma_id, null);
+    await abrirGrade();
+    await grade().getByRole('tab', { name: 'Disciplinas', exact: true }).click();
+    await grade().getByText('Sem turma', { exact: true }).waitFor({ state: 'visible' });
+    await grade().getByText(nomeDisciplina, { exact: true }).click();
+    const f = grade().getByRole('dialog');
+    await f.getByRole('button', { name: 'Salvar disciplina', exact: true }).waitFor({ state: 'visible' });
+    assert.equal(await f.locator('input').first().inputValue(), nomeDisciplina);
+    await page.keyboard.press('Escape');
+    assert.ok(await grade().getByText(nomeDisciplina, { exact: true }).count());
+    // A disciplina fica disponível até a limpeza garantida no finally.
+  });
   await conferir('Ano letivo mostra Independência em setembro e publica evento pela API', async () => {
     await abrirSetembro();
     await grade().getByRole('button', { name: 'Novo evento', exact: true }).click();
@@ -171,11 +188,26 @@ try {
     const recebido = await resp, corpo = await recebido.json();
     assert.deepEqual(recebido.request().postDataJSON(), { mensagens: [{ papel: 'usuario', texto: mensagem }] });
     await painel.getByText(mensagem, { exact: true }).waitFor({ state: 'visible' });
-    if (recebido.status() === 200) await painel.getByText(corpo.resposta, { exact: true }).waitFor({ state: 'visible' });
-    else {
-      assert.ok([429, 502, 503].includes(recebido.status()), JSON.stringify(corpo));
-      await painel.getByRole('alert').filter({ hasText: corpo.detail }).waitFor({ state: 'visible' });
+    if (recebido.status() !== 200) {
+      const textos = { 503: 'O assistente não está configurado neste servidor.', 429: 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.', 502: 'Não consegui falar com o assistente. Tente de novo.' };
+      assert.ok(textos[recebido.status()], JSON.stringify(corpo));
+      await painel.getByText(textos[recebido.status()], { exact: true }).waitFor({ state: 'visible' });
+      console.log('NÃO FEITO segunda mensagem: o Gemini respondeu ' + recebido.status() + ' (serviço externo indisponível); o erro exibido foi conferido.');
+      return;
     }
+    assert.equal(recebido.status(), 200, JSON.stringify(corpo));
+    await painel.getByText(corpo.resposta, { exact: true }).waitFor({ state: 'visible' });
+    const segundaMensagem = 'Explique os horários que você analisou, sem alterar a grade.';
+    await painel.getByLabel('Mensagem para o assistente', { exact: true }).fill(segundaMensagem);
+    const resp2 = page.waitForResponse(r => r.url() === API + '/ia/grade' && r.request().method() === 'POST', { timeout: 90000 });
+    await painel.locator('button[type=submit]').click();
+    const recebido2 = await resp2, corpo2 = await recebido2.json();
+    assert.deepEqual(recebido2.request().postDataJSON(), { mensagens: [
+      { papel: 'usuario', texto: mensagem }, { papel: 'ia', texto: corpo.resposta }, { papel: 'usuario', texto: segundaMensagem },
+    ] });
+    assert.equal(recebido2.status(), 200, JSON.stringify(corpo2));
+    await painel.getByText(segundaMensagem, { exact: true }).waitFor({ state: 'visible' });
+    await painel.getByText(corpo2.resposta, { exact: true }).last().waitFor({ state: 'visible' });
     // Não aplica propostas: este teste preserva as grades do seed.
   });
   await conferir('Carlos abre /grade e o Quadro mostra só disciplinas dele', async () => {
@@ -226,7 +258,17 @@ try {
       const proxima = new Date(data + 'T00:00:00Z'); proxima.setUTCDate(proxima.getUTCDate() + 1); data = proxima.toISOString().slice(0, 10);
     }
     assert.ok(livre, 'seed precisa ter um horário livre válido para Marta');
-    await sair(); await entrar('marta@escola.com'); await abrirGrade();
+    await sair(); await entrar('marta@escola.com');
+    await conferir('painel de Marta mostra hoje pela data local do navegador', async () => {
+      await page.getByRole('heading', { name: 'Suas aulas de hoje', exact: true }).waitFor({ state: 'visible' });
+      const hoje = await page.evaluate(() => {
+        const d = new Date(), dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        return dias[d.getDay()] + ', ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+      });
+      const cabecalho = page.getByRole('heading', { name: 'Suas aulas de hoje', exact: true }).locator('..');
+      assert.equal(await cabecalho.locator('span.sc-interp').first().textContent(), hoje);
+    });
+    await abrirGrade();
     await grade().getByRole('tab', { name: /^Aulas extras/ }).click();
     const emAnaliseAntes = await grade().getByText('Em análise', { exact: true }).count();
     const f = grade().locator('form').filter({ has: page.getByRole('button', { name: 'Enviar para análise', exact: true }) });
@@ -282,6 +324,13 @@ try {
   process.exitCode = 1;
   if (!browser) console.error(er.stack);
 } finally {
+  try {
+    const disciplinas = await api('/portal/estado'); assert.equal(disciplinas.status, 200);
+    for (const d of disciplinas.corpo.disciplinas.filter(d => d.id === disciplinaId || d.nome === nomeDisciplina)) {
+      assert.equal((await api(`/disciplinas/${d.id}`, 'DELETE')).status, 204);
+      console.log('OK disciplina de teste removida: ' + d.id);
+    }
+  } catch (er) { process.exitCode = 1; console.error('FALHOU limpeza da disciplina\n' + er.stack); }
   try {
     // A consulta pelo título recupera o id mesmo se a tela falhar após o POST.
     const eventos = await api('/eventos'); assert.equal(eventos.status, 200);

@@ -4,7 +4,7 @@ import { DCLogic, criarDC } from "./dc";
 import Template from "./template";
 import { publicar, configurarRecarga } from "./loja";
 import { salvarOcupacoes, pedirGradeIA, erroGradeIA } from "./rede";
-import { montarEstado, fmt, pct, AVISO, TINTA } from "./adaptador";
+import { montarEstado, fmt, pct, AVISO, TINTA, dataHoje } from "./adaptador";
 import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
 import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
   criarAluno, atualizarAluno, redefinirAluno, apagarAluno, criarDisciplina, atualizarDisciplina,
@@ -12,7 +12,7 @@ import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor,
 import { criarAvaliacao, apagarAvaliacao, salvarNota, apagarNota, salvarChamada as salvarChamadaAPI,
   atualizarAula, criarAula, criarAviso, atualizarAviso, apagarAviso } from "./rede";
 
-const HOJE = '2026-10-06';
+const HOJE = dataHoje(new Date(), import.meta.env.DEV && new URLSearchParams(window.location.search).has('inicio'));
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const DIA_C = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const DIA_L = ['', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'];
@@ -132,6 +132,7 @@ class Component extends DCLogic {
     const s = this.state;
     publicar({ perfil: s.papel, usuario: s.usuario, semestre: s.semestre, disciplinas: s.discs,
       professores: s.profs, aulas: s.aulas, turmas: s.turmas || [], salas: s.salas || [], eventos: s.eventos || [], pedidos: s.pedidos || [],
+      avisar: texto => this.setState({ rotaAviso: texto }),
       ...(import.meta.env.DEV ? { relogio: this.props.relogio } : {}),
       ...(import.meta.env.DEV && this.props.inicio !== undefined ? this.demoGrade : {}) });
   }
@@ -567,32 +568,44 @@ class Component extends DCLogic {
   remLinha(k) { this.setState(s => ({ fGrade: s.fGrade.filter(r => r.k !== k), fErro: '', fOk: '' })); }
   async salvarDisc(e) {
     e.preventDefault();
-    const st = this.state, sem = this.ativo(), did = (st.painel || {}).did || null, erro = t => this.setState({ fErro: t, fOk: '' });
+    if (this.state.discGravando) return;
+    let pn = this.state.painel;
+    const st = this.state, sem = this.ativo(), did = (pn || {}).did || null;
+    const resposta = (campos, texto) => this.setState(s => s.painel === pn && s.painel?.tipo === pn?.tipo && s.painel?.did === pn?.did ? campos : { rotaAviso: texto }), erro = t => resposta({ fErro: t, fOk: '' }, t);
     if (!sem) return erro('Sem semestre ativo.');
     const nome = st.fNome.trim(), ch = parseInt(st.fIdade, 10);
     if (!nome) return erro('Informe o nome.');
     if (st.discs.some(d => d.id !== did && d.nome.trim().toLowerCase() === nome.toLowerCase())) return erro('Já existe uma disciplina com esse nome.');
     if (isNaN(ch) || ch <= 0) return erro('A carga horária precisa ser maior que zero.');
-    const grade = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim }));
+    const anterior = st.discs.find(d => d.id === did)?.grade || [];
+    const grade = st.fGrade.map(r => {
+      const existente = anterior.find(g => g.dia_semana === +r.dia_semana && g.hora_inicio === r.hora_inicio);
+      return { dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim, ...(existente ? { sala_id: existente.sala_id } : {}) };
+    });
     const errs = this.conflitoGrade(grade, did, st.fProf ? +st.fProf : null), k = errs.findIndex(Boolean);
     if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
-    let id;
+    this.setState({ discGravando: true });
     try {
-      const corpo = { nome, carga_horaria: ch, ...(st.fProf ? { professor_id: +st.fProf } : did ? { professor_id: null } : {}) };
-      id = (did ? await atualizarDisciplina(did, corpo) : await criarDisciplina(corpo)).id;
-    } catch (er) { return erro(er.detalhe); }
-    const painel = { tipo: 'disc', did: id };
-    this.setState({ painel, painelUlt: painel });
-    let salvo, falha;
-    try { salvo = await salvarGrade(id, grade); }
-    catch (er) { falha = er; }
-    try {
-      await this.recarregar();
-      if (falha) return erro(falha.detalhe);
-      const n = salvo.aulas_geradas, de = HOJE > sem.inicio ? HOJE : sem.inicio;
-      const msg = grade.length ? n + (n === 1 ? ' aula gerada' : ' aulas geradas') + ' de ' + ddmm(de) + ' a ' + ddmm(sem.fim) + '.' : 'Salvo. Sem grade, nenhuma aula foi gerada.';
-      this.setState({ selDisc: id, fErro: '', fOk: msg });
-    } catch (er) { erro((falha || er).detalhe); }
+      let id;
+      try {
+        const corpo = { nome, carga_horaria: ch, ...(st.fProf ? { professor_id: +st.fProf } : did ? { professor_id: null } : {}) };
+        id = (did ? await atualizarDisciplina(did, corpo) : await criarDisciplina(corpo)).id;
+      } catch (er) { return erro(er.detalhe); }
+      if (this.state.painel === pn) {
+        pn = { tipo: 'disc', did: id };
+        this.setState({ painel: pn, painelUlt: pn });
+      }
+      let salvo, falha;
+      try { salvo = await salvarGrade(id, grade); }
+      catch (er) { falha = er; }
+      try {
+        await this.recarregar();
+        if (falha) return erro(falha.detalhe);
+        const n = salvo.aulas_geradas, de = HOJE > sem.inicio ? HOJE : sem.inicio;
+        const msg = grade.length ? n + (n === 1 ? ' aula gerada' : ' aulas geradas') + ' de ' + ddmm(de) + ' a ' + ddmm(sem.fim) + '.' : 'Salvo. Sem grade, nenhuma aula foi gerada.';
+        resposta({ selDisc: id, fErro: '', fOk: msg }, msg);
+      } catch (er) { erro((falha || er).detalhe); }
+    } finally { this.setState({ discGravando: false }); }
   }
   abrirFicha(p) { this.abrirPainel({ tipo: 'prof', id: p.id }, { fOcup: (p.ocupados || []).map((o, i) => ({ k: i + 1, dia_semana: String(o.dia_semana), hora_inicio: o.hora_inicio, hora_fim: o.hora_fim, motivo: o.motivo || '' })) }); }
   addOcup() { this.setState(s => { const g = s.fOcup, u = g[g.length - 1]; return { fOcup: g.concat({ k: Date.now(), dia_semana: u ? String(Math.min(5, +u.dia_semana + 1)) : '1', hora_inicio: u ? u.hora_inicio : '08:00', hora_fim: u ? u.hora_fim : '12:00', motivo: '' }), fErro: '', fOk: '' }; }); }
