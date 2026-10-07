@@ -2,13 +2,14 @@
 import React from "react";
 
 const ALUNOS0 = [
-  { id: 1, nome: 'Ana Souza', mat: '2026001', idade: 20, media: 9.0, email: 'ana@escola.com', hist: '2026.1' },
-  { id: 2, nome: 'Bruno Lima', mat: '2026002', idade: 22, media: 6.0, email: 'bruno@escola.com', hist: '2026.1' },
-  { id: 3, nome: 'Carla Dias', mat: '2026003', idade: 19, media: 3.8, email: null },
-  { id: 4, nome: 'Diego Alves', mat: '2026004', idade: 21, media: 8.5, email: 'diego@escola.com' },
-  { id: 5, nome: 'Eva Rocha', mat: '2026005', idade: 23, media: 6.3, email: null },
+  { id: 1, nome: 'Ana Souza', mat: '2026001', idade: 20, media: 9.0, email: 'ana@escola.com', hist: '2026.1', turma: '1A' },
+  { id: 2, nome: 'Bruno Lima', mat: '2026002', idade: 22, media: 6.0, email: 'bruno@escola.com', hist: '2026.1', turma: '1A' },
+  { id: 3, nome: 'Carla Dias', mat: '2026003', idade: 19, media: 3.8, email: null, turma: '2A' },
+  { id: 4, nome: 'Diego Alves', mat: '2026004', idade: 21, media: 8.5, email: 'diego@escola.com', turma: '2A' },
+  { id: 5, nome: 'Eva Rocha', mat: '2026005', idade: 23, media: 6.3, email: null, turma: '3A' },
   { id: 6, nome: 'Fabio Neri', mat: '2026006', idade: 20, media: 4.8, email: null }
 ];
+const TURMAS0 = [{ id: '1A', nome: '1º A' }, { id: '2A', nome: '2º A' }, { id: '3A', nome: '3º A' }];
 const HOJE = '2026-10-06';
 
 const pD = s => { const p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); };
@@ -25,10 +26,10 @@ const gerarAulas = (d, de, ate) => {
   return r;
 };
 const DISC0 = [
-  { id: 1, nome: 'Python', carga_horaria: 40, professor_id: 1, grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }, { dia_semana: 4, hora_inicio: '08:00', hora_fim: '09:40' }] },
-  { id: 2, nome: 'Banco de Dados', carga_horaria: 60, professor_id: 1, grade: [{ dia_semana: 2, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 3, hora_inicio: '08:00', hora_fim: '09:40' }] },
-  { id: 3, nome: 'Algoritmos', carga_horaria: 80, professor_id: 2, grade: [{ dia_semana: 3, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40' }] },
-  { id: 4, nome: 'Redes', carga_horaria: 30, professor_id: null, grade: [] }
+  { id: 1, nome: 'Python', carga_horaria: 40, professor_id: 1, turma: '1A', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }, { dia_semana: 4, hora_inicio: '08:00', hora_fim: '09:40' }] },
+  { id: 2, nome: 'Banco de Dados', carga_horaria: 60, professor_id: 1, turma: '2A', grade: [{ dia_semana: 2, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 3, hora_inicio: '08:00', hora_fim: '09:40' }] },
+  { id: 3, nome: 'Algoritmos', carga_horaria: 80, professor_id: 2, turma: '1A', grade: [{ dia_semana: 3, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40' }] },
+  { id: 4, nome: 'Redes', carga_horaria: 30, professor_id: null, turma: '3A', grade: [] }
 ];
 const SEM0 = { id: 2, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null };
 
@@ -74,7 +75,7 @@ export function estadoDemo(papel: 'escola' | 'prof' | 'aluno') {
   const usuario = papel === 'escola' ? { nome: 'Secretaria', email: 'escola@escola.com' }
     : papel === 'prof' ? PROFS0[0] : { nome: 'Ana Souza', email: 'ana@escola.com', aluno_id: 1 };
   return Object.assign(seed(), {
-    alunos: ALUNOS0, discs: DISC0, profs: PROFS0, semestre: SEM0, historico: HIST0,
+    alunos: ALUNOS0, turmas: TURMAS0, discs: DISC0, profs: PROFS0, semestre: SEM0, historico: HIST0,
     avisos: [
       { id: 3, titulo: 'Lista de grafos', data: '2026-10-02', msg: 'A lista 3 de grafos está no mural da sala. Entrega na aula de quinta.', disciplina_id: 3, autor_id: 2, autor_nome: 'Marta Ribeiro' },
       { id: 2, titulo: 'Prova de Python', data: '2026-09-28', msg: 'A P1 de Python será na aula de terça, 29/09. O conteúdo vai até funções e listas.', disciplina_id: 1, autor_id: 1, autor_nome: 'Carlos Mendes' },
