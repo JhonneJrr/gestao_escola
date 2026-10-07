@@ -441,3 +441,143 @@ test('aluno com turma vira id em texto e nome; sem turma vira nulo, sem alterar 
   assert.equal(montarEstado(escola, { ...turma, alunos: [{ ...turma.alunos[0], turma_id: 0, turma_nome: 'Zero' }] }).alunos[0].turma, '0');
   assert.equal(montarEstado(aluno, { ...turma, alunos: [{ ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' }] }).alunos[0].turma, '5');
 });
+
+test('loja recebe alunos com turma, matriculas em lista e a turma do próprio aluno', () => {
+  const { alunosLoja, matriculasDe, turmaDoAluno } = adaptador();
+  const alunos = [{ id: 27, nome: 'Bia', mat: 'A027', turma: '5', turma_nome: '1º A' }, { id: 28, nome: 'Colega', mat: 'A028', turma: null }, { id: 29, nome: 'Sem campo', mat: 'A029' }];
+  assert.deepEqual(alunosLoja(alunos), [{ id: 27, nome: 'Bia', turma: '5' }, { id: 28, nome: 'Colega', turma: null }, { id: 29, nome: 'Sem campo', turma: null }]);
+  assert.deepEqual(matriculasDe({ '27-13': true, '28-13': true, '27-14': false }), [{ aluno_id: 27, disciplina_id: 13 }, { aluno_id: 28, disciplina_id: 13 }]);
+  assert.deepEqual(matriculasDe({}), []);
+  assert.equal(turmaDoAluno(aluno, alunos), '5');
+  assert.equal(turmaDoAluno(escola, alunos), '');
+  assert.equal(turmaDoAluno(aluno, [alunos[1]]), '');
+  assert.equal(turmaDoAluno({ ...aluno, aluno_id: 28 }, alunos), '');
+  const r = montarEstado(escola, { ...turma, alunos: [{ ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' }] });
+  assert.deepEqual(alunosLoja(r.alunos), [{ id: 27, nome: 'Bia', turma: '5' }]);
+  assert.deepEqual(matriculasDe(r.mats), [{ aluno_id: 27, disciplina_id: 13 }]);
+});
+
+test('Portal publica alunos, matriculas, turma do aluno e carga no store', () => {
+  const q = quadro([], {}, 'Portal.tsx');
+  Object.assign(q.state, montarEstado(aluno, { ...turma, alunos: [{ ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' }] }), { carga: 'carregando' });
+  q.publicarEstado();
+  assert.deepEqual(q.loja.alunos, [{ id: 27, nome: 'Bia', turma: '5' }]);
+  assert.deepEqual(q.loja.matriculas, [{ aluno_id: 27, disciplina_id: 13 }]);
+  assert.equal(q.loja.turmaAluno, '5'); assert.equal(q.loja.carga, 'carregando');
+  q.state.carga = 'ok'; q.state.usuario = escola; q.publicarEstado();
+  assert.equal(q.loja.turmaAluno, ''); assert.equal(q.loja.carga, 'ok');
+});
+
+test('renderVals do Portal fornece todos os valores que o template usa, em todos os perfis e no hub', () => {
+  const usados = new Set([...readFileSync('src/portal/template.tsx', 'utf8').matchAll(/\bv\.([A-Za-z_$][\w$]*)/g)].map(m => m[1]));
+  const dados = { ...turma, turmas: [{ id: 5, nome: '1º A' }], alunos: [{ ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' }, { id: 28, nome: 'Colega', matricula: 'A028', idade: 20, media: 0, email: null, semestre_historico: null, turma_id: null, turma_nome: null }] };
+  const fornecidos = new Set();
+  const coletar = (usuario, extra = {}) => {
+    const q = quadro([], {}, 'Portal.tsx');
+    Object.assign(q.state, montarEstado(usuario, dados), { logado: true, tela: 'alunos' }, extra);
+    for (const k of Object.keys(q.renderVals())) fornecidos.add(k);
+    return q;
+  };
+  coletar({ id: 0, perfil: 'escola', nome: 'Visitante', email: '', aluno_id: null }, { papel: null, logado: false, tela: 'inicio' });
+  coletar(escola); coletar(escola, { hubTurma: '5', hubNova: true, hubMsg: { erro: false, t: 'ok' }, gaEd: 13, acadDisc: true, tela: 'frequencia' });
+  coletar(escola, { hubTurma: '__sem' }); coletar(professor);
+  coletar(escola, { tela: 'professores', profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }], painel: { tipo: 'prof', id: 42 }, painelUlt: { tipo: 'prof', id: 42 } }); coletar(aluno, { tela: 'meu-painel' });
+  assert.deepEqual([...usados].filter(n => !fornecidos.has(n)), []);
+});
+
+test('hub matricula e desmatricula pela API, recarrega e mostra o detalhe do servidor', async () => {
+  const chamadas = [];
+  const rede = { matricular: async (...a) => { chamadas.push(['matricular', ...a]); if (a[0] === 99) throw { detalhe: 'Semestre encerrado' }; return {}; }, desmatricular: async (...a) => { chamadas.push(['desmatricular', ...a]); } };
+  const q = quadro([], rede, 'Portal.tsx'); let recargas = 0;
+  q.recarregar = async () => { recargas++; };
+  Object.assign(q.state, montarEstado(escola, { ...turma, matriculas: [], notas: [], aulas: [], alunos: [turma.alunos[0], { ...turma.alunos[0], id: 28, nome: 'Colega' }, { ...turma.alunos[0], id: 99, nome: 'Barrado' }] }));
+  q.ativo = () => ({ id: 9 });
+  await q.hubToggle(27, 13);
+  assert.deepEqual(chamadas, [['matricular', 27, 13]]); assert.equal(recargas, 1);
+  assert.deepEqual(q.state.hubMsg, { erro: false, t: 'Bia matriculado em Python.' }); assert.equal(q.state.hubGravando, false);
+  q.state.mats = { '27-13': true };
+  await q.hubToggle(27, 13);
+  assert.deepEqual(chamadas.at(-1), ['desmatricular', 27, 13]); assert.equal(q.state.hubMsg.t, 'Bia desmatriculado de Python.');
+  await q.hubToggle(99, 13);
+  assert.deepEqual(q.state.hubMsg, { erro: true, t: 'Semestre encerrado' }); assert.equal(recargas, 2);
+  // coluna Todos: uma chamada por aluno que falta, a primeira falha vira a mensagem e o estado é relido
+  chamadas.length = 0; recargas = 0;
+  await q.hubTodos({ id: 13, nome: 'Python' }, q.state.alunos);
+  assert.deepEqual(chamadas, [['matricular', 28, 13], ['matricular', 99, 13]]); assert.equal(recargas, 1);
+  assert.deepEqual(q.state.hubMsg, { erro: true, t: 'Matriculei 1 de 2 em Python. Barrado: Semestre encerrado' });
+  // semestre encerrado: nada é chamado
+  chamadas.length = 0; q.ativo = () => null;
+  await q.hubToggle(27, 13); assert.deepEqual(chamadas, []); assert.equal(q.state.hubMsg.t, 'Semestre encerrado: somente leitura.');
+});
+
+test('hub bloqueia envio duplo, não desmatricula quem tem nota e cria turma pela API', async () => {
+  let concluir, chamadas = 0;
+  const q = quadro([], { matricular: () => { chamadas++; return new Promise(r => { concluir = r; }); }, criarTurma: async nome => { chamadas++; return { id: 8, nome }; } }, 'Portal.tsx');
+  q.recarregar = async () => {}; q.ativo = () => ({ id: 9 });
+  Object.assign(q.state, montarEstado(escola, { ...turma, matriculas: [{ aluno_id: 27, disciplina_id: 13 }], turmas: [{ id: 5, nome: '1º A' }] }));
+  q.state.mats = {};
+  const envio = q.hubToggle(27, 13); q.hubToggle(27, 13); assert.equal(chamadas, 1);
+  concluir({}); await envio; assert.equal(q.state.hubGravando, false);
+  q.state.mats = { '27-13': true }; chamadas = 0;
+  await q.hubToggle(27, 13); assert.equal(chamadas, 0); assert.equal(q.state.hubMsg.t, 'Bia já tem notas ou frequência em Python: não dá para desmatricular.');
+  const vazio = () => q.state.hubErro;
+  await q.hubCriarTurma({ preventDefault() {} }); assert.equal(vazio(), 'Dê um nome à turma.');
+  q.state.hubNome = ' 1º a '; await q.hubCriarTurma({ preventDefault() {} }); assert.equal(vazio(), 'Turma já cadastrada.'); assert.equal(chamadas, 0);
+  q.state.hubNome = ' 2º B '; q.state.hubNova = true; await q.hubCriarTurma({ preventDefault() {} });
+  assert.equal(chamadas, 1); assert.equal(q.state.hubNova, false); assert.equal(q.state.hubMsg.t, 'Turma 2º B criada. Cadastre ou mova alunos para ela.');
+});
+
+test('aluno envia turma_id inteiro ou nulo e o aviso de matrícula mantida fica no formulário', async () => {
+  const corpos = [];
+  const rede = { atualizarAluno: async (id, corpo) => { corpos.push(['patch', id, corpo]); return { matriculas_mantidas: q.mantidas }; }, criarAluno: async corpo => { corpos.push(['post', corpo]); return {}; } };
+  const q = quadro([], rede, 'Portal.tsx'); q.recarregar = async () => {}; q.mantidas = [{ disciplina_id: 3, disciplina_nome: 'Algoritmos' }, { disciplina_id: 4, disciplina_nome: 'Redes' }];
+  Object.assign(q.state, montarEstado(escola, { ...turma, turmas: [{ id: 5, nome: '1º A' }] }));
+  Object.assign(q.state, { painel: { tipo: 'aluno', id: 27 }, editando: true, fNome: 'Bia', fIdade: '20', fMat: '2026009', fEmail: '', fTurma: '5' });
+  await q.salvarAluno({ preventDefault() {} });
+  assert.deepEqual(corpos[0], ['patch', 27, { nome: 'Bia', idade: 20, matricula: '2026009', turma_id: 5 }]);
+  assert.equal(q.state.fErro, 'Mantido em: Algoritmos, Redes (já tem nota ou presença).'); assert.equal(q.state.editando, true);
+  q.mantidas = []; q.state.fTurma = ''; await q.salvarAluno({ preventDefault() {} });
+  assert.equal(corpos[1][2].turma_id, null); assert.equal(q.state.editando, false); assert.equal(q.state.fErro, '');
+  Object.assign(q.state, { painel: { tipo: 'novoAluno' }, fNome: 'Novo', fIdade: '19', fMat: '2026010', fEmail: '', fTurma: '5' });
+  await q.cadastrarAluno({ preventDefault() {} });
+  assert.deepEqual(corpos[2], ['post', { nome: 'Novo', idade: 19, matricula: '2026010', turma_id: 5 }]);
+});
+
+test('GradeAgenda: salvar e nova turma só recarregam; fechar volta o editor a nulo; abrir disciplina abre a página', async () => {
+  const q = quadro([], {}, 'Portal.tsx'); let recargas = 0; q.recarregar = async () => { recargas++; }; q.atualizarURL = () => {};
+  Object.assign(q.state, montarEstado(escola, turma), { gaEd: 13, tela: 'frequencia' });
+  const v = q.renderVals();
+  assert.equal(v.gaEdVis, true); assert.equal(v.gaDiscId, '13');
+  await v.gaSalvar({ id: 13 }); await v.gaNovaTurma({ id: '8' }); assert.equal(recargas, 2); assert.equal(q.state.gaEd, 13);
+  v.gaFechar(); assert.equal(q.state.gaEd, null);
+  v.gaAbrirDisc('13'); assert.equal(q.state.selDisc, 13); assert.equal(q.state.acadDisc, true); assert.equal(q.state.subAba, 'alunos');
+  q.recarregar = async () => { throw { detalhe: 'Fora do ar' }; };
+  await q.gaSalvar(); assert.equal(q.state.rotaAviso, 'Fora do ar');
+});
+
+test('professor: boletim e disciplinas viram o Acadêmico e a rota errada ainda avisa', () => {
+  const q = quadro([], {}, 'Portal.tsx'); q.atualizarURL = () => {}; q.entrarTela = () => {};
+  Object.assign(q.state, montarEstado(professor, { ...turma, professores: [professor] }), { logado: true, tela: 'painel' });
+  q.ir('boletim'); assert.equal(q.state.tela, 'frequencia'); assert.equal(q.state.acadDisc, true); assert.equal(q.state.subAba, 'notas'); assert.equal(q.state.rotaAviso, '');
+  Object.assign(q.state, { tela: 'painel', acadDisc: false }); q.ir('disciplinas'); assert.equal(q.state.tela, 'frequencia'); assert.equal(q.state.acadDisc, true);
+  q.state.tela = 'painel'; q.ir('professores');
+  assert.equal(q.state.tela, 'painel'); assert.equal(q.state.rotaAviso, 'Essa tela não faz parte do perfil Professor. Você voltou ao início.');
+  const a = quadro([], {}, 'Portal.tsx'); a.atualizarURL = () => {}; a.entrarTela = () => {};
+  Object.assign(a.state, montarEstado(aluno, turma), { logado: true, tela: 'meu-painel' });
+  for (const pedido of ['disciplinas', 'frequencia', 'boletim', 'alunos']) { a.state.rotaAviso = ''; a.ir(pedido); assert.equal(a.state.tela, 'meu-painel', pedido); assert.match(a.state.rotaAviso, /perfil Aluno/, pedido); assert.equal(a.state.acadDisc, false, pedido); }
+});
+
+test('escola: acadêmico e hub levam aos lugares certos, sem cair em tela de outro perfil', () => {
+  const q = quadro([], {}, 'Portal.tsx');
+  q.atualizarURL = () => {};
+  Object.assign(q.state, montarEstado(escola, { ...turma, turmas: [{ id: 5, nome: '1º A' }] }), { logado: true, tela: 'painel' });
+  // mudança de tela sem animação: o harness não tem DOM
+  q.telaRef = { current: null }; q.mainRef = { current: null };
+  q.entrarTela = () => {};
+  for (const [pedido, tela, acad] of [['disciplinas', 'frequencia', true], ['frequencia', 'frequencia', false], ['boletim', 'alunos', false], ['alunos', 'alunos', false], ['grade', 'grade', false]]) {
+    q.state.tela = 'painel'; q.state.acadDisc = false; q.ir(pedido);
+    assert.equal(q.state.tela, tela, pedido); assert.equal(q.state.acadDisc, acad, pedido); assert.equal(q.state.rotaAviso, '', pedido);
+  }
+  assert.deepEqual(q.telas().map(t => t.label), ['Painel', 'Semestre', 'Professores', 'Alunos', 'Acadêmico', 'Avisos']);
+});
+
