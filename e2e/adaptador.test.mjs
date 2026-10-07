@@ -12,6 +12,14 @@ function adaptador() {
   new Function('module', 'exports', codigo)(modulo, modulo.exports);
   return modulo.exports;
 }
+function gradeRegras() {
+  const codigo = ts.transpileModule(readFileSync('src/portal/grade-regras.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  const modulo = { exports: {} };
+  new Function('module', 'exports', codigo)(modulo, modulo.exports);
+  return modulo.exports;
+}
 const montarEstado = (usuario, estado) => adaptador().montarEstado(usuario, estado);
 // Executa a lógica TS existente, sem montar React nem acessar serviços.
 function quadro(aulas = [], rede = {}, arquivo = 'GradeAgenda.tsx', dev = false) {
@@ -28,7 +36,7 @@ function quadro(aulas = [], rede = {}, arquivo = 'GradeAgenda.tsx', dev = false)
   const require = nome => nome === 'react' ? { createRef: () => ({ current: null }) }
     : nome === './dc' ? { DCLogic, criarDC: (_nome, _template, classe) => classe }
     : nome === './loja' ? { lerLoja: () => loja, recarregarLoja: async () => {}, publicar: novos => Object.assign(loja, novos), assinar: () => () => {} }
-    : nome === './rede' ? rede : nome === './adaptador' ? adaptador() : {};
+    : nome === './rede' ? rede : nome === './adaptador' ? adaptador() : nome === './grade-regras' ? gradeRegras() : {};
   new Function('module', 'exports', 'require', 'window', codigo)(modulo, modulo.exports, require, globalThis.window || { location: { search: '' } });
   const q = new modulo.exports.default();
   q.avisos = avisos; q.loja = loja;
@@ -67,10 +75,10 @@ test('histórico usa aulas preservadas; futuro e demo continuam pela grade', () 
     { aula_id: 2, disciplina_id: 13, origem: 'grade', status: 'cancelada', data: '2026-10-05', hora_inicio: '08:00', hora_fim: '09:40' },
   ]);
   const r = q.instSemana('2026-10-05', q.state, {}, 'escola');
-  assert.deepEqual(r.map(i => [i.data, i.ini, i.idx]), [['2026-10-08', '10:00', 0], ['2026-10-06', '08:00', null]]);
+  assert.deepEqual(r.map(i => [i.data, i.ini, i.idx]), [['2026-10-08', '10:00', 0], ['2026-10-06', '08:00', null], ['2026-10-05', '08:00', null]]);
   assert.equal(q.podeArrastar(r[1]), false);
   assert.equal(q.podeArrastar(r[0]), true);
-  assert.equal(r.some(i => i.data === '2026-10-05'), false);
+  const cancelada = r.find(i => i.data === '2026-10-05'); assert.equal(cancelada.cancelada, true); assert.equal(q.podeArrastar(cancelada), false);
   assert.equal(q.instSemana('2026-09-28', q.state, {}, 'escola').length, 0);
   const demo = quadro();
   assert.deepEqual(demo.instSemana('2026-09-28', demo.state, {}, 'escola').map(i => [i.data, i.ini]), [['2026-10-01', '10:00']]);
@@ -99,7 +107,7 @@ test('remarcação do passado para o futuro entra uma vez, inclusive entre seman
 test('índice histórico pode corresponder ao dia e horário atuais da aula', () => {
   const q = quadro([{ aula_id: 1, disciplina_id: 13, origem: 'grade', status: 'agendada', data: '2026-10-01', remarcada_de: '2026-09-30', hora_inicio: '10:00', hora_fim: '11:40' }]);
   const r = q.instSemana('2026-09-28', q.state, {}, 'escola');
-  assert.equal(r.length, 1); assert.equal(r[0].idx, 0); assert.equal(q.podeArrastar(r[0]), true);
+  assert.equal(r.length, 1); assert.equal(r[0].idx, 0); assert.equal(q.podeArrastar(r[0]), false); // aula passada nao arrasta
 });
 
 test('extras seguem a aula vinculada e incluem avulsas, sem duplicar pedidos', () => {
@@ -111,12 +119,12 @@ test('extras seguem a aula vinculada e incluem avulsas, sem duplicar pedidos', (
   q.state.pedidos = [1, 2].map(id => ({ id, aula_id: id, disc: 13, status: 'aprovada', data: '2026-10-06', ini: '08:00', fim: '09:40', sala: '9' }));
   q.state.pedidos.push({ id: 4, disc: 13, status: 'pendente', data: '2026-10-07', ini: '15:30', fim: '17:10' });
   const r = q.instSemana('2026-10-05', q.state, {}, 'escola').filter(i => i.tipo === 'extra');
-  assert.deepEqual(r.map(i => [i.data, i.ini]), [['2026-10-09', '13:30'], ['2026-10-07', '15:30'], ['2026-10-05', '08:00']]);
+  assert.deepEqual(r.map(i => [i.data, i.ini]), [['2026-10-09', '13:30'], ['2026-10-06', '08:00'], ['2026-10-07', '15:30'], ['2026-10-05', '08:00']]);
   assert.equal(r[0].pedido.id, 1); assert.equal(r[0].remarcada, true);
-  assert.equal(r[2].sala, '7'); assert.equal(r[2].pendente, false); assert.equal(r[2].pedido, undefined);
-  assert.equal(r.some(i => i.pedido?.id === 2), false);
+  assert.equal(r[3].sala, '7'); assert.equal(r[3].pendente, false); assert.equal(r[3].pedido, undefined);
+  assert.equal(r[1].cancelada, true); assert.equal(r.filter(i => i.pedido?.id === 2).length, 1); // a extra cancelada aparece uma vez, como estado
   const aluno = q.instSemana('2026-10-05', q.state, {}, 'aluno').filter(i => i.tipo === 'extra');
-  assert.equal(aluno.length, 2); assert.equal(aluno.some(i => i.pendente), false);
+  assert.equal(aluno.length, 3); assert.equal(aluno.filter(i => !i.cancelada).length, 2); assert.equal(aluno.some(i => i.pendente), false);
   const demo = quadro(); demo.state.pedidos = [{ id: 5, disc: 13, status: 'aprovada', data: '2026-10-06', ini: '13:30', fim: '15:10' }];
   assert.equal(demo.instSemana('2026-10-05', demo.state, {}, 'aluno').find(i => i.tipo === 'extra').data, '2026-10-06');
 });
@@ -184,7 +192,7 @@ test('gravações de pedidos bloqueiam repetição em todas as ações', async (
     q.state.recusando = 99; q.state.sugerindo = 99;
     concluir(); await envio;
     assert.equal(q.state.recusando, 99, api); assert.equal(q.state.sugerindo, 99, api);
-    assert.equal(q.state.gravando['resposta-1'], false, api);
+    assert.equal(q.state.salvando, null, api);
   }
 });
 
