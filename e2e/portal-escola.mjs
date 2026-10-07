@@ -163,13 +163,12 @@ try {
   });
 
   const nomeDisc = 'Disciplina F3a ' + sufixo;
-  const grade = [{ dia_semana: 6, hora_inicio: '20:00', hora_fim: '21:00' }, { dia_semana: 7, hora_inicio: '20:00', hora_fim: '21:00' }];
-  await conferir('cria disciplina com professor e dois horários; usa aulas_geradas do PUT', async () => {
+  const grade = [{ dia_semana: 5, hora_inicio: '15:30', hora_fim: '17:10' }];
+  await conferir('cria disciplina com professor e horário na sexta; usa aulas_geradas do PUT', async () => {
     await page.keyboard.press('Alt+3'); await botao('Nova disciplina').click();
     await form().getByLabel('Nome', { exact: true }).fill(nomeDisc);
     await form().getByLabel('Carga horária (h)', { exact: true }).fill('40');
     await form().getByRole('radio', { name: nomeProf }).click();
-    await botao('Adicionar horário').click();
     for (let i = 0; i < grade.length; i++) {
       await form().getByLabel('Dia da semana', { exact: true }).nth(i).selectOption(String(grade[i].dia_semana));
       await form().getByLabel('Início', { exact: true }).nth(i).fill(grade[i].hora_inicio);
@@ -264,6 +263,15 @@ try {
       assert.deepEqual(await logic('return logic.state.fGrade.map(({ dia_semana, hora_inicio, hora_fim }) => ({ dia_semana: +dia_semana, hora_inicio, hora_fim }));'), grade);
       await page.unroute(API + rota);
     }
+    // O PATCH real que precede o PUT com 409 pode ter gravado o nome do rascunho.
+    await form().getByLabel('Nome', { exact: true }).fill(nomeDisc + ' editada');
+    const restaurouGrade = page.waitForResponse(r => r.url() === API + caminho + '/grade' && r.request().method() === 'PUT');
+    assert.equal((await resposta(caminho, 'PATCH', () => botao('Salvar').click())).status, 200);
+    assert.equal((await restaurouGrade).status(), 200);
+    await page.getByRole('status').filter({ hasText: 'aulas geradas' }).waitFor({ state: 'visible' });
+    assert.equal(await logic('return logic.state.discs.find(d => d.id === arg).nome;', disc.id), nomeDisc + ' editada');
+    assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === disc.id).nome, nomeDisc + ' editada');
+    assert.deepEqual((await api(caminho + '/grade')).corpo, grade);
     await page.keyboard.press('Escape');
   });
   await conferir('cria sem professor omitindo o campo e remove professor com null no PATCH', async () => {

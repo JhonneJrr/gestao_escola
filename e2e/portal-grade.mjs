@@ -47,13 +47,15 @@ try {
     assert.equal(new URL(page.url()).pathname, '/grade');
   }
   async function sair() {
+    await page.goto(FRONT + '/painel');
+    await page.getByRole('button', { name: 'Menu do usuário' }).waitFor({ state: 'visible' });
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
     await page.getByRole('button', { name: 'Entrar no portal', exact: true }).first().waitFor({ state: 'visible' });
   }
   await conferir('escola abre /grade com disciplinas reais e ocupação de Carlos na segunda', async () => {
     await entrar('escola@escola.com'); await abrirGrade();
     await grade().getByRole('tab', { name: 'Quadro semanal', exact: true }).waitFor({ state: 'visible' });
-    const nomes = await grade().getByLabel('Disciplina', { exact: true }).locator('option').allTextContents();
+    const nomes = await grade().locator('select').filter({ has: page.locator('option', { hasText: 'Python' }) }).locator('option').allTextContents();
     for (const d of seed.disciplinas) assert.ok(nomes.some(n => n.startsWith(d.nome + ' · ')), d.nome);
     assert.ok(nomes.some(n => n.startsWith('Python · ')));
     const quadro = grade().locator('[data-quadro-professores]');
@@ -67,7 +69,7 @@ try {
   });
   await conferir('ficha mostra ocupações, salva e conserva a lista real', async () => {
     await page.goto(FRONT + '/professores');
-    await page.getByRole('button', { name: 'Abrir ficha de ' + carlos.nome, exact: true }).click();
+    await page.getByRole('button', { name: 'Abrir ficha de ' + carlos.nome, exact: true }).getByText(carlos.nome, { exact: true }).click();
     const f = page.locator('[data-ficha-professor]');
     await f.getByRole('button', { name: 'Salvar horários', exact: true }).waitFor({ state: 'visible' });
     assert.equal(await f.getByLabel('Dia da semana', { exact: true }).count(), originais.length);
@@ -109,7 +111,7 @@ try {
   await conferir('Carlos abre /grade e o Quadro mostra só disciplinas dele', async () => {
     await sair(); await entrar('prof@escola.com'); await abrirGrade();
     await grade().getByRole('tab', { name: 'Minha semana', exact: true }).waitFor({ state: 'visible' });
-    const opcoes = await grade().getByLabel('Disciplina', { exact: true }).locator('option').allTextContents();
+    const opcoes = await grade().locator('select').filter({ has: page.locator('option', { hasText: 'Python' }) }).locator('option').allTextContents();
     const minhas = seed.disciplinas.filter(d => d.professor_id === carlos.id); assert.ok(minhas.length);
     for (const d of minhas) assert.ok(opcoes.some(n => n.startsWith(d.nome + ' · ')), d.nome);
     for (const d of seed.disciplinas.filter(d => d.professor_id !== carlos.id)) {
