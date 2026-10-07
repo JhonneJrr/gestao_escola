@@ -1,0 +1,135 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/general/AlunoCard/**",
+              "components/general/Avatar/**",
+              "components/general/CampoBusca/**",
+              "components/general/DisciplinaCard/**",
+              "components/general/Filtros/**",
+              "components/general/FormAluno/**",
+              "components/general/FormDisciplina/**",
+              "components/general/ListaAlunos/**",
+              "components/general/Paginacao/**",
+              "components/general/SeletorAlunos/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Newsreader|Space Grotesk))/i]",
+        "message": "Font not provided by the design system. Available: Newsreader, Space Grotesk."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "AlunoCard": {
+        "replaces": []
+      },
+      "Avatar": {
+        "replaces": []
+      },
+      "CampoBusca": {
+        "replaces": []
+      },
+      "DisciplinaCard": {
+        "replaces": []
+      },
+      "Filtros": {
+        "replaces": []
+      },
+      "FormAluno": {
+        "replaces": []
+      },
+      "FormDisciplina": {
+        "replaces": []
+      },
+      "ListaAlunos": {
+        "replaces": []
+      },
+      "Paginacao": {
+        "replaces": []
+      },
+      "SeletorAlunos": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--aviso",
+      "--aviso-suave",
+      "--borda",
+      "--borda-fraca",
+      "--dur-media",
+      "--dur-rapida",
+      "--ease-saida",
+      "--espaco",
+      "--fundo",
+      "--primaria",
+      "--raio",
+      "--sunken",
+      "--superficie",
+      "--texto",
+      "--texto-fraco",
+      "--texto-suave"
+    ],
+    "tokenKinds": {
+      "--fundo": "color",
+      "--superficie": "color",
+      "--sunken": "color",
+      "--borda": "color",
+      "--borda-fraca": "color",
+      "--texto": "color",
+      "--texto-suave": "color",
+      "--texto-fraco": "color",
+      "--aviso": "color",
+      "--aviso-suave": "color",
+      "--primaria": "color",
+      "--raio": "spacing",
+      "--espaco": "spacing",
+      "--ease-saida": "other",
+      "--dur-rapida": "other",
+      "--dur-media": "other"
+    },
+    "fontFamilies": [
+      "Newsreader",
+      "Space Grotesk"
+    ]
+  }
+}
