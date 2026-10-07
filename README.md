@@ -74,7 +74,7 @@ node e2e/portal-rotas.mjs
 
 Link de produção: A PREENCHER
 
-Na Vercel, configure `VITE_API_URL` com a URL pública da API antes do build. O comando padrão é `npm run build`, a saída é `dist` e `vercel.json` redireciona os caminhos para `/index.html`, permitindo abrir e recarregar as URLs da SPA.
+No Cloudflare Pages (Workers & Pages > Create > Pages > Connect to Git), use o comando `npm run build` e a saída `dist`, e configure `VITE_API_URL` com a URL pública da API antes do build (se o build reclamar da versão do Node, defina `NODE_VERSION=20`). O arquivo `public/_redirects` manda todos os caminhos para `/index.html`, permitindo abrir e recarregar as URLs da SPA.
 
 ## Estrutura
 

@@ -34,7 +34,7 @@ Como Escola:
 ## 5. Produção e fecho (1 min)
 
 - Link do front: A PREENCHER. Link da API: A PREENCHER (`/docs` para o Swagger).
-- Arquitetura: Vercel (front), Render (API), Neon (PostgreSQL).
+- Arquitetura: Cloudflare Pages (front), Render (API), Neon (PostgreSQL).
 - Testes: 55 verificações ponta a ponta no navegador contra a API real e mais de 300 testes de backend com banco real.
 
 ## Se algo falhar na hora
