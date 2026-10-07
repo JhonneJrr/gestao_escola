@@ -78,7 +78,9 @@ try {
         await visivel('Ana Souza').first().waitFor({ state: 'visible' });
         assert.equal(await page.getByRole('button', { name: 'Professores', exact: true }).filter({ visible: true }).count(), 0);
       } else {
-        await page.keyboard.press('Alt+3');
+        // As disciplinas moram no Acadêmico (Alt+5 da escola, Alt+2 do professor), na aba Disciplinas.
+        await page.keyboard.press('Alt+' + (conta.email === 'escola@escola.com' ? 5 : 2));
+        await page.getByRole('tab', { name: 'Disciplinas', exact: true }).click();
         for (const disciplina of conta.disciplinas) await visivel(disciplina).first().waitFor({ state: 'visible' });
         if (conta.ausente) {
           assert.ok(await visivel(conta.disciplinas[0]).count());

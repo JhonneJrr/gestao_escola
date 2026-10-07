@@ -83,30 +83,70 @@ try {
     await entrar('escola@escola.com', '/painel');
     await telaMenu('Painel', '/painel');
   });
+  // A escola tem seis telas; Disciplinas e Grade agora vivem dentro do Acadêmico (/agenda).
   for (const [rotulo, caminho] of [
-    ['Semestre', '/semestre'], ['Disciplinas', '/disciplinas'], ['Professores', '/professores'],
-    ['Alunos', '/alunos'], ['Matrículas', '/matriculas'], ['Grade e agenda', '/agenda'], ['Avisos', '/avisos'], ['Painel', '/painel'],
+    ['Semestre', '/semestre'], ['Professores', '/professores'],
+    ['Alunos', '/alunos'], ['Acadêmico', '/agenda'], ['Avisos', '/avisos'], ['Painel', '/painel'],
   ]) {
     await conferir('menu da escola: ' + rotulo + ' usa ' + caminho, () => menu(rotulo, caminho));
   }
+  await conferir('menu da escola tem exatamente as seis telas, na ordem dos atalhos Alt+N', async () => {
+    const nomes = await nav().getByRole('button').evaluateAll(bs => bs.map(b => b.getAttribute('aria-label') || b.textContent.trim()));
+    const esperado = ['Painel', 'Semestre', 'Professores', 'Alunos', 'Acadêmico', 'Avisos'];
+    assert.deepEqual(esperado.map(n => nomes.some(x => x.startsWith(n))), esperado.map(() => true));
+    assert.equal(nomes.length, 6);
+    assert.equal(await nav().getByRole('button', { name: /^(Disciplinas|Matrículas|Grade e agenda)(?:\s|$)/ }).count(), 0);
+    for (const [i, [rotulo, caminho]] of [['Semestre', '/semestre'], ['Professores', '/professores'], ['Alunos', '/alunos'], ['Acadêmico', '/agenda'], ['Avisos', '/avisos']].entries()) {
+      await page.keyboard.press('Alt+' + (i + 2)); await telaMenu(rotulo, caminho);
+    }
+    await page.keyboard.press('Alt+1'); await telaMenu('Painel', '/painel');
+  });
+  await conferir('Acadêmico abre o quadro semanal em /agenda e tem as quatro abas da escola', async () => {
+    await menu('Acadêmico', '/agenda');
+    const grade = page.locator('[data-sc-name="GradeAgenda"]');
+    const abas = grade.getByRole('tablist', { name: 'Seções', exact: true });
+    await abas.waitFor({ state: 'visible' });
+    for (const aba of ['Quadro semanal', 'Ano letivo', 'Disciplinas']) await abas.getByRole('tab', { name: aba, exact: true }).waitFor({ state: 'visible' });
+    await abas.getByRole('tab', { name: /^Pedidos de aula extra/ }).waitFor({ state: 'visible' });
+    assert.equal(await abas.getByRole('tab', { name: 'Quadro semanal', exact: true }).getAttribute('aria-selected'), 'true');
+  });
   await conferir('escola abre /grade e conserva a rota após recarga', async () => {
     await page.goto(FRONT + '/grade'); await page.locator('[data-sc-name="GradeAgenda"]').waitFor({ state: 'visible' });
     await url('/grade'); await page.reload(); await page.locator('[data-sc-name="GradeAgenda"]').waitFor({ state: 'visible' }); await url('/grade');
   });
+  await conferir('aba Disciplinas do Acadêmico abre a página da disciplina em /disciplinas e o voltar leva à aba', async () => {
+    await menu('Acadêmico', '/agenda');
+    const grade = page.locator('[data-sc-name="GradeAgenda"]');
+    await grade.getByRole('tab', { name: 'Disciplinas', exact: true }).click();
+    await grade.getByText('Algoritmos', { exact: true }).first().click();
+    await telaMenu('Acadêmico', '/disciplinas');
+    await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).waitFor({ state: 'visible' });
+    await page.getByRole('tablist', { name: 'Seções da disciplina', exact: true }).waitFor({ state: 'visible' });
+    await page.goBack(); await telaMenu('Acadêmico', '/agenda');
+    await grade.getByRole('tablist', { name: 'Seções', exact: true }).waitFor({ state: 'visible' });
+  });
   await conferir('recarregar /disciplinas mantém a tela, a sessão e os dados', async () => {
-    await menu('Disciplinas', '/disciplinas');
+    await page.goto(FRONT + '/disciplinas');
     const token = await page.evaluate(() => localStorage.getItem('portal.token'));
     assert.ok(token);
+    await telaMenu('Acadêmico', '/disciplinas');
     await page.reload();
-    await telaMenu('Disciplinas', '/disciplinas');
+    await telaMenu('Acadêmico', '/disciplinas');
     await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).waitFor({ state: 'visible' });
     await visivel('Python').first().waitFor({ state: 'visible' });
     await visivel('Algoritmos').first().waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), token);
   });
+  await conferir('escola em /matriculas cai no hub de turmas em /alunos', async () => {
+    await page.goto(FRONT + '/matriculas');
+    await telaMenu('Alunos', '/alunos');
+    for (const turma of ['1º A', '2º A', '3º A']) await page.getByRole('button', { name: new RegExp('^' + turma) }).filter({ visible: true }).waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: 'Nova turma', exact: true }).waitFor({ state: 'visible' });
+  });
   await conferir('voltar e avançar no navegador restauram a tela anterior sem nova navegação', async () => {
+    await page.goto(FRONT + '/disciplinas'); await telaMenu('Acadêmico', '/disciplinas');
     await menu('Professores', '/professores');
-    await page.goBack(); await telaMenu('Disciplinas', '/disciplinas');
+    await page.goBack(); await telaMenu('Acadêmico', '/disciplinas');
     await visivel('Python').first().waitFor({ state: 'visible' });
     await page.goForward(); await telaMenu('Professores', '/professores');
     await visivel('Prof. Carlos').first().waitFor({ state: 'visible' });
@@ -127,10 +167,22 @@ try {
     await visivel('Essa tela não faz parte do perfil Professor. Você voltou ao início.').waitFor({ state: 'visible' });
     await telaMenu('Painel', '/painel');
     await usuario().click(); await visivel('prof@escola.com').first().waitFor({ state: 'visible' }); await usuario().click();
+    assert.equal(await nav().getByRole('button', { name: /^Acadêmico(?:\s|$)/ }).count(), 1);
     assert.equal(await nav().getByRole('button', { name: /^Professores(?:\s|$)/ }).count(), 0);
   });
-  await conferir('Carlos recarrega /agenda e mantém a tela permitida', async () => {
-    await menu('Grade e agenda', '/agenda'); await page.reload(); await telaMenu('Grade e agenda', '/agenda');
+  await conferir('Carlos tem quatro telas (Painel, Acadêmico, Meus alunos, Avisos) e recarrega /agenda', async () => {
+    assert.equal(await nav().getByRole('button').count(), 4);
+    for (const rotulo of ['Painel', 'Acadêmico', 'Meus alunos', 'Avisos']) assert.equal(await nav().getByRole('button', { name: new RegExp('^' + rotulo + '(?:\\s|$)') }).count(), 1, rotulo);
+    await menu('Acadêmico', '/agenda'); await page.reload(); await telaMenu('Acadêmico', '/agenda');
+    const abas = page.locator('[data-sc-name="GradeAgenda"]').getByRole('tablist', { name: 'Seções', exact: true });
+    for (const aba of ['Minha semana', 'Ano letivo', 'Disciplinas', 'Aulas extras']) await abas.getByRole('tab', { name: aba, exact: true }).waitFor({ state: 'visible' });
+  });
+  await conferir('Carlos em /matriculas abre a sub-aba de notas da disciplina em /disciplinas', async () => {
+    await page.goto(FRONT + '/matriculas');
+    await telaMenu('Acadêmico', '/disciplinas');
+    await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).waitFor({ state: 'visible' });
+    await page.getByRole('tab', { name: /^Avaliações e notas/ }).and(page.locator('[aria-selected="true"]')).waitFor({ state: 'visible' });
+    await page.getByLabel('Nota de Ana Souza em P1', { exact: true }).waitFor({ state: 'visible' });
   });
   await conferir('Ana em /alunos vê o aviso e volta ao próprio painel', async () => {
     await sair(); await page.goto(FRONT + '/login'); await entrar('ana@escola.com', '/meu-painel');
