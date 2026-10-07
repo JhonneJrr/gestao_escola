@@ -45,4 +45,4 @@ Como Escola:
 - Tela em branco ou erro de rede logo ao entrar: a API ainda estava dormindo; espere 1 minuto e recarregue.
 - Assistente com "limite de uso": a cota gratuita do Gemini esgotou; os horários continuam podendo ser organizados à mão.
 - Dados bagunçados por testes ao vivo: o seed refaz tudo (`python seed.py --apagar-tudo` apontando para o banco da Render) em segundos.
-- A chamada (presença por aula) existe na API, mas a interface dela está sendo redesenhada; não faz parte desta demonstração.
+- A chamada (presença por aula) fica no Painel do professor (aulas de hoje) e na página da disciplina, aba Chamada.

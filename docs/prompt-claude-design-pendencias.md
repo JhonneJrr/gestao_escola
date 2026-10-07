@@ -2,13 +2,13 @@ Trabalhe no canvas existente **Portal Escolar** e no componente **Grade e Agenda
 
 Contexto: o site agora roda com dados reais de um servidor. Isso trouxe lacunas que o canvas, feito com dados fictícios, não cobre. Elas estão em ordem de importância. Para cada item, acrescente os estados novos ao canvas (e à lista de estados de início, para eu poder abrir cada um direto), usando nomes como "Escola / Grade e agenda / Carregando".
 
-## 1. Chamada (obrigatório)
+## 1. Chamada: atalho no painel da aula (opcional)
 
-A tela "Grade e agenda" substituiu a antiga Agenda, e com isso a **chamada** (lançar presença dos alunos na aula) ficou sem nenhum ponto de entrada. O fluxo de chamada já existe no canvas, no painel da agenda antiga, e é o que quero reaproveitar.
+CORREÇÃO: a chamada NÃO ficou sem entrada. Ela continua acessível pelo Painel do professor ("Fazer chamada" nas aulas de hoje) e pela página da disciplina, na sub-aba **Chamada**. O que falta é só um atalho na tela "Grade e agenda", para quem já está olhando a aula no quadro.
 
-- No painel "Aula" (o que abre ao clicar numa aula no Quadro semanal ou na visão Dia) acrescente o botão **Fazer chamada**, para os perfis **Escola** e **Professor**, nas aulas de grade e nas aulas extras aprovadas. O botão abre o painel de chamada que já existe, com a data e a disciplina daquela aula.
-- Estados do botão: aula futura (desabilitado, com a explicação "A chamada abre no dia da aula."), aula de hoje ou passada (habilitado), aula cancelada ou em feriado (desabilitado, "Aula cancelada." / "Sem aula: <feriado>."), semestre encerrado (desabilitado, mesma mensagem que o portal já usa).
-- Quando a chamada já foi feita, o painel da aula mostra "Chamada feita" e o botão vira **Revisar chamada**. Na visão Dia, a linha dessa aula também mostra "Chamada feita" ao lado do status ("Dada").
+- No painel "Aula" (o que abre ao clicar numa aula no Quadro semanal ou na visão Dia) acrescente o botão **Fazer chamada** para **Escola** e **Professor**, nas aulas de grade e nas aulas extras aprovadas. Ele abre o mesmo painel de chamada que já existe, com a data e a disciplina daquela aula.
+- Estados: aula futura (desabilitado, "A chamada abre no dia da aula."), aula de hoje ou passada (habilitado), aula cancelada ou em feriado (desabilitado, "Aula cancelada." / "Sem aula: <feriado>."), semestre encerrado (desabilitado, mesma mensagem que o portal já usa).
+- Quando a chamada já foi feita, o botão vira **Ver chamada** e a linha da aula, na visão Dia, mostra "Chamada feita" ao lado de "Dada".
 - Aluno não vê o botão.
 
 ## 2. Carregando, salvando e erro do servidor
