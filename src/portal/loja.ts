@@ -1,5 +1,7 @@
 // Estado da API publicado pelo Portal e atualizado após as gravações.
-let dados: any = { perfil: null, usuario: null, semestre: null, disciplinas: [], professores: [], aulas: [], turmas: [], salas: [], eventos: [], pedidos: [] };
+// alunos: lista do estado, já recortada pelo servidor; turmaAluno: turma do próprio aluno (vazio nos outros perfis).
+export type AlunoLoja = { id: number; nome: string; turma: string | null };
+let dados: any = { perfil: null, usuario: null, semestre: null, disciplinas: [], professores: [], aulas: [], turmas: [], salas: [], eventos: [], pedidos: [], alunos: [] as AlunoLoja[], turmaAluno: '' };
 const ouvintes = new Set<() => void>();
 let recarga: () => Promise<void>;
 export const lerLoja = () => dados;

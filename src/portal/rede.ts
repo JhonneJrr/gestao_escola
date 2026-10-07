@@ -41,7 +41,7 @@ type ProfessorEntrada = { nome: string; email: string };
 type ProfessorSaida = ProfessorEntrada & SenhaProvisoria & { id: number };
 type AlunoEntrada = { nome: string; idade: number; matricula: string; media?: number; email?: string; turma_id?: number | null };
 type AlunoSaida = { id: number; nome: string; idade: number | null; matricula: string; media: number; turma_id: number | null; turma_nome: string | null; senha_provisoria_texto?: string };
-// Disciplinas da turma antiga em que o aluno ficou por ter nota ou presenca.
+// Disciplinas da turma antiga em que o aluno ficou por ter nota ou presença.
 type MatriculaMantida = { disciplina_id: number; disciplina_nome: string };
 type DisciplinaEntrada = { nome: string; carga_horaria: number; professor_id?: number | null; turma_id?: number | null; sala_id?: number | null };
 type DisciplinaSaida = { id: number; nome: string; carga_horaria: number; professor_id: number | null; professor_nome: string | null; turma_id: number | null; sala_id: number | null; turma_nome: string | null; sala_nome: string | null };
