@@ -39,8 +39,10 @@ type SemestreSaida = SemestreEntrada & { id: number; encerrado_em: string | null
 type SenhaProvisoria = { senha_provisoria_texto: string };
 type ProfessorEntrada = { nome: string; email: string };
 type ProfessorSaida = ProfessorEntrada & SenhaProvisoria & { id: number };
-type AlunoEntrada = { nome: string; idade: number; matricula: string; media?: number; email?: string };
-type AlunoSaida = { id: number; nome: string; idade: number | null; matricula: string; media: number; senha_provisoria_texto?: string };
+type AlunoEntrada = { nome: string; idade: number; matricula: string; media?: number; email?: string; turma_id?: number | null };
+type AlunoSaida = { id: number; nome: string; idade: number | null; matricula: string; media: number; turma_id: number | null; turma_nome: string | null; senha_provisoria_texto?: string };
+// Disciplinas da turma antiga em que o aluno ficou por ter nota ou presenca.
+type MatriculaMantida = { disciplina_id: number; disciplina_nome: string };
 type DisciplinaEntrada = { nome: string; carga_horaria: number; professor_id?: number | null; turma_id?: number | null; sala_id?: number | null };
 type DisciplinaSaida = { id: number; nome: string; carga_horaria: number; professor_id: number | null; professor_nome: string | null; turma_id: number | null; sala_id: number | null; turma_nome: string | null; sala_nome: string | null };
 type GradeItem = { dia_semana: number; hora_inicio: string; hora_fim: string; sala_id?: number | null };
@@ -52,6 +54,8 @@ type PedidoEntrada = HorarioPedido & { disciplina_id: number; motivo: string };
 type PedidoSaida = PedidoEntrada & { id: number; professor_id: number; professor_nome: string; disciplina_nome: string; status: string; resposta: string; sugestao: HorarioPedido | null; aula_id: number | null };
 export const turmas = () => pedir<{ id: number; nome: string }[]>('/turmas');
 export const salas = () => pedir<{ id: number; nome: string }[]>('/salas');
+export const criarTurma = (nome: string) => pedir<{ id: number; nome: string }>('/turmas', { nome });
+export const criarSala = (nome: string) => pedir<{ id: number; nome: string }>('/salas', { nome });
 export const eventos = () => pedir<EventoSaida[]>('/eventos');
 export const pedidos = () => pedir<PedidoSaida[]>('/pedidos');
 export const criarEvento = (corpo: EventoEntrada) => pedir<EventoSaida>('/eventos', corpo);
@@ -69,7 +73,7 @@ export const encerrarSemestre = (id: number) => pedir<SemestreSaida>(`/semestres
 export const criarProfessor = (corpo: ProfessorEntrada) => pedir<ProfessorSaida>('/professores', corpo);
 export const redefinirProfessor = (id: number) => pedir<SenhaProvisoria>(`/professores/${id}/redefinir-senha`, undefined, 'POST');
 export const criarAluno = (corpo: AlunoEntrada) => pedir<AlunoSaida>('/alunos', corpo);
-export const atualizarAluno = (id: number, corpo: Partial<AlunoEntrada>) => pedir<AlunoSaida>(`/alunos/${id}`, corpo, 'PATCH');
+export const atualizarAluno = (id: number, corpo: Partial<AlunoEntrada>) => pedir<AlunoSaida & { matriculas_mantidas: MatriculaMantida[] }>(`/alunos/${id}`, corpo, 'PATCH');
 export const redefinirAluno = (id: number) => pedir<SenhaProvisoria>(`/alunos/${id}/redefinir-senha`, undefined, 'POST');
 export const apagarAluno = (id: number) => pedir<void>(`/alunos/${id}`, undefined, 'DELETE');
 export const criarDisciplina = (corpo: DisciplinaEntrada) => pedir<DisciplinaSaida>('/disciplinas', corpo);
