@@ -90,8 +90,8 @@ try {
     await conferir('menu da escola: ' + rotulo + ' usa ' + caminho, () => menu(rotulo, caminho));
   }
   await conferir('escola abre /grade e conserva a rota após recarga', async () => {
-    await page.goto(FRONT + '/grade'); await page.locator('[data-sc-name="Grade e Agenda"]').waitFor({ state: 'visible' });
-    await url('/grade'); await page.reload(); await page.locator('[data-sc-name="Grade e Agenda"]').waitFor({ state: 'visible' }); await url('/grade');
+    await page.goto(FRONT + '/grade'); await page.locator('[data-sc-name="GradeAgenda"]').waitFor({ state: 'visible' });
+    await url('/grade'); await page.reload(); await page.locator('[data-sc-name="GradeAgenda"]').waitFor({ state: 'visible' }); await url('/grade');
   });
   await conferir('recarregar /disciplinas mantém a tela, a sessão e os dados', async () => {
     await menu('Disciplinas', '/disciplinas');

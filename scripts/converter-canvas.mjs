@@ -6,7 +6,7 @@ import { parseDocument } from 'htmlparser2';
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const aviso = '// GERADO por scripts/converter-canvas.mjs — não edite\n';
 const avisoCSS = '/* GERADO por scripts/converter-canvas.mjs — não edite */\n';
-export const PROPRIOS = { 'Grade e Agenda': './GradeAgenda' };
+export const PROPRIOS = { GradeAgenda: './GradeAgenda' };
 export const identificador = nome => nome.split(/[^\p{L}\p{N}_$]+/u).filter(Boolean).map(p => p[0].toUpperCase() + p.slice(1)).join('');
 const camel = s => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 // Atributos DOM distintos dos quatro templates; data-* e aria-* são literais.

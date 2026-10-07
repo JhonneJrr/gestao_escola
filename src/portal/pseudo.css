@@ -10,8 +10,8 @@
 .scp8:hover{color:var(--texto) !important}
 .scp9:active{transform:scale(.98) !important}
 .scpa:hover{background:var(--aviso-suave) !important}
-.scpb:hover{border-color:var(--aviso) !important;color:var(--aviso) !important}
-.scpc:hover{background:var(--sunken) !important}
+.scpb:hover{background:var(--sunken) !important}
+.scpc:hover{border-color:var(--aviso) !important;color:var(--aviso) !important}
 .scpd:hover{color:var(--aviso) !important}
 .scpe:hover{border-color:var(--borda) !important}
 .scpf:hover{text-decoration:underline !important;text-underline-offset:3px !important}

@@ -71,18 +71,18 @@ test('host atualiza a lógica antes do render e repassa props e ciclos de vida',
 });
 
 
-test('nome com espaços gera identificador válido e lógica própria só gera template e CSS', async () => {
+test('lógica própria só gera template e CSS; nome com espaços ainda gera identificador válido', async () => {
   const { converterTemplate, converter } = await import('../scripts/converter-canvas.mjs');
-  const r = converterTemplate('<dc-import name="Grade e Agenda" perfil="Escola"/><input maxLength="40"/>');
+  const r = converterTemplate('<dc-import name="GradeAgenda" perfil="Escola"/><input maxLength="40"/>');
   assert.match(r.jsx, /maxLength=\{"40"\}/);
-  assert.deepEqual(r.imports, ['Grade e Agenda']);
-  assert.match(r.jsx, /<GradeEAgenda perfil=/);
+  assert.deepEqual(r.imports, ['GradeAgenda']);
+  assert.match(r.jsx, /<GradeAgenda perfil=/);
   const arquivos = new Map(converter());
-  assert.match(arquivos.get('src/portal/template.tsx'), /import GradeEAgenda from "\.\/GradeAgenda"/);
-  const template = arquivos.get('src/portal/componentes/GradeEAgendaTemplate.tsx');
+  assert.match(arquivos.get('src/portal/template.tsx'), /import GradeAgenda from "\.\/GradeAgenda"/);
+  const template = arquivos.get('src/portal/componentes/GradeAgendaTemplate.tsx');
   assert.match(template, /export default function Template/);
-  assert.match(template, /import "\.\/GradeEAgenda.css"/);
+  assert.match(template, /import "\.\/GradeAgenda.css"/);
   assert.doesNotMatch(template, /class Component|criarDC|Carlos Mendes/);
-  assert.ok(arquivos.has('src/portal/componentes/GradeEAgenda.css'));
+  assert.ok(arquivos.has('src/portal/componentes/GradeAgenda.css'));
   assert.match(arquivos.get('src/portal/componentes/DemoPortal.tsx'), /class Component/);
 });

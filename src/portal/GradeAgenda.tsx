@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { DCLogic, criarDC } from './dc';
-import Template from './componentes/GradeEAgendaTemplate';
+import Template from './componentes/GradeAgendaTemplate';
 import { lerLoja, assinar, recarregarLoja } from './loja';
 import { salvarGrade, atualizarAula, criarDisciplina, atualizarDisciplina, pedirGradeIA, erroGradeIA, criarEvento, atualizarEvento, apagarEvento, criarPedido, aprovarPedido, recusarPedido, sugerirPedido, aceitarSugestao, recusarSugestao } from './rede';
 import { itensGradeAPI as itensAPI, disciplinaAPI, eventoAPI, pedidoAPI, horarioAPI } from './adaptador';
@@ -701,4 +701,4 @@ class GradeAgenda extends DCLogic {
   }
 }
 
-export default criarDC('Grade e Agenda', Template, GradeAgenda);
+export default criarDC('GradeAgenda', Template, GradeAgenda);

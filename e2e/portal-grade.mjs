@@ -45,7 +45,7 @@ try {
   await page.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, route => route.abort());
   const erros = [];
   page.on('pageerror', er => erros.push(er.message));
-  const grade = () => page.locator('[data-sc-name="Grade e Agenda"]');
+  const grade = () => page.locator('[data-sc-name="GradeAgenda"]');
   const visivel = t => page.getByText(t, { exact: true }).filter({ visible: true });
   async function entrar(email) {
     await page.goto(FRONT + '/login');
