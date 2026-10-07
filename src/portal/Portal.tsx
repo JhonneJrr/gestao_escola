@@ -4,6 +4,9 @@ import { DCLogic, criarDC } from "./dc";
 import Template from "./template";
 import { montarEstado, fmt, pct, AVISO, TINTA } from "./adaptador";
 import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
+import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
+  criarAluno, atualizarAluno, redefinirAluno, apagarAluno, criarDisciplina, atualizarDisciplina,
+  salvarGrade, apagarDisciplina, matricular as matricularAPI, desmatricular as desmatricularAPI } from "./rede";
 
 const HOJE = '2026-10-06';
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -175,6 +178,18 @@ class Component extends DCLogic {
     const dados = await estado();
     this.setState(Object.assign(montarEstado(usuario, dados), { carregando: false }));
     return true;
+  }
+  async recarregar() {
+    const { papel, profId, usuario, selAluno, selDisc, notaDisc, notaAval, ...dados } = montarEstado(this.state.usuario, await estado());
+    this.setState(s => {
+      const aluno = dados.alunos.some(a => a.id === s.selAluno) ? s.selAluno : dados.alunos[0]?.id ?? null;
+      const disc = dados.discs.some(d => d.id === s.selDisc) ? s.selDisc : dados.discs[0]?.id ?? null;
+      const nd = dados.discs.some(d => d.id === s.notaDisc) ? s.notaDisc : dados.discs[0]?.id ?? null;
+      return { ...dados, selAluno: aluno, selDisc: disc, notaDisc: nd,
+        notaAval: dados.avals.some(a => a.id === +s.notaAval && a.did === nd) ? s.notaAval : dados.avals.find(a => a.did === nd)?.id ?? '',
+        matAluno: !s.matAluno || dados.alunos.some(a => a.id === +s.matAluno) ? s.matAluno : String(dados.alunos[0]?.id ?? ''),
+        matDisc: !s.matDisc || dados.discs.some(d => d.id === +s.matDisc) ? s.matDisc : String(dados.discs[0]?.id ?? '') };
+    });
   }
   primeiroAcesso(usuario) {
     this.limparMg();
@@ -485,7 +500,7 @@ class Component extends DCLogic {
   addLinha() { this.setState(s => { const g = s.fGrade, u = g[g.length - 1], usados = g.map(r => +r.dia_semana); let d = 1; while (usados.includes(d) && d < 6) d++; return { fGrade: g.concat({ k: Date.now(), dia_semana: String(d), hora_inicio: u ? u.hora_inicio : '08:00', hora_fim: u ? u.hora_fim : '09:40' }), fErro: '', fOk: '' }; }); }
   setLinha(k, campo, v) { this.setState(s => ({ fGrade: s.fGrade.map(r => r.k === k ? Object.assign({}, r, { [campo]: v }) : r), fErro: '', fOk: '' })); }
   remLinha(k) { this.setState(s => ({ fGrade: s.fGrade.filter(r => r.k !== k), fErro: '', fOk: '' })); }
-  salvarDisc(e) {
+  async salvarDisc(e) {
     e.preventDefault();
     const st = this.state, sem = this.ativo(), did = (st.painel || {}).did || null, erro = t => this.setState({ fErro: t, fOk: '' });
     if (!sem) return erro('Sem semestre ativo.');
@@ -496,25 +511,39 @@ class Component extends DCLogic {
     const grade = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim }));
     const errs = this.conflitoGrade(grade, did), k = errs.findIndex(Boolean);
     if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
-    const id = did || Date.now(), de = HOJE > sem.inicio ? HOJE : sem.inicio, disc = { id, nome, carga_horaria: ch, professor_id: st.fProf ? +st.fProf : null, grade };
-    const velhas = st.aulas.filter(a => a.disciplina_id === id);
-    const fica = velhas.filter(a => a.origem === 'extra' || a.chamada || a.data < de || a.remarcada_de);
-    const canc = velhas.filter(a => a.status === 'cancelada' && a.origem === 'grade' && !a.remarcada_de).map(a => a.data + a.hora_inicio);
-    const novas = gerarAulas(disc, de, sem.fim).filter(a => !fica.some(f => (f.origem === 'grade' && f.data === a.data && f.hora_inicio === a.hora_inicio) || f.remarcada_de === a.data));
-    novas.forEach(a => { if (canc.includes(a.data + a.hora_inicio)) a.status = 'cancelada'; });
-    const n = novas.filter(a => a.status !== 'cancelada').length;
-    const msg = grade.length ? n + (n === 1 ? ' aula gerada' : ' aulas geradas') + ' de ' + ddmm(de) + ' a ' + ddmm(sem.fim) + '.' : 'Salvo. Sem grade, nenhuma aula foi gerada.';
-    this.setState(s => ({ discs: did ? s.discs.map(d => d.id === did ? disc : d) : s.discs.concat(disc), aulas: s.aulas.filter(a => a.disciplina_id !== id).concat(fica, novas), selDisc: id, painel: { tipo: 'disc', did: id }, painelUlt: { tipo: 'disc', did: id }, fErro: '', fOk: msg }));
+    let id;
+    try {
+      const corpo = { nome, carga_horaria: ch, ...(st.fProf ? { professor_id: +st.fProf } : did ? { professor_id: null } : {}) };
+      id = (did ? await atualizarDisciplina(did, corpo) : await criarDisciplina(corpo)).id;
+    } catch (er) { return erro(er.detalhe); }
+    const painel = { tipo: 'disc', did: id };
+    this.setState({ painel, painelUlt: painel });
+    let salvo, falha;
+    try { salvo = await salvarGrade(id, grade); }
+    catch (er) { falha = er; }
+    try {
+      await this.recarregar();
+      if (falha) return erro(falha.detalhe);
+      const n = salvo.aulas_geradas, de = HOJE > sem.inicio ? HOJE : sem.inicio;
+      const msg = grade.length ? n + (n === 1 ? ' aula gerada' : ' aulas geradas') + ' de ' + ddmm(de) + ' a ' + ddmm(sem.fim) + '.' : 'Salvo. Sem grade, nenhuma aula foi gerada.';
+      this.setState({ selDisc: id, fErro: '', fOk: msg });
+    } catch (er) { erro((falha || er).detalhe); }
   }
-  excluirDisc(id) { this.setState(s => ({ discs: s.discs.filter(x => x.id !== id), aulas: s.aulas.filter(a => a.disciplina_id !== id), matMsg: null })); }
-  desmatricular(aid, did) {
+  async excluirDisc(id) {
+    try { await apagarDisciplina(id); await this.recarregar(); this.setState({ matMsg: null }); }
+    catch (erro) { this.setState({ matMsg: { erro: true, t: erro.detalhe } }); }
+  }
+  async desmatricular(aid, did) {
     const st = this.state, k = aid + '-' + did;
     if (!this.ativo()) return;
     const temNota = st.avals.some(v => v.did === did && st.notas[aid + '-' + v.id] != null);
     const temFreq = st.aulas.some(a => a.disciplina_id === did && a.chamada && a.chamada[aid] != null);
     if (temNota || temFreq) return this.setState({ confDesm: null, desmErro: { k, t: 'Aluno já tem notas ou frequência nessa disciplina.' } });
     const al = st.alunos.find(a => a.id === aid), d = st.discs.find(x => x.id === did);
-    this.setState(s => { const mats = Object.assign({}, s.mats); delete mats[k]; return { mats, confDesm: null, desmErro: null, matMsg: { erro: false, t: (al ? al.nome : 'Aluno') + ' desmatriculado de ' + (d ? d.nome : 'disciplina') + '.' } }; });
+    try {
+      await desmatricularAPI(aid, did); await this.recarregar();
+      this.setState({ confDesm: null, desmErro: null, matMsg: { erro: false, t: (al ? al.nome : 'Aluno') + ' desmatriculado de ' + (d ? d.nome : 'disciplina') + '.' } });
+    } catch (erro) { this.setState({ confDesm: null, desmErro: { k, t: erro.detalhe } }); }
   }
   abrirChamada(au) { this.abrirPainel({ tipo: 'chamada', id: au.aula_id }, { cham: Object.assign({}, au.chamada || {}) }); }
   salvarChamada() {
@@ -565,7 +594,7 @@ class Component extends DCLogic {
       return { disc: d.nome, alunos: String(al.length), media: mm == null ? '—' : fmt(mm), mediaCor: mm != null && mm < 6 ? AVISO : TINTA, freq: ff == null ? '—' : pct(ff), freqCor: ff != null && ff < 0.75 ? AVISO : TINTA, aprov: String(ap), reprov: String(rp), reprovCor: rp ? AVISO : TINTA };
     });
   }
-  abrirSemestre(e) {
+  async abrirSemestre(e) {
     e.preventDefault();
     const st = this.state, erro = t => this.setState({ nsErro: t });
     if (this.ativo()) return erro('Já existe um semestre ativo.');
@@ -575,12 +604,15 @@ class Component extends DCLogic {
     if (!ISO.test(st.nsInicio) || !ISO.test(st.nsFim)) return erro('Preencha início e fim.');
     if (st.nsFim <= st.nsInicio) return erro('O fim precisa ser depois do início.');
     const dia = st.nsInicio > HOJE ? st.nsInicio : HOJE;
-    this.setState({ semestre: { id: Date.now(), nome, inicio: st.nsInicio, fim: st.nsFim, encerrado_em: null }, discs: [], avals: [], notas: {}, mats: {}, aulas: [], selDisc: null, notaDisc: '', notaAval: '', agDia: dia, agMes: dia.slice(0, 7), nsNome: '', nsInicio: '', nsFim: '', nsErro: '', semMsg: 'Semestre ' + nome + ' aberto. Agora crie as disciplinas.' });
+    try {
+      await criarSemestre({ nome, inicio: st.nsInicio, fim: st.nsFim }); await this.recarregar();
+      this.setState({ agDia: dia, agMes: dia.slice(0, 7), nsNome: '', nsInicio: '', nsFim: '', nsErro: '', semMsg: 'Semestre ' + nome + ' aberto. Agora crie as disciplinas.' });
+    } catch (er) { erro(er.detalhe); }
   }
-  encerrarSemestre() {
+  async encerrarSemestre() {
     const sem = this.ativo(); if (!sem) return;
-    const snap = Object.assign({}, sem, { encerrado_em: HOJE, resumo: this.resumoSemestre() });
-    this.setState(s => ({ semestre: Object.assign({}, s.semestre, { encerrado_em: HOJE }), historico: [snap].concat(s.historico), semConfirm: false, semMsg: '' }));
+    try { await encerrarSemestreAPI(sem.id); await this.recarregar(); this.setState({ semConfirm: false, semMsg: '' }); }
+    catch (erro) { this.setState({ semMsg: erro.detalhe }); }
   }
   validarAluno(id) {
     const st = this.state, idade = parseInt(st.fIdade, 10), em = st.fEmail.trim().toLowerCase();
@@ -592,26 +624,49 @@ class Component extends DCLogic {
     if (em && st.alunos.some(a => a.id !== id && (a.email || '').toLowerCase() === em)) return 'Esse e-mail já é de outro aluno.';
     return '';
   }
-  salvarAluno(e) {
+  async salvarAluno(e) {
     e.preventDefault();
     const id = (this.state.painel || {}).id, er = this.validarAluno(id); if (er) return this.setState({ fErro: er });
-    const st = this.state, em = st.fEmail.trim().toLowerCase(), antes = st.alunos.find(a => a.id === id), novoAcesso = !!em && (!antes || (antes.email || '') !== em);
-    this.setState(s => ({ alunos: s.alunos.map(a => a.id === id ? Object.assign({}, a, { nome: s.fNome.trim(), idade: parseInt(s.fIdade, 10), mat: s.fMat, email: em || null, provisoria: novoAcesso ? true : a.provisoria }) : a), editando: false, fErro: '', senhaProv: novoAcesso ? { email: em, senha: this.senhaNova(), copiado: false } : null }));
+    const st = this.state, em = st.fEmail.trim().toLowerCase();
+    try {
+      const salvo = await atualizarAluno(id, { nome: st.fNome.trim(), idade: parseInt(st.fIdade, 10), matricula: st.fMat, ...(em ? { email: em } : {}) });
+      await this.recarregar();
+      this.setState({ editando: false, fErro: '', senhaProv: salvo.senha_provisoria_texto ? { email: em, senha: salvo.senha_provisoria_texto, copiado: false } : null });
+    } catch (erro) { this.setState({ fErro: erro.detalhe }); }
   }
-  cadastrarProf(e) {
+  async cadastrarProf(e) {
     e.preventDefault();
     const st = this.state, nome = st.fNome.trim(), em = st.fEmail.trim().toLowerCase(), erro = t => this.setState({ fErro: t });
     if (!nome) return erro('Informe o nome.');
     if (!EMAIL_RE.test(em)) return erro('Informe um e-mail válido.');
     if (em === 'escola@escola.com' || st.profs.some(p => p.email === em) || st.alunos.some(a => a.email === em)) return erro('Este e-mail já está em uso.');
-    this.setState(s => ({ profs: s.profs.concat({ id: Date.now(), nome, email: em, provisoria: true }), fErro: '', senhaProv: { email: em, senha: this.senhaNova(), copiado: false, criado: nome } }));
+    try {
+      const criado = await criarProfessor({ nome, email: em }); await this.recarregar();
+      this.setState({ fErro: '', senhaProv: { email: em, senha: criado.senha_provisoria_texto, copiado: false, criado: nome } });
+    } catch (er) { erro(er.detalhe); }
   }
-  cadastrarAluno(e) {
+  async cadastrarAluno(e) {
     e.preventDefault();
     const er = this.validarAluno(null); if (er) return this.setState({ fErro: er });
     const st = this.state, em = st.fEmail.trim().toLowerCase(), nome = st.fNome.trim();
-    const novo = { id: Date.now(), nome, idade: parseInt(st.fIdade, 10), mat: st.fMat, email: em || null, provisoria: !!em };
-    this.setState(s => Object.assign({ alunos: s.alunos.concat(novo), fErro: '' }, em ? { senhaProv: { email: em, senha: this.senhaNova(), copiado: false, criado: nome } } : { painel: null }));
+    try {
+      const criado = await criarAluno({ nome, idade: parseInt(st.fIdade, 10), matricula: st.fMat, ...(em ? { email: em } : {}) });
+      await this.recarregar();
+      this.setState(Object.assign({ fErro: '' }, em ? { senhaProv: { email: em, senha: criado.senha_provisoria_texto, copiado: false, criado: nome } } : { painel: null }));
+    } catch (erro) { this.setState({ fErro: erro.detalhe }); }
+  }
+  async redefinirProf(p) {
+    this.abrirPainel({ tipo: 'prof', id: p.id });
+    try {
+      const salvo = await redefinirProfessor(p.id); await this.recarregar();
+      this.setState({ fErro: '', senhaProv: { email: p.email, senha: salvo.senha_provisoria_texto, copiado: false, redef: p.nome } });
+    } catch (erro) { this.setState({ fErro: erro.detalhe }); }
+  }
+  async redefinirSenhaAluno(a) {
+    try {
+      const salvo = await redefinirAluno(a.id); await this.recarregar();
+      this.setState({ alunoErro: '', senhaProv: { email: a.email, senha: salvo.senha_provisoria_texto, copiado: false } });
+    } catch (erro) { this.setState({ alunoErro: erro.detalhe }); }
   }
   salvarAvisoEd(e) {
     e.preventDefault();
@@ -706,10 +761,15 @@ class Component extends DCLogic {
       };
     });
   }
-  excluirAluno(id) {
+  async excluirAluno(id) {
     const al = this.state.alunos.find(a => a.id === id);
     if (al && al.hist) { const t = 'Não dá para excluir: ' + al.nome + ' tem histórico no semestre ' + al.hist + ', que está encerrado.'; if ((this.state.painel || {}).tipo === 'aluno' && this.state.painel.id === id) return this.setState({ alunoErro: t }); return this.abrirPainel({ tipo: 'aluno', id }, { alunoErro: t }); }
-    this.setState(s => ({ alunos: s.alunos.filter(a => a.id !== id), painel: null, selAluno: s.selAluno === id ? (s.alunos.find(a => a.id !== id) || {}).id : s.selAluno })); }
+    try { await apagarAluno(id); await this.recarregar(); this.setState({ painel: null }); }
+    catch (erro) {
+      if ((this.state.painel || {}).tipo === 'aluno' && this.state.painel.id === id) this.setState({ alunoErro: erro.detalhe });
+      else this.abrirPainel({ tipo: 'aluno', id }, { alunoErro: erro.detalhe });
+    }
+  }
 
   irSecao(id) {
     const m = this.mainRef.current; const el = m && m.querySelector('#' + id); if (!el) return;
@@ -1432,13 +1492,13 @@ class Component extends DCLogic {
       seletorRotulo: ehEscola ? 'Alunos e disciplinas · semestre ' + semNome : 'Notas por disciplina',
       seletor: reais.map(a => { const on = selA && a.id === selA.id; return { nome: a.nome, mat: a.mat, on, peso: peso(on), cor: on ? 'var(--fundo)' : TINTA, escolher: () => this.setState({ selAluno: a.id, matMsg: null, notaMsg: null }) }; }),
       seletorOk: !seletorEstado && !!selA, seletorEstado, sa: selA || {},
-      matricular: e => { e.preventDefault(); if (!selD || bloqueado) return; const al = st.alunos.find(a => a.id === +st.matAluno); if (!al) return this.setState({ matMsg: { erro: true, t: 'Escolha um aluno.' } }); if (st.mats[al.id + '-' + selD.id]) return this.setState({ matMsg: { erro: true, t: `${al.nome} já está matriculado em ${selD.nome}.` } }); this.setState(s => ({ mats: Object.assign({}, s.mats, { [al.id + '-' + selD.id]: true }), matMsg: { erro: false, t: `${al.nome} matriculado em ${selD.nome}.` }, matAluno: '' })); },
+      matricular: async e => { e.preventDefault(); if (!selD || bloqueado) return; const al = st.alunos.find(a => a.id === +st.matAluno); if (!al) return this.setState({ matMsg: { erro: true, t: 'Escolha um aluno.' } }); if (st.mats[al.id + '-' + selD.id]) return this.setState({ matMsg: { erro: true, t: `${al.nome} já está matriculado em ${selD.nome}.` } }); try { await matricularAPI(al.id, selD.id); await this.recarregar(); this.setState({ matMsg: { erro: false, t: `${al.nome} matriculado em ${selD.nome}.` }, matAluno: '' }); } catch (erro) { this.setState({ matMsg: { erro: true, t: erro.detalhe } }); } },
       matVis: ehEscola,
       ...(() => {
         const chips = selA ? st.discs.filter(d => st.mats[selA.id + '-' + d.id]).map(d => { const k = selA.id + '-' + d.id, er = st.desmErro && st.desmErro.k === k; return { nome: d.nome, label: 'Desmatricular ' + selA.nome + ' de ' + d.nome, podeX: !bloqueado, confirmando: st.confDesm === k, pedir: () => this.setState({ confDesm: k, desmErro: null, matMsg: null }), cancelar: () => this.setState({ confDesm: null }), confirmar: () => this.desmatricular(selA.id, d.id), temErro: !!er, erro: er ? st.desmErro.t : '' }; }) : [];
         return { matChips: chips, matSemChips: !chips.length, matChipsTxt: chips.length + (chips.length === 1 ? ' disciplina' : ' disciplinas'),
           matDiscOpcoes: st.discs.map(d => ({ v: String(d.id), l: d.nome + (selA && st.mats[selA.id + '-' + d.id] ? ' · já matriculado' : '') })), matDisc: st.matDisc, setMatDisc: set('matDisc'),
-          matricularAluno: e => { e.preventDefault(); if (!selA || bloqueado) return; const d = st.discs.find(x => x.id === +st.matDisc); if (!d) return this.setState({ matMsg: { erro: true, t: 'Escolha a disciplina.' } }); if (st.mats[selA.id + '-' + d.id]) return this.setState({ matMsg: { erro: true, t: selA.nome + ' já está matriculado em ' + d.nome + '.' } }); this.setState(s => ({ mats: Object.assign({}, s.mats, { [selA.id + '-' + d.id]: true }), matDisc: '', matMsg: { erro: false, t: selA.nome + ' matriculado em ' + d.nome + '.' } })); } };
+          matricularAluno: async e => { e.preventDefault(); if (!selA || bloqueado) return; const d = st.discs.find(x => x.id === +st.matDisc); if (!d) return this.setState({ matMsg: { erro: true, t: 'Escolha a disciplina.' } }); if (st.mats[selA.id + '-' + d.id]) return this.setState({ matMsg: { erro: true, t: selA.nome + ' já está matriculado em ' + d.nome + '.' } }); try { await matricularAPI(selA.id, d.id); await this.recarregar(); this.setState({ matDisc: '', matMsg: { erro: false, t: selA.nome + ' matriculado em ' + d.nome + '.' } }); } catch (erro) { this.setState({ matMsg: { erro: true, t: erro.detalhe } }); } } };
       })(),
       matMsg: st.matMsg ? st.matMsg.t : '', matMsgCor: st.matMsg && st.matMsg.erro ? AVISO : TINTA,
       bol: selA ? this.boletim(selA.id) : [],
@@ -1506,7 +1566,7 @@ class Component extends DCLogic {
       psp: st.senhaProv ? { titulo: st.senhaProv.redef ? 'Nova senha de ' + st.senhaProv.redef : st.senhaProv.criado + ' cadastrado.', sub: st.senhaProv.redef ? 'A senha anterior deixou de valer. No próximo acesso o professor cria a própria senha.' : 'Entregue a senha ao professor. No primeiro acesso ele cria a própria senha.' } : {},
       cadastrarProf: e => this.cadastrarProf(e), abrirNovoProf: () => this.abrirPainel({ tipo: 'prof' }),
       profsTotalTxt: st.profs.length + (st.profs.length === 1 ? ' professor' : ' professores') + ' · semestre ' + semNome,
-      profsLista: st.profs.map(p => { const ds = st.discs.filter(d => d.professor_id === p.id); return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, redefinir: () => this.abrirPainel({ tipo: 'prof', id: p.id }, { profs: st.profs.map(x => x.id === p.id ? Object.assign({}, x, { provisoria: true }) : x), senhaProv: { email: p.email, senha: this.senhaNova(), copiado: false, redef: p.nome } }),
+      profsLista: st.profs.map(p => { const ds = st.discs.filter(d => d.professor_id === p.id); return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, redefinir: () => this.redefinirProf(p),
         discs: ds.map(d => ({ nome: d.nome, ir: () => { this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
       df: (() => {
         const dsc = st.discs.find(d => d.id === pu.did), de = ativo ? (HOJE > ativo.inicio ? HOJE : ativo.inicio) : null;
@@ -1551,7 +1611,7 @@ class Component extends DCLogic {
       pa: paAl ? Object.assign({}, paAl, {
         presencas: String(paAl.s.presencas ?? 0), faltas: String(paAl.s.faltas ?? 0), faltasCor: paAl.s.freq != null && paAl.s.freq < 0.75 ? AVISO : TINTA, comNota: String(paAl.s.comNota ?? 0), bol: paAl.fixo ? [] : this.boletim(paAl.id),
         temEmail: !!paAl.email, acessoTxt: paAl.email || 'Sem e-mail de acesso. Edite o aluno para criar um.', acessoCor: paAl.email ? TINTA : 'var(--texto-suave)',
-        redefinir: () => this.setState(s => ({ alunos: s.alunos.map(x => x.id === paAl.id ? Object.assign({}, x, { provisoria: true }) : x), senhaProv: { email: paAl.email, senha: this.senhaNova(), copiado: false } })),
+        redefinir: () => this.redefinirSenhaAluno(paAl),
         editar: () => this.setState({ editando: true, fNome: paAl.nome, fIdade: String(paAl.idade), fMat: paAl.mat, fEmail: paAl.email || '', fErro: '', senhaProv: null }),
         discs: st.discs.filter(d => st.mats[paAl.id + '-' + d.id]).map(d => { const k = paAl.id + '-' + d.id, conf = st.confDesm === k; return { nome: d.nome, normal: !conf, confirmando: conf, podeDesm: ehEscola && !bloqueado, label: 'Desmatricular de ' + d.nome, pedir: () => this.setState({ confDesm: k, desmErro: null }), cancelar: () => this.setState({ confDesm: null }), confirmar: () => this.desmatricular(paAl.id, d.id) }; }),
         semDiscs: !st.discs.some(d => st.mats[paAl.id + '-' + d.id]),
