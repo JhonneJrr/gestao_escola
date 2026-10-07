@@ -30,12 +30,12 @@ O seed da API usa o semestre 2026.2. A senha de todas as contas abaixo é `escol
 
 | Conta | Perfil | O que vê |
 | --- | --- | --- |
-| `escola@escola.com` | Escola | Painel, semestre, disciplinas, professores, alunos, matrículas, agenda e avisos de toda a escola. |
-| `prof@escola.com` | Prof. Carlos | Painel, agenda, Python e Banco de Dados, seus alunos e avisos. |
-| `marta@escola.com` | Profa. Marta | Painel, agenda, Algoritmos, seus alunos e avisos. |
+| `escola@escola.com` | Escola | Painel, semestre, professores, alunos (hub por turma), acadêmico (quadro, ano letivo, disciplinas e pedidos) e avisos de toda a escola. |
+| `prof@escola.com` | Prof. Carlos | Painel, acadêmico (Python e Banco de Dados), seus alunos e avisos. |
+| `marta@escola.com` | Profa. Marta | Painel, acadêmico (Algoritmos), seus alunos e avisos. |
 | `ana@escola.com` | Ana Souza | Meu painel, com suas notas, frequência, próximas aulas e avisos, para leitura. |
 
-Visitantes veem a apresentação em `/` e o login em `/login`. Após entrar, escola e professores vão para `/painel`; alunos vão para `/meu-painel`. As demais telas usam `/semestre`, `/disciplinas`, `/professores`, `/alunos`, `/matriculas`, `/agenda` e `/avisos`. A troca de senha provisória usa `/primeiro-acesso`. Rotas fora do perfil mostram o aviso do portal e voltam à primeira tela permitida.
+Visitantes veem a apresentação em `/` e o login em `/login`. Após entrar, escola e professores vão para `/painel`; alunos vão para `/meu-painel`. As demais telas usam `/semestre`, `/professores`, `/alunos`, `/agenda` e `/avisos`. O Acadêmico responde em `/agenda` (quadro semanal), `/disciplinas` (página da disciplina) e `/grade`; `/matriculas` abre Alunos para a escola e as notas da disciplina para o professor. A troca de senha provisória usa `/primeiro-acesso`. Rotas fora do perfil mostram o aviso do portal e voltam à primeira tela permitida.
 
 ## Canvas e conferência
 
@@ -53,15 +53,17 @@ Com API em `http://localhost:8000`, front em `http://localhost:5173` e Microsoft
 ```bash
 npx tsc -b
 npm run build
-node --test e2e/adaptador.test.mjs e2e/converter-canvas.test.mjs
+node --test e2e/adaptador.test.mjs e2e/converter-canvas.test.mjs e2e/gradeagenda.test.mjs
 node e2e/portal-integracao.mjs
 node e2e/portal-escola.mjs
 node e2e/portal-operacao.mjs
 node e2e/portal-rotas.mjs
+node e2e/portal-grade.mjs
+node e2e/portal-turmas.mjs
 npm run comparar
 ```
 
-Os testes unitários conferem o adaptador e o conversor. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, grade e matrículas; operação verifica notas, chamadas, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil. O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste; professores de teste permanecem. As escritas de semestre são simuladas no teste de escola.
+Os testes unitários conferem o adaptador, o conversor e as regras da Grade e agenda. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, editor de disciplina e matrícula pela disciplina; operação verifica notas, chamada pela página da disciplina, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil; grade verifica quadro, calendário, pedidos de aula extra e assistente; turmas verifica o hub por turma, a matrícula automática pela turma do aluno, a troca de turma e a chamada. O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste; professores e a turma de teste permanecem (o reseed da API limpa). As escritas de semestre são simuladas no teste de escola.
 
 Para conferir o build, rode `npx vite preview --port 4173` em outro terminal e aponte o teste de rotas para ele:
 
