@@ -236,7 +236,8 @@ try {
     const st = atuais.corpo, minhas = st.disciplinas.filter(d => d.professor_id === marta.id); assert.ok(minhas.length);
     let livre;
     const sobrepoe = (ini, fim, o) => ini < o.hora_fim && o.hora_inicio < fim;
-    for (let data = st.semestre.inicio; data <= st.semestre.fim && !livre;) {
+    const amanha = new Date(Date.now() + 86400000).toISOString().slice(0, 10); // a API recusa pedido em data passada
+    for (let data = amanha > st.semestre.inicio ? amanha : st.semestre.inicio; data <= st.semestre.fim && !livre;) {
       const dia = new Date(data + 'T00:00:00Z').getUTCDay();
       const feriado = st.eventos.some(e => e.tipo === 'feriado' && e.data <= data && data <= (e.fim || e.data));
       if ([2, 3, 4].includes(dia) && !feriado) for (const d of minhas) {

@@ -253,18 +253,22 @@ try {
   process.exitCode = 1;
   if (!browser) console.error('FALHOU abrir Edge\n' + erro.stack);
 } finally {
-  let limpou = true;
+  let limpou = true, ficou = false;
   if (token) {
     const apagar = async caminho => {
       try {
         const r = await api(caminho, 'DELETE');
-        if (![204, 404].includes(r.status)) { limpou = false; console.error('FALHOU limpeza ' + caminho + ': ' + JSON.stringify(r)); }
+        if (r.status === 409 && /notas ou (chamadas|presenças)/.test(r.corpo.detail || '')) {
+          // A API recusa excluir com nota ou chamada: o histórico fica até o reseed.
+          ficou = true; console.log('Fica até o reseed (tem chamada lançada): ' + caminho);
+          if (caminho.startsWith('/disciplinas/')) await api(caminho, 'PATCH', { professor_id: null });
+        } else if (![204, 404].includes(r.status)) { limpou = false; console.error('FALHOU limpeza ' + caminho + ': ' + JSON.stringify(r)); }
       } catch (erro) { limpou = false; console.error('FALHOU limpeza ' + caminho + '\n' + erro.stack); }
     };
     if (notaDoAluno) await apagar(notaDoAluno);
     if (disciplinaId) await apagar('/disciplinas/' + disciplinaId);
     for (const id of alunos) await apagar('/alunos/' + id);
-    if (inicial) {
+    if (inicial && !ficou) {
       try {
         const final = await estado();
         for (const k of ['alunos', 'disciplinas', 'matriculas', 'notas', 'aulas']) assert.deepEqual(final[k], inicial[k], 'o teste precisa devolver ' + k + ' ao que encontrou');

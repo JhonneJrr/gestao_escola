@@ -182,8 +182,8 @@ try {
     const sem = (await api('/semestres/atual')).corpo;
     dia = sem.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
     segundoDia = new Date(Date.parse(dia) + 86400000).toISOString().slice(0, 10);
-    assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: dia, hora_inicio: '08:00', hora_fim: '09:40' })).status, 201);
-    assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: segundoDia, hora_inicio: '10:00', hora_fim: '11:40' })).status, 201);
+    assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: dia, hora_inicio: '15:30', hora_fim: '17:10' })).status, 201);
+    assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: segundoDia, hora_inicio: '13:30', hora_fim: '15:10' })).status, 201);
     const aulas = (await api(`/disciplinas/${disc.id}/aulas`)).corpo;
     aula = aulas.find(a => a.data === dia); outra = aulas.find(a => a.data === segundoDia); assert.ok(aula && outra);
     await logic('await logic.recarregar();');
@@ -288,15 +288,20 @@ try {
 } finally {
   let limpou = true;
   const caminhos = [...avisos].map(id => '/avisos/' + id);
+  let ficou = false; // a API recusa excluir disciplina e aluno com nota ou chamada: o histórico fica até o reseed
   if (disc) caminhos.push('/disciplinas/' + disc.id);
   for (const a of [aluno, colega]) if (a) caminhos.push('/alunos/' + a.id);
   for (const caminho of caminhos) {
     try {
       const r = await api(caminho, 'DELETE');
-      if (![204, 404].includes(r.status)) { limpou = false; console.error('FALHOU limpeza ' + caminho + ': ' + JSON.stringify(r)); }
+      if (r.status === 409 && /notas ou (chamadas|presenças)/.test(r.corpo.detail || '')) {
+        ficou = true; console.log('Fica até o reseed (tem chamada lançada): ' + caminho);
+        // Solta o professor para o horário da disciplina não bloquear a próxima rodada.
+        if (caminho.startsWith('/disciplinas/')) await api(caminho, 'PATCH', { professor_id: null });
+      } else if (![204, 404].includes(r.status)) { limpou = false; console.error('FALHOU limpeza ' + caminho + ': ' + JSON.stringify(r)); }
     } catch (erro) { limpou = false; console.error('FALHOU limpeza ' + caminho + '\n' + erro.stack); }
   }
-  if (seed) {
+  if (seed && !ficou) {
     try {
       const dados = await api('/portal/estado'); assert.equal(dados.status, 200);
       assert.deepEqual(dados.corpo, seed, 'o teste precisa devolver o estado completo ao que encontrou');
