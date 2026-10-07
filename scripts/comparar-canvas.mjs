@@ -11,7 +11,9 @@ import { setTimeout as esperar } from 'node:timers/promises';
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const canvas = resolve(raiz, 'design/canvas');
 const saida = resolve(raiz, 'e2e/saida');
-const estados = ["Apresentação", "Login", "Primeiro acesso", "Escola", "Professor", "Professor · sem permissão", "Aluno", "Escola · horários do professor", "Escola · assistente vazio", "Escola · assistente com proposta", "Escola · assistente com erro"];
+// Os estados de `inicio` vêm direto das opções do canvas da atualização 3 (os mesmos nomes que o porte DEV aceita).
+const propsCanvas = arquivo => JSON.parse(readFileSync(resolve(canvas, arquivo), 'utf8').match(/data-props="([^"]*)"/)[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+const estados = propsCanvas('Portal Escolar.dc.html').inicio.options;
 const casos = [
   ...estados.map(inicio => ({ inicio })),
   ...["Vazio", "Enviando", "Só texto", "Com proposta", "Com \"Não coube\"", "Aplicando", "Aplicada", "Erro: não configurado", "Erro: limite de uso", "Erro: sem conexão"].map(iaEstado => ({ inicio: 'Escola', iaEstado })),
@@ -21,11 +23,15 @@ const casos = [
 ];
 let opcoes = {};
 
+// Menu da atualização 3: os Alt+N seguem esta ordem (TELAS_POR do canvas).
 const abas = {
-  Escola: ['Painel', 'Semestre', 'Disciplinas', 'Professores', 'Alunos', 'Matrículas', 'Grade e agenda', 'Avisos'],
-  Professor: ['Painel', 'Grade e agenda', 'Minhas disciplinas', 'Meus alunos', 'Avisos'],
+  Escola: ['Painel', 'Semestre', 'Professores', 'Alunos', 'Acadêmico', 'Avisos'],
+  Professor: ['Painel', 'Acadêmico', 'Meus alunos', 'Avisos'],
 };
 const filtro = process.argv.includes('--estado') ? process.argv[process.argv.indexOf('--estado') + 1] : '';
+// ESTADOS=<regex> filtra também por expressão regular (rodar por partes, sem estourar o tempo).
+const regexEstados = process.env.ESTADOS ? new RegExp(process.env.ESTADOS) : null;
+const passa = texto => texto.includes(filtro) && (!regexEstados || regexEstados.test(texto));
 const reactLocal = new Map([
   ['https://unpkg.com/react@18.3.1/umd/react.production.min.js', resolve(raiz, 'scripts/referencia/react.production.min.js')],
   ['https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js', resolve(raiz, 'scripts/referencia/react-dom.production.min.js')],
@@ -37,7 +43,7 @@ const servidor = createServer((req, res) => {
   try {
     let body = readFileSync(path);
     if (path === resolve(canvas, 'Portal Escolar.dc.html')) {
-      body = body.toString('utf8').replace(/<dc-import name="Grade e Agenda"/g, '<dc-import name="Grade e Agenda" relogio="' + (opcoes.relogio || 'Terça 08:40') + '"').replace(/data-props="([^"]*)"/, (_, raw) => {
+      body = body.toString('utf8').replace(/<dc-import name="GradeAgenda"/g, '<dc-import name="GradeAgenda" relogio="' + (opcoes.relogio || 'Terça 08:40') + '"').replace(/data-props="([^"]*)"/, (_, raw) => {
         const props = JSON.parse(raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
         props.inicio.default = inicio;
         props.movimento.default = 'Reduzido';
@@ -45,7 +51,7 @@ const servidor = createServer((req, res) => {
         return 'data-props="' + JSON.stringify(props).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"';
       });
     }
-    if (path === resolve(canvas, 'Grade e Agenda.dc.html')) body = body.toString('utf8').replace(/data-props="([^"]*)"/, (_, raw) => {
+    if (path === resolve(canvas, 'GradeAgenda.dc.html')) body = body.toString('utf8').replace(/data-props="([^"]*)"/, (_, raw) => {
       const props = JSON.parse(raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
       props.relogio.default = 'Terça 08:40';
       return 'data-props="' + JSON.stringify(props).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"';
@@ -141,10 +147,11 @@ try {
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
     for (const caso of casos) {
       inicio = caso.inicio; opcoes = caso;
-      const nomeInicio = inicio + (caso.iaEstado ? ' / IA ' + caso.iaEstado : caso.iaErroSimulado ? ' / Simulação ' + caso.iaErroSimulado : caso.funcoesEstilo ? ' / ' + caso.funcoesEstilo : caso.relogio ? ' / ' + caso.relogio : '');
-      const nomes = [nomeInicio, ...(inicio === 'Aluno' ? ['Aluno / Grade e agenda'] : []), ...(abas[inicio] ?? []).map((aba, i) => inicio + ' / ' + aba + ' [Alt+' + (i + 1) + ']')];
+      const variante = caso.iaEstado ? ' / IA ' + caso.iaEstado : caso.iaErroSimulado ? ' / Simulação ' + caso.iaErroSimulado : caso.funcoesEstilo ? ' / ' + caso.funcoesEstilo : caso.relogio ? ' / ' + caso.relogio : '';
+      const nomeInicio = inicio + variante;
+      const nomes = [nomeInicio, ...(inicio === 'Aluno' ? ['Aluno' + variante + ' / Acadêmico'] : []), ...(abas[inicio] ?? []).map((aba, i) => inicio + variante + ' / ' + aba + ' [Alt+' + (i + 1) + ']')];
       const sufixo = ' · ' + viewport.width + '×' + viewport.height;
-      if (!nomes.some(nome => (nome + sufixo).includes(filtro))) continue;
+      if (!nomes.some(nome => passa(nome + sufixo))) continue;
       const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
       const referencia = await context.newPage();
       const porte = await context.newPage();
@@ -173,7 +180,7 @@ try {
         const [ref, portado] = await Promise.all([estabilizar(referencia), estabilizar(porte)]);
         if (externas.size) throw new Error('URL externa não prevista pelo plano; comparação interrompida:\n' + [...externas].join('\n'));
         if (erros.length) throw new Error('Erro de execução do canvas/porte:\n' + erros.join('\n'));
-        if (!label.includes(filtro)) return;
+        if (!passa(label)) return;
         const file = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
         if (!ref.estavel || !portado.estavel) {
           console.log('INSTAVEL ' + label);
@@ -189,39 +196,48 @@ try {
         } else {
           const texto = diff(ref.atual, portado.atual);
           writeFileSync(resolve(saida, 'comparar-' + file + '.diff'), texto);
-          // A referência que divergiu é a primeira abertura; o controle abre a segunda em outro contexto.
-          const controleContext = await browser.newContext({ viewport, reducedMotion: 'reduce' });
-          try {
-            const page = await controleContext.newPage();
-            await preparar(page);
-            await page.goto(urlReferencia, { waitUntil: 'load' });
-            let resultado = await estabilizar(page);
-            if (abaIndex === -2) { await page.getByRole('button', { name: 'Grade e agenda', exact: true }).click(); resultado = await estabilizar(page); }
-            for (let i = 0; i <= abaIndex && resultado.estavel; i++) {
-              await page.keyboard.press('Alt+' + (i + 1));
-              resultado = await estabilizar(page);
-            }
-            const resultados = [ref, resultado];
-            if (externas.size) throw new Error('URL externa não prevista pelo plano; comparação interrompida:\n' + [...externas].join('\n'));
-            if (erros.length) throw new Error('Erro de execução do controle:\n' + erros.join('\n'));
-            if (resultados.some(r => !r.estavel)) {
-              console.log('INSTAVEL ' + label + ' · CONTROLE canvas x canvas: INSTAVEL');
-              for (const [i, resultado] of resultados.entries()) {
-                if (!resultado.estavel) {
-                  writeFileSync(resolve(saida, 'comparar-' + file + '-instavel-controle-' + (i + 1) + '.diff'), diff(resultado.anterior, resultado.atual, 'canvas penúltima captura', 'canvas última captura'));
-                }
+          // O canvas às vezes varia de uma abertura para outra (medidas e animações dependem do tempo): o controle
+          // abre o canvas mais três vezes, cada uma em outro contexto, e compara o porte com todas as aberturas.
+          const resultados = [ref];
+          for (let n = 0; n < 3; n++) {
+            const controleContext = await browser.newContext({ viewport, reducedMotion: 'reduce' });
+            try {
+              const page = await controleContext.newPage();
+              await preparar(page);
+              await page.goto(urlReferencia, { waitUntil: 'load' });
+              let resultado = await estabilizar(page);
+              if (abaIndex === -2) { await page.getByRole('button', { name: 'Acadêmico', exact: true }).click(); resultado = await estabilizar(page); }
+              for (let i = 0; i <= abaIndex && resultado.estavel; i++) {
+                await page.keyboard.press('Alt+' + (i + 1));
+                resultado = await estabilizar(page);
               }
-              process.exitCode = 1;
-            } else {
-              const igual = resultados[0].atual === resultados[1].atual;
-              console.log((igual ? 'DIFERENTE ' : 'ANIMADO (canvas difere de si mesmo) ') + label + ' · CONTROLE canvas x canvas: ' + (igual ? 'IGUAL' : 'DIFERENTE'));
-              const controle = diff(resultados[0].atual, resultados[1].atual, 'canvas abertura 1', 'canvas abertura 2');
-              writeFileSync(resolve(saida, 'comparar-' + file + '-controle.diff'), controle);
-              console.log((igual ? texto : controle).split('\n').slice(0, 5).join('\n'));
-              if (igual) process.exitCode = 1;
+              resultados.push(resultado);
+            } finally {
+              await controleContext.close();
             }
-          } finally {
-            await controleContext.close();
+          }
+          if (externas.size) throw new Error('URL externa não prevista pelo plano; comparação interrompida:\n' + [...externas].join('\n'));
+          if (erros.length) throw new Error('Erro de execução do controle:\n' + erros.join('\n'));
+          if (resultados.some(r => !r.estavel)) {
+            console.log('INSTAVEL ' + label + ' · CONTROLE canvas x canvas: INSTAVEL');
+            for (const [i, resultado] of resultados.entries()) {
+              if (!resultado.estavel) {
+                writeFileSync(resolve(saida, 'comparar-' + file + '-instavel-controle-' + (i + 1) + '.diff'), diff(resultado.anterior, resultado.atual, 'canvas penúltima captura', 'canvas última captura'));
+              }
+            }
+            process.exitCode = 1;
+          } else {
+            const aberturas = resultados.map(r => r.atual);
+            const igual = aberturas.every(a => a === aberturas[0]);
+            // Quando o canvas varia, diz se o porte bate com alguma abertura (e, na segunda régua, sem o indicador de seleção das abas).
+            const solto = s => s.replace(/<div aria-hidden="true" style="position: absolute; left: 0px; top: 0px;[^"]*"><\/div>/g, '').replace(/ isolation: isolate;/g, '');
+            const veredito = aberturas.includes(portado.atual) ? 'porte igual a uma abertura do canvas' : aberturas.some(a => solto(a) === solto(portado.atual)) ? 'porte igual a uma abertura do canvas, fora o indicador de seleção' : 'porte DIFERE de todas as aberturas do canvas';
+            console.log((igual ? 'DIFERENTE ' : 'ANIMADO (canvas difere de si mesmo) ') + label + ' · CONTROLE canvas x canvas: ' + (igual ? 'IGUAL' : 'DIFERENTE · ' + veredito));
+            const outra = aberturas.find(a => a !== aberturas[0]) ?? aberturas[1];
+            const controle = diff(aberturas[0], outra, 'canvas abertura 1', 'canvas outra abertura');
+            writeFileSync(resolve(saida, 'comparar-' + file + '-controle.diff'), controle);
+            console.log((igual ? texto : controle).split('\n').slice(0, 5).join('\n'));
+            if (igual) process.exitCode = 1;
           }
         }
         if (captura) await Promise.all([
@@ -231,14 +247,14 @@ try {
       }
       await comparar(nomeInicio, ['Login', 'Escola', 'Aluno'].includes(inicio));
       for (const [i, aba] of (abas[inicio] ?? []).entries()) {
-        if (!nomes.slice(i + 1).some(nome => (nome + sufixo).includes(filtro))) break;
+        if (!nomes.slice(i + 1).some(nome => passa(nome + sufixo))) break;
         await Promise.all([referencia.keyboard.press('Alt+' + (i + 1)), porte.keyboard.press('Alt+' + (i + 1))]);
         if (erros.length) throw new Error('Erro ao percorrer abas:\n' + erros.join('\n'));
-        await comparar(inicio + ' / ' + aba + ' [Alt+' + (i + 1) + ']', false, i);
+        await comparar(inicio + variante + ' / ' + aba + ' [Alt+' + (i + 1) + ']', false, i);
       }
       if (inicio === 'Aluno') {
-        await Promise.all([referencia.getByRole('button', { name: 'Grade e agenda', exact: true }).click(), porte.getByRole('button', { name: 'Grade e agenda', exact: true }).click()]);
-        await comparar('Aluno / Grade e agenda' + (caso.relogio ? ' / ' + caso.relogio : ''), false, -2);
+        await Promise.all([referencia.getByRole('button', { name: 'Acadêmico', exact: true }).click(), porte.getByRole('button', { name: 'Acadêmico', exact: true }).click()]);
+        await comparar('Aluno' + variante + ' / Acadêmico', false, -2);
       }
       await context.close();
     }
