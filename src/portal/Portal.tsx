@@ -7,6 +7,8 @@ import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToke
 import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
   criarAluno, atualizarAluno, redefinirAluno, apagarAluno, criarDisciplina, atualizarDisciplina,
   salvarGrade, apagarDisciplina, matricular as matricularAPI, desmatricular as desmatricularAPI } from "./rede";
+import { criarAvaliacao, apagarAvaliacao, salvarNota, apagarNota, salvarChamada as salvarChamadaAPI,
+  atualizarAula, criarAula, criarAviso, atualizarAviso, apagarAviso } from "./rede";
 
 const HOJE = '2026-10-06';
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -86,13 +88,17 @@ class Component extends DCLogic {
   subRef = React.createRef();
   setSub(id) { if (id === this.state.subAba) return; this.setState({ subAba: id, gnMsg: null }, () => { const el = this.subRef.current; if (el && el.animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: this.rm ? 100 : 160, easing: 'linear' }); }); }
   notaOk(t) { const x = String(t).trim(), n = parseFloat(x.replace(',', '.')); return /^\d{1,2}([.,]\d)?$/.test(x) && n >= 0 && n <= 10; }
-  salvarNotaGrade(key, an, vn) {
+  async salvarNotaGrade(key, an, vn) {
     const d = (this.state.gnDraft || {})[key]; if (d == null) return;
     const limpa = () => { const g = Object.assign({}, this.state.gnDraft); delete g[key]; return g; };
     if (String(d).trim() === '') return this.setState({ gnDraft: limpa() });
     if (!this.notaOk(d)) return this.setState({ gnMsg: { erro: true, t: 'Nota de ' + an + ' em ' + vn + ': use um valor de 0 a 10, com até uma casa decimal.' } });
     const n = Math.round(parseFloat(String(d).replace(',', '.')) * 10) / 10;
-    this.setState(s => ({ notas: Object.assign({}, s.notas, { [key]: n }), gnDraft: limpa(), gnMsg: { erro: false, t: 'Nota de ' + an + ' em ' + vn + ': ' + fmt(n) + '.' } }));
+    const [aid, vid] = key.split('-').map(Number);
+    try {
+      await salvarNota(vid, aid, n); await this.recarregar();
+      this.setState({ gnDraft: limpa(), gnMsg: { erro: false, t: 'Nota de ' + an + ' em ' + vn + ': ' + fmt(n) + '.' } });
+    } catch (erro) { this.setState({ gnMsg: { erro: true, t: erro.detalhe } }); }
   }
   telas() { return TELAS_POR[this.state.papel] || TELAS_POR.escola; }
   escopo(S, pid) {
@@ -546,18 +552,23 @@ class Component extends DCLogic {
     } catch (erro) { this.setState({ confDesm: null, desmErro: { k, t: erro.detalhe } }); }
   }
   abrirChamada(au) { this.abrirPainel({ tipo: 'chamada', id: au.aula_id }, { cham: Object.assign({}, au.chamada || {}) }); }
-  salvarChamada() {
+  async salvarChamada() {
     const st = this.state, au = st.aulas.find(a => a.aula_id === (st.painel || {}).id);
     if (!au || !this.ativo() || au.status === 'cancelada') return;
     const lista = st.alunos.filter(a => st.mats[a.id + '-' + au.disciplina_id] || (au.chamada && au.chamada[a.id] != null));
     const faltam = lista.filter(a => st.cham[a.id] == null).length;
     if (faltam) return this.setState({ chamErro: 'Marque todos os alunos. ' + (faltam === 1 ? 'Falta 1.' : 'Faltam ' + faltam + '.') });
-    const ch = {}; lista.forEach(a => { ch[a.id] = !!st.cham[a.id]; });
-    this.setState(s => ({ aulas: s.aulas.map(a => a.aula_id === au.aula_id ? Object.assign({}, a, { chamada: ch }) : a), painel: null }));
+    try {
+      await salvarChamadaAPI(au.disciplina_id, { data: au.data, presencas: lista.map(a => ({ aluno_id: a.id, presente: !!st.cham[a.id] })) });
+      await this.recarregar(); this.setState({ painel: null, chamErro: '' });
+    } catch (erro) { this.setState({ chamErro: erro.detalhe }); }
   }
-  setStatus(id, status) { this.setState(s => ({ aulas: s.aulas.map(a => a.aula_id === id ? Object.assign({}, a, { status }) : a), menuAula: null })); }
+  async setStatus(id, status) {
+    try { await atualizarAula(id, { status }); await this.recarregar(); this.setState({ menuAula: null, agErro: '' }); }
+    catch (erro) { this.setState({ menuAula: null, agErro: erro.detalhe }); }
+  }
   abrirRemarcar(au) { this.abrirPainel({ tipo: 'remarcar', id: au.aula_id }, { fData: au.data, fIni: au.hora_inicio || '', fFim: au.hora_fim || '', fErro: au.chamada ? 'Aula já tem presenças: não dá para remarcar.' : '' }); }
-  salvarRemarcar(e) {
+  async salvarRemarcar(e) {
     e.preventDefault();
     const st = this.state, sem = this.ativo(), au = st.aulas.find(a => a.aula_id === (st.painel || {}).id), erro = t => this.setState({ fErro: t });
     if (!au || !sem) return erro('Sem semestre ativo.');
@@ -569,10 +580,13 @@ class Component extends DCLogic {
     if (st.fData === au.data && st.fIni === au.hora_inicio && st.fFim === au.hora_fim) return erro('Escolha outra data ou outro horário.');
     if (st.aulas.some(a => a.aula_id !== au.aula_id && a.disciplina_id === au.disciplina_id && a.data === st.fData && a.status !== 'cancelada')) return erro('Já existe aula dessa disciplina nesse dia.');
     const nd = st.fData;
-    this.setState(s => ({ aulas: s.aulas.map(a => a.aula_id === au.aula_id ? Object.assign({}, a, { data: nd, hora_inicio: s.fIni, hora_fim: s.fFim, status: 'agendada', remarcada_de: a.remarcada_de || (nd !== a.data ? a.data : null) }) : a), painel: null }), () => this.irDia(nd));
+    try {
+      await atualizarAula(au.aula_id, { data: nd, hora_inicio: st.fIni, hora_fim: st.fFim, status: 'agendada' });
+      await this.recarregar(); this.setState({ painel: null }, () => this.irDia(nd));
+    } catch (er) { erro(er.detalhe); }
   }
   abrirExtra() { const st = this.state; this.abrirPainel({ tipo: 'extra' }, { fData: st.agDia, fDisc: String((st.discs[0] || {}).id || ''), fIni: '', fFim: '' }); }
-  salvarExtra(e) {
+  async salvarExtra(e) {
     e.preventDefault();
     const st = this.state, sem = this.ativo(), erro = t => this.setState({ fErro: t });
     if (!sem) return erro('Sem semestre ativo.');
@@ -582,8 +596,10 @@ class Component extends DCLogic {
     if (!!st.fIni !== !!st.fFim) return erro('Preencha início e fim, ou deixe os dois vazios.');
     if (st.fIni && !(hm(st.fIni) < hm(st.fFim))) return erro('O fim precisa ser depois do início.');
     if (st.aulas.some(a => a.disciplina_id === did && a.data === st.fData && a.status !== 'cancelada')) return erro('Já existe aula dessa disciplina nesse dia.');
-    const au = { aula_id: AID++, disciplina_id: did, data: st.fData, hora_inicio: st.fIni || null, hora_fim: st.fFim || null, status: 'agendada', origem: 'extra', chamada: null };
-    this.setState(s => ({ aulas: s.aulas.concat(au), painel: null }), () => this.irDia(au.data));
+    try {
+      const au = await criarAula(did, { data: st.fData, hora_inicio: st.fIni || null, hora_fim: st.fFim || null });
+      await this.recarregar(); this.setState({ painel: null }, () => this.irDia(au.data));
+    } catch (er) { erro(er.detalhe); }
   }
   resumoSemestre() {
     const st = this.state;
@@ -668,7 +684,7 @@ class Component extends DCLogic {
       this.setState({ alunoErro: '', senhaProv: { email: a.email, senha: salvo.senha_provisoria_texto, copiado: false } });
     } catch (erro) { this.setState({ alunoErro: erro.detalhe }); }
   }
-  salvarAvisoEd(e) {
+  async salvarAvisoEd(e) {
     e.preventDefault();
     const st = this.state, id = (st.painel || {}).id, t = st.fNome.trim(), erro = x => this.setState({ fErro: x });
     if (!st.avisos.some(a => a.id === id)) return this.setState({ painel: null });
@@ -676,7 +692,10 @@ class Component extends DCLogic {
     if (!ISO.test(st.fData)) return erro('Escolha a data.');
     if (!st.fTexto.trim()) return erro('Escreva a mensagem.');
     if (st.avisos.some(a => a.id !== id && a.titulo.trim().toLowerCase() === t.toLowerCase() && a.data === st.fData)) return erro('Já existe um aviso com esse título nessa data.');
-    this.setState(s => ({ avisos: s.avisos.map(a => a.id === id ? Object.assign({}, a, { titulo: t, data: s.fData, msg: s.fTexto.trim() }) : a), painel: null }));
+    try {
+      await atualizarAviso(id, { titulo: t, mensagem: st.fTexto.trim(), data: st.fData });
+      await this.recarregar(); this.setState({ painel: null });
+    } catch (er) { erro(er.detalhe); }
   }
   async trocarSenha(e) {
     e.preventDefault();
@@ -756,7 +775,7 @@ class Component extends DCLogic {
         parcial: m && m.parcial ? ' (parcial)' : '',
         confirmando: !!alvo, confTxt: alvo ? 'Limpar ' + alvo.nome + ' de ' + d.nome + ' (' + fmt(notas[limpar]) + ')?' : '',
         cancelarLimpar: () => this.setState({ limpar: null }),
-        confirmarLimpar: () => this.setState(s => { const n = Object.assign({}, s.notas); delete n[limpar]; return { notas: n, limpar: null, notaMsg: { erro: false, t: 'Nota ' + (alvo ? alvo.nome : '') + ' de ' + d.nome + ' limpa. Agora aparece como —.' } }; }),
+        confirmarLimpar: async () => { try { await apagarNota(alvo.id, aid); await this.recarregar(); this.setState({ limpar: null, notaMsg: { erro: false, t: 'Nota ' + (alvo ? alvo.nome : '') + ' de ' + d.nome + ' limpa. Agora aparece como —.' } }); } catch (erro) { this.setState({ notaMsg: { erro: true, t: erro.detalhe } }); } },
         escolher: () => this.setState({ notaDisc: d.id, notaAval: (avals.find(v => v.did === d.id) || {}).id || '' })
       };
     });
@@ -1256,7 +1275,7 @@ class Component extends DCLogic {
     const avBase = (E === 'vazio' ? [] : st.avisos.concat(muitos ? Array.from({ length: 14 }, (_, i) => ({ id: 900 + i, titulo: `Lembrete semanal nº ${i + 1}`, data: `2026-09-${String(19 - i).padStart(2, '0')}`, msg: 'Revisem o conteúdo da semana e tragam dúvidas para a próxima aula.' })) : []));
     const avF = avBase.filter(a => a.titulo.toLowerCase().includes(st.avisoQ.trim().toLowerCase())).sort((x, y) => y.data.localeCompare(x.data));
     const avPags = Math.max(1, Math.ceil(avF.length / 10)), avPag = Math.min(st.avisoPagina, avPags);
-    const avP = avF.slice((avPag - 1) * 10, avPag * 10).map(a => Object.assign({}, a, { dataBR: br(a.data), escopo: a.disciplina_id ? discNome(a.disciplina_id) : 'Geral', autor: a.autor_nome || 'Secretaria', podeMexer: ehEscola || (!!meuProf && a.autor_id === meuProf.id), excluir: () => this.setState(s => ({ avisos: s.avisos.filter(x => x.id !== a.id) })), editar: () => this.abrirPainel({ tipo: 'aviso', id: a.id }, { fNome: a.titulo, fData: a.data, fTexto: a.msg }) }));
+    const avP = avF.slice((avPag - 1) * 10, avPag * 10).map(a => Object.assign({}, a, { dataBR: br(a.data), escopo: a.disciplina_id ? discNome(a.disciplina_id) : 'Geral', autor: a.autor_nome || 'Secretaria', podeMexer: ehEscola || (!!meuProf && a.autor_id === meuProf.id), excluir: async () => { try { await apagarAviso(a.id); await this.recarregar(); this.setState({ avErro: '' }); } catch (erro) { this.setState({ avErro: erro.detalhe }); } }, editar: () => this.abrirPainel({ tipo: 'aviso', id: a.id }, { fNome: a.titulo, fData: a.data, fTexto: a.msg }) }));
     const avisosEstado = E && E !== 'vazio' ? E : avP.length ? null : 'vazio';
 
         const profNome = d => { const p = d.professor_id != null && st.profs.find(x => x.id === d.professor_id); return p ? p.nome : 'Sem professor'; };
@@ -1461,12 +1480,12 @@ class Component extends DCLogic {
                 mudar: e => { const x = e.target.value; this.setState(s => ({ gnDraft: Object.assign({}, s.gnDraft, { [key]: x }), gnMsg: null })); },
                 salvar: () => this.salvarNotaGrade(key, a.nome, v.nome),
                 tecla: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') this.setState(s => { const g = Object.assign({}, s.gnDraft); delete g[key]; return { gnDraft: g }; }); },
-                limpar: () => this.setState(s => ({ notas: Object.assign({}, s.notas, { [key]: null }), gnMsg: { erro: false, t: 'Nota de ' + a.nome + ' em ' + v.nome + ' limpa. Voltou para —.' } })) }; }) }; });
+                limpar: async () => { try { await apagarNota(v.id, a.id); await this.recarregar(); this.setState({ gnMsg: { erro: false, t: 'Nota de ' + a.nome + ' em ' + v.nome + ' limpa. Voltou para —.' } }); } catch (erro) { this.setState({ gnMsg: { erro: true, t: erro.detalhe } }); } } }; }) }; });
         const somaS = avs.reduce((x, a) => x + a.peso, 0);
         Object.assign(r, { gnTem: als.length > 0 && avs.length > 0, gnSemAlunos: !als.length, gnSemAvals: als.length > 0 && !avs.length, gnMsg: st.gnMsg ? st.gnMsg.t : '', gnMsgCor: st.gnMsg && st.gnMsg.erro ? AVISO : TINTA,
           somaSelTxt: somaS + ' / 100', somaSelBar: 'scaleX(' + Math.min(1, somaS / 100) + ')', notasEditaveis: !bloqueado,
-          avsSel: avs.map(a => { const tem = Object.keys(st.notas).some(k2 => k2.endsWith('-' + a.id) && st.notas[k2] != null), off = tem || bloqueado; return { nome: a.nome, peso: a.peso, status: tem ? 'com notas' : 'sem notas', bloqueado: off, opacidade: off ? 0.4 : 1, dica: tem ? 'Só é possível excluir avaliações sem notas' : 'Excluir avaliação', excluir: () => { if (!off) this.setState(s => ({ avals: s.avals.filter(x => x.id !== a.id), avalMsg: { erro: false, t: a.nome + ' excluída.' } })); } }; }),
-          criarAvalSel: e => { e.preventDefault(); if (bloqueado) return; const p = parseInt(st.avalPeso, 10); if (!st.avalNome.trim()) return this.setState({ avalMsg: { erro: true, t: 'Dê um nome à avaliação.' } }); if (isNaN(p) || p <= 0) return this.setState({ avalMsg: { erro: true, t: 'O peso precisa ser maior que zero.' } }); if (somaS + p > 100) return this.setState({ avalMsg: { erro: true, t: 'A soma passaria de 100 (hoje: ' + somaS + '). Ajuste o peso.' } }); this.setState(s => ({ avals: s.avals.concat({ id: Date.now(), did: selD.id, nome: st.avalNome.trim(), peso: p }), avalNome: '', avalPeso: '', avalMsg: { erro: false, t: 'Avaliação criada.' } })); } });
+          avsSel: avs.map(a => { const tem = Object.keys(st.notas).some(k2 => k2.endsWith('-' + a.id) && st.notas[k2] != null), off = tem || bloqueado; return { nome: a.nome, peso: a.peso, status: tem ? 'com notas' : 'sem notas', bloqueado: off, opacidade: off ? 0.4 : 1, dica: tem ? 'Só é possível excluir avaliações sem notas' : 'Excluir avaliação', excluir: async () => { if (off) return; try { await apagarAvaliacao(a.id); await this.recarregar(); this.setState({ avalMsg: { erro: false, t: a.nome + ' excluída.' } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } } }; }),
+          criarAvalSel: async e => { e.preventDefault(); if (bloqueado) return; const p = parseInt(st.avalPeso, 10); if (!st.avalNome.trim()) return this.setState({ avalMsg: { erro: true, t: 'Dê um nome à avaliação.' } }); if (isNaN(p) || p <= 0) return this.setState({ avalMsg: { erro: true, t: 'O peso precisa ser maior que zero.' } }); if (somaS + p > 100) return this.setState({ avalMsg: { erro: true, t: 'A soma passaria de 100 (hoje: ' + somaS + '). Ajuste o peso.' } }); try { await criarAvaliacao(selD.id, { nome: st.avalNome.trim(), peso: p }); await this.recarregar(); this.setState({ avalNome: '', avalPeso: '', avalMsg: { erro: false, t: 'Avaliação criada.' } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } } });
         const avT = st.avisos.filter(a => a.disciplina_id === selD.id).sort((x, y) => y.data.localeCompare(x.data));
         Object.assign(r, { saAvisos: avT.map(a => ({ titulo: a.titulo, msg: a.msg, dataBR: br(a.data), autor: a.autor_nome || 'Secretaria' })), saTem: avT.length > 0, saVazio: !avT.length, escreverAvisoTurma: () => { this.setState({ avDestino: String(selD.id) }); this.ir('avisos'); } });
         return r;
@@ -1507,12 +1526,12 @@ class Component extends DCLogic {
       setNotaDisc: e => { const did = +e.target.value; this.setState({ notaDisc: did, notaAval: (st.avals.find(a => a.did === did) || {}).id || '', notaMsg: null, avalMsg: null }); },
       notaAvalOpcoes: avalsD.map(a => ({ v: String(a.id), l: `${a.nome} · peso ${a.peso}` })), notaAval: String(st.notaAval), setNotaAval: e => this.setState({ notaAval: +e.target.value }),
       notaValor: st.notaValor, setNotaValor: set('notaValor'),
-      lancarNota: e => { e.preventDefault(); if (bloqueado) return; const n = parseFloat(String(st.notaValor).replace(',', '.')); const av = st.avals.find(a => a.id === +st.notaAval); if (!av) return this.setState({ notaMsg: { erro: true, t: 'Escolha uma avaliação.' } }); if (isNaN(n) || n < 0 || n > 10) return this.setState({ notaMsg: { erro: true, t: 'A nota precisa estar entre 0 e 10.' } }); const k = selA.id + '-' + av.id; const tinha = st.notas[k] != null; this.setState(s => ({ notas: Object.assign({}, s.notas, { [k]: Math.round(n * 10) / 10 }), notaValor: '', notaMsg: { erro: false, t: `${tinha ? 'Nota atualizada' : 'Nota lançada'}: ${av.nome} = ${fmt(n)}.` } })); },
+      lancarNota: async e => { e.preventDefault(); if (bloqueado) return; const n = parseFloat(String(st.notaValor).replace(',', '.')); const av = st.avals.find(a => a.id === +st.notaAval); if (!av) return this.setState({ notaMsg: { erro: true, t: 'Escolha uma avaliação.' } }); if (isNaN(n) || n < 0 || n > 10) return this.setState({ notaMsg: { erro: true, t: 'A nota precisa estar entre 0 e 10.' } }); if (!this.notaOk(st.notaValor)) return this.setState({ notaMsg: { erro: true, t: 'Use um valor de 0 a 10, com até uma casa decimal.' } }); const k = selA.id + '-' + av.id; const tinha = st.notas[k] != null; try { await salvarNota(av.id, selA.id, Math.round(n * 10) / 10); await this.recarregar(); this.setState({ notaValor: '', notaMsg: { erro: false, t: `${tinha ? 'Nota atualizada' : 'Nota lançada'}: ${av.nome} = ${fmt(n)}.` } }); } catch (erro) { this.setState({ notaMsg: { erro: true, t: erro.detalhe } }); } },
       notaMsg: st.notaMsg ? st.notaMsg.t : '', notaMsgCor: st.notaMsg && st.notaMsg.erro ? AVISO : TINTA,
       avalDiscNome: avalDisc ? avalDisc.nome : '', somaTxt: `${soma} / 100`, somaBar: `scaleX(${Math.min(1, soma / 100)})`,
-      avalLista: avalsD.map(a => { const tem = Object.keys(st.notas).some(k => k.endsWith('-' + a.id) && st.notas[k] != null); return { nome: a.nome, peso: a.peso, status: tem ? 'com notas' : 'sem notas', bloqueado: tem, opacidade: tem ? 0.4 : 1, dica: tem ? 'Só é possível excluir avaliações sem notas' : 'Excluir avaliação', excluir: () => this.setState(s => ({ avals: s.avals.filter(x => x.id !== a.id), avalMsg: { erro: false, t: `${a.nome} excluída.` } })) }; }),
+      avalLista: avalsD.map(a => { const tem = Object.keys(st.notas).some(k => k.endsWith('-' + a.id) && st.notas[k] != null); return { nome: a.nome, peso: a.peso, status: tem ? 'com notas' : 'sem notas', bloqueado: tem, opacidade: tem ? 0.4 : 1, dica: tem ? 'Só é possível excluir avaliações sem notas' : 'Excluir avaliação', excluir: async () => { try { await apagarAvaliacao(a.id); await this.recarregar(); this.setState({ avalMsg: { erro: false, t: `${a.nome} excluída.` } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } } }; }),
       avalNome: st.avalNome, avalPeso: st.avalPeso, setAvalNome: set('avalNome'), setAvalPeso: set('avalPeso'),
-      criarAval: e => { e.preventDefault(); if (bloqueado || !avalDisc) return; const p = parseInt(st.avalPeso, 10); if (!st.avalNome.trim()) return this.setState({ avalMsg: { erro: true, t: 'Dê um nome à avaliação.' } }); if (isNaN(p) || p <= 0) return this.setState({ avalMsg: { erro: true, t: 'O peso precisa ser maior que zero.' } }); if (soma + p > 100) return this.setState({ avalMsg: { erro: true, t: `A soma passaria de 100 (hoje: ${soma}). Ajuste o peso.` } }); this.setState(s => ({ avals: s.avals.concat({ id: Date.now(), did: avalDisc.id, nome: st.avalNome.trim(), peso: p }), avalNome: '', avalPeso: '', avalMsg: { erro: false, t: 'Avaliação criada.' } })); },
+      criarAval: async e => { e.preventDefault(); if (bloqueado || !avalDisc) return; const p = parseInt(st.avalPeso, 10); if (!st.avalNome.trim()) return this.setState({ avalMsg: { erro: true, t: 'Dê um nome à avaliação.' } }); if (isNaN(p) || p <= 0) return this.setState({ avalMsg: { erro: true, t: 'O peso precisa ser maior que zero.' } }); if (soma + p > 100) return this.setState({ avalMsg: { erro: true, t: `A soma passaria de 100 (hoje: ${soma}). Ajuste o peso.` } }); try { await criarAvaliacao(avalDisc.id, { nome: st.avalNome.trim(), peso: p }); await this.recarregar(); this.setState({ avalNome: '', avalPeso: '', avalMsg: { erro: false, t: 'Avaliação criada.' } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } },
       avalMsg: st.avalMsg ? st.avalMsg.t : '', avalMsgCor: st.avalMsg && st.avalMsg.erro ? AVISO : TINTA,
 
       // agenda
@@ -1545,7 +1564,7 @@ class Component extends DCLogic {
       avDestinoAjuda: meuProf ? 'Só as suas disciplinas. O aviso aparece para os alunos da turma.' : 'Geral aparece para todos; de disciplina, só para a turma.',
       avTitulo: st.avTitulo, avData: st.avData, avMsg: st.avMsg, avErro: st.avErro, avDataBR: br(st.avData),
       setAvTitulo: set('avTitulo'), setAvData: set('avData'), setAvMsg: set('avMsg'),
-      publicarAviso: e => { e.preventDefault(); const dst = meuProf ? (+st.avDestino || (st.discs[0] || {}).id || null) : (+st.avDestino || null); if (meuProf && !dst) return this.setState({ avErro: 'Você ainda não tem disciplinas para publicar avisos.' }); if (dst && bloqueado) return this.setState({ avErro: 'Semestre encerrado: avisos de disciplina ficam somente leitura.' }); if (!st.avTitulo.trim()) return this.setState({ avErro: 'Escreva um título.' }); if (br(st.avData) === '—') return this.setState({ avErro: 'Use a data no formato AAAA-MM-DD.' }); if (!st.avMsg.trim()) return this.setState({ avErro: 'Escreva a mensagem.' }); this.setState(s => ({ avisos: [{ id: Date.now(), titulo: s.avTitulo.trim(), data: s.avData, msg: s.avMsg.trim(), disciplina_id: dst, autor_id: meuProf ? meuProf.id : 'escola', autor_nome: meuProf ? meuProf.nome : 'Secretaria' }].concat(s.avisos), avTitulo: '', avMsg: '', avErro: '', avisoPagina: 1 })); },
+      publicarAviso: async e => { e.preventDefault(); const dst = meuProf ? (+st.avDestino || (st.discs[0] || {}).id || null) : (+st.avDestino || null); if (meuProf && !dst) return this.setState({ avErro: 'Você ainda não tem disciplinas para publicar avisos.' }); if (dst && bloqueado) return this.setState({ avErro: 'Semestre encerrado: avisos de disciplina ficam somente leitura.' }); if (!st.avTitulo.trim()) return this.setState({ avErro: 'Escreva um título.' }); if (br(st.avData) === '—') return this.setState({ avErro: 'Use a data no formato AAAA-MM-DD.' }); if (!st.avMsg.trim()) return this.setState({ avErro: 'Escreva a mensagem.' }); try { await criarAviso({ titulo: st.avTitulo.trim(), mensagem: st.avMsg.trim(), data: st.avData, ...(dst ? { disciplina_id: dst } : {}) }); await this.recarregar(); this.setState({ avTitulo: '', avMsg: '', avErro: '', avisoPagina: 1 }); } catch (erro) { this.setState({ avErro: erro.detalhe }); } },
       avisoQ: st.avisoQ, setAvisoQ: e => this.setState({ avisoQ: e.target.value, avisoPagina: 1 }),
       avisosPagina: avP, avisosOk: !avisosEstado, avisosEstado, avisosPaginado: avPags > 1,
       avisosMostrando: avF.length ? `${(avPag - 1) * 10 + 1}–${(avPag - 1) * 10 + avP.length} de ${avF.length}` : '',

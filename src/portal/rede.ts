@@ -59,3 +59,23 @@ export const salvarGrade = (id: number, itens: GradeItem[]) => pedir<{ itens: Gr
 export const apagarDisciplina = (id: number) => pedir<void>(`/disciplinas/${id}`, undefined, 'DELETE');
 export const matricular = (aluno: number, disciplina: number) => pedir<{ mensagem: string }>(`/alunos/${aluno}/matricular/${disciplina}`, undefined, 'POST');
 export const desmatricular = (aluno: number, disciplina: number) => pedir<void>(`/alunos/${aluno}/matricular/${disciplina}`, undefined, 'DELETE');
+
+type AvaliacaoEntrada = { nome: string; peso: number };
+type AvaliacaoSaida = AvaliacaoEntrada & { id: number; disciplina_id: number };
+type Presenca = { aluno_id: number; presente: boolean };
+type AulaEntrada = { data: string; hora_inicio?: string | null; hora_fim?: string | null };
+type AulaAtualizacao = Partial<AulaEntrada> & { status?: 'agendada' | 'cancelada' };
+type AulaSaida = Required<AulaEntrada> & { id: number; disciplina_id: number; status: 'agendada' | 'cancelada'; origem: 'grade' | 'extra'; remarcada_de: string | null };
+type AvisoEntrada = { titulo: string; mensagem: string; data: string; disciplina_id?: number };
+type AvisoSaida = Omit<AvisoEntrada, 'disciplina_id'> & { id: number; disciplina_id: number | null; disciplina_nome: string | null; autor_nome: string | null };
+
+export const criarAvaliacao = (disciplina: number, corpo: AvaliacaoEntrada) => pedir<AvaliacaoSaida>(`/disciplinas/${disciplina}/avaliacoes`, corpo);
+export const apagarAvaliacao = (id: number) => pedir<void>(`/avaliacoes/${id}`, undefined, 'DELETE');
+export const salvarNota = (avaliacao: number, aluno: number, valor: number) => pedir<void>(`/avaliacoes/${avaliacao}/notas/${aluno}`, { valor }, 'PUT');
+export const apagarNota = (avaliacao: number, aluno: number) => pedir<void>(`/avaliacoes/${avaliacao}/notas/${aluno}`, undefined, 'DELETE');
+export const salvarChamada = (disciplina: number, corpo: { data: string; presencas: Presenca[] }) => pedir<void>(`/disciplinas/${disciplina}/chamada`, corpo, 'PUT');
+export const atualizarAula = (id: number, corpo: AulaAtualizacao) => pedir<AulaSaida>(`/aulas/${id}`, corpo, 'PATCH');
+export const criarAula = (disciplina: number, corpo: AulaEntrada) => pedir<AulaSaida>(`/disciplinas/${disciplina}/aulas`, corpo);
+export const criarAviso = (corpo: AvisoEntrada) => pedir<AvisoSaida>('/avisos', corpo);
+export const atualizarAviso = (id: number, corpo: Partial<Omit<AvisoEntrada, 'disciplina_id'>>) => pedir<AvisoSaida>(`/avisos/${id}`, corpo, 'PATCH');
+export const apagarAviso = (id: number) => pedir<void>(`/avisos/${id}`, undefined, 'DELETE');
