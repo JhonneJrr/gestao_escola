@@ -237,7 +237,7 @@ class Component extends DCLogic {
     else if (/^Escola · /.test(i)) { this.entrarComo('escola'); await this.esperarQuadro(); if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); this.abrirFicha(this.state.profs[0]); } else await this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com \"Não coube\"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i]); }
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
-    if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') await this.iaEstadoAplicar(this.props.iaEstado);
+    if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') { await this.esperarQuadro(); await this.iaEstadoAplicar(this.props.iaEstado); }
   }
   async carregarEstado(usuario) {
     this.setState({ carregando: true, carga: 'carregando' });
