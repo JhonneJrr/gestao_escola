@@ -1,0 +1,595 @@
+22c22,23
+< <div ref="{{ raiz }}" style="position:relative;min-height:{{ raizMinH }};background:{{ raizBg }};color:var(--texto);font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-size:15px;line-height:1.45;overflow-x:hidden">
+---
+> <div ref="{{ raiz }}" style="position:relative;min-height:{{ raizMinH }};background:{{ raizBg }};color:var(--texto);font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-size:15px;line-height:1.45;overflow-x:{{ raizOvx }}">
+> <sc-if value="{{ conteudoVis }}" hint-placeholder-val="{{ true }}">
+26c27
+<     <h1 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(32px,6cqi,48px);line-height:1.05">Grade e agenda</h1>
+---
+>     <h1 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(32px,6cqi,48px);line-height:1.05">Acadêmico</h1>
+33a35,52
+> <sc-if value="{{ skQuadro }}" hint-placeholder-val="{{ false }}">
+>   <div role="status" aria-live="polite" aria-label="Carregando o quadro" style="display:flex;flex-direction:column;gap:16px">
+>     <div ref="{{ skRef }}" style="height:150px;background:var(--sunken);border:1px solid var(--borda-fraca)"></div>
+>     <div ref="{{ skRef }}" style="height:40px;width:min(100%,520px);background:var(--sunken)"></div>
+>     <div style="overflow:hidden;border:1px solid var(--borda-fraca);background:var(--superficie)"><div style="display:grid;grid-template-columns:56px repeat(5,minmax(0,1fr))"><div style="height:44px;border-bottom:1px solid var(--borda-fraca)"></div><sc-for list="{{ skCols }}" as="c" hint-placeholder-count="5"><div style="height:44px;border-left:1px solid var(--borda-fraca);border-bottom:1px solid var(--borda-fraca)"></div></sc-for><div style="height:620px"></div><sc-for list="{{ skCols }}" as="c" hint-placeholder-count="5"><div style="position:relative;height:620px;border-left:1px solid var(--borda-fraca)"><sc-for list="{{ c.blocos }}" as="b" hint-placeholder-count="3"><span ref="{{ skRef }}" style="position:absolute;left:4px;right:4px;top:{{ b.top }};height:{{ b.h }};border-radius:2px;background:var(--sunken)"></span></sc-for></div></sc-for></div></div>
+>     <span style="font-size:13px;color:var(--texto-suave)">Carregando a grade e a agenda…</span>
+>   </div>
+> </sc-if>
+> <sc-if value="{{ skAno }}" hint-placeholder-val="{{ false }}">
+>   <div role="status" aria-live="polite" aria-label="Carregando o ano letivo" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px"><sc-for list="{{ skMeses }}" as="m" hint-placeholder-count="12"><div ref="{{ skRef }}" style="height:250px;background:var(--sunken);border:1px solid var(--borda-fraca)"></div></sc-for></div>
+> </sc-if>
+> <sc-if value="{{ skLista }}" hint-placeholder-val="{{ false }}"><div style="background:var(--superficie);border:1px solid var(--borda-fraca);padding:0 16px"><dc-import name="EstadoLista" tipo="carregando" hint-size="100%,220px"></dc-import></div></sc-if>
+> <sc-if value="{{ cargaErro }}" hint-placeholder-val="{{ false }}">
+>   <div style="display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:0 16px 20px;background:var(--superficie);border:1px solid var(--borda-fraca)">
+>     <dc-import name="EstadoLista" tipo="erro" mensagem="Não consegui carregar a grade e a agenda." hint-size="100%,140px"></dc-import>
+>     <button type="button" onClick="{{ tentarCarregar }}" style="min-height:44px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Tentar de novo</button>
+>   </div>
+> </sc-if>
+89c108
+<         <div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ confSemana }}" disabled="{{ pendSemOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ pendSemO }}">Só nesta semana</button><button type="button" onClick="{{ confGrade }}" disabled="{{ pendGrOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ pendGrO }}">Na grade do semestre</button><button type="button" onClick="{{ cancelarPend }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Cancelar</button></div>
+---
+>         <div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ confSemana }}" disabled="{{ pendSemOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ pendSemO }}">{{ pendSemTxt }}</button><button type="button" onClick="{{ confGrade }}" disabled="{{ pendGrOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ pendGrO }}">{{ pendGrTxt }}</button><button type="button" onClick="{{ cancelarPend }}" disabled="{{ pendOcupado }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Cancelar</button></div>
+90a110
+>         <sc-if value="{{ pendTemGravErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size:14px;color:var(--aviso);text-wrap:pretty">{{ pendGravErro }}</span></sc-if>
+98c118,119
+<     <div role="status" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span style="text-wrap:pretty">{{ msgTxt }}</span><span style="display:flex;gap:6px"><sc-if value="{{ temDesfazer }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ desfazer }}" style="min-height:32px;padding:0 10px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:13px;font-weight:500;cursor:pointer">Desfazer</button></sc-if><button type="button" onClick="{{ fecharMsg }}" style="min-height:32px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer">Ok</button></span></div>
+---
+>     <div role="status" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span style="text-wrap:pretty">{{ msgTxt }}</span><sc-if value="{{ reverterNao }}" hint-placeholder-val="{{ true }}"><span style="display:flex;gap:6px"><sc-if value="{{ temDesfazer }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ pedirReverter }}" style="min-height:32px;padding:0 10px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:13px;font-weight:500;cursor:pointer">Reverter</button></sc-if><button type="button" onClick="{{ fecharMsg }}" style="min-height:32px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer">Ok</button></span></sc-if>
+>       <sc-if value="{{ reverterVis }}" hint-placeholder-val="{{ false }}"><div role="alertdialog" aria-label="Confirmar reversão" style="flex:1 1 100%;display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--borda)"><span style="font-weight:500;text-wrap:pretty">Reverter a mudança? A grade volta ao que era antes e os alunos veem o horário anterior.</span><div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ confReverter }}" disabled="{{ revOff }}" style="min-height:36px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">{{ revTxt }}</button><button type="button" onClick="{{ cancelarReverter }}" disabled="{{ revOff }}" style="min-height:36px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Cancelar</button></div><sc-if value="{{ revTemErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size:14px;color:var(--aviso);text-wrap:pretty">{{ revErro }}</span></sc-if></div></sc-if></div>
+105a127
+>       <sc-if value="{{ quadroVazio }}" hint-placeholder-val="{{ false }}"><div style="padding:0 16px;background:var(--superficie);border:1px solid var(--borda-fraca)"><dc-import name="EstadoLista" tipo="vazio" mensagem="{{ quadroVazioMsg }}" hint-size="100%,160px"></dc-import></div></sc-if>
+126c148
+<                   <div data-bloco="{{ b.key }}" role="button" tabIndex="0" aria-label="{{ b.titulo }}" title="{{ b.titulo }}" onPointerDown="{{ b.down }}" onKeyDown="{{ b.tecla }}" style="position:absolute;top:{{ b.top }};height:{{ b.h }};left:{{ b.left }};width:{{ b.w }};z-index:2;display:flex;flex-direction:column;gap:1px;padding:4px 6px;overflow:hidden;border:{{ b.borda }};border-radius:2px;background:{{ b.bg }};opacity:{{ b.op }};cursor:{{ b.cursor }};touch-action:{{ b.touch }};user-select:none;font-size:12px;line-height:1.25;transition:opacity 160ms linear">
+---
+>                   <div data-bloco="{{ b.key }}" role="button" tabIndex="0" aria-label="{{ b.titulo }}" title="{{ b.titulo }}" onPointerDown="{{ b.down }}" onKeyDown="{{ b.tecla }}" style="position:absolute;top:{{ b.top }};height:{{ b.h }};left:{{ b.left }};width:{{ b.w }};z-index:2;display:flex;flex-direction:column;gap:1px;padding:4px {{ b.padDir }} 4px 6px;overflow:hidden;border:{{ b.borda }};border-radius:2px;background:{{ b.bg }};opacity:{{ b.op }};cursor:{{ b.cursor }};touch-action:{{ b.touch }};user-select:none;font-size:12px;line-height:1.25;transition:opacity 160ms linear">
+130a153
+>                     <sc-if value="{{ b.chIcone }}" hint-placeholder-val="{{ false }}"><button type="button" aria-label="{{ b.chLabel }}" title="{{ b.chLabel }}" onPointerDown="{{ b.chParar }}" onClick="{{ b.chAbrir }}" style="position:absolute;top:3px;right:3px;width:24px;height:24px;display:grid;place-items:center;padding:0;border:1px solid var(--texto);border-radius:2px;background:{{ b.chBg }};color:{{ b.chCor }};cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="17" rx="1"></rect><path d="M9 4h6v3H9zM9 13l2 2 4-4"></path></svg></button></sc-if>
+142c165
+<           <div data-quadro-professores="" style="min-width:1080px">
+---
+>           <div data-quadro-professores="" style="min-width:1560px">
+148c171
+<               <div style="display:grid;grid-template-columns:190px repeat(5,minmax(0,1fr));min-height:76px;border-top:1px solid var(--borda-fraca)">
+---
+>               <div style="display:grid;grid-template-columns:190px repeat(5,minmax(0,1fr));min-height:84px;border-top:1px solid var(--borda-fraca)">
+154c177
+<                       <div role="button" tabIndex="0" aria-label="{{ b.titulo }}" title="{{ b.titulo }}" onPointerDown="{{ b.down }}" onKeyDown="{{ b.tecla }}" style="position:absolute;top:10px;bottom:10px;left:{{ b.left }};width:{{ b.w }};z-index:2;display:flex;flex-direction:column;justify-content:center;padding:0 4px;overflow:hidden;border:{{ b.borda }};border-radius:2px;background:{{ b.bg }};opacity:{{ b.op }};cursor:pointer;font-size:11px;font-weight:600;line-height:1.2;white-space:nowrap">{{ b.curto }}</div>
+---
+>                       <div role="button" tabIndex="0" aria-label="{{ b.titulo }}" title="{{ b.titulo }}" onPointerDown="{{ b.down }}" onKeyDown="{{ b.tecla }}" style="position:absolute;top:10px;bottom:10px;left:{{ b.left }};width:{{ b.w }};z-index:2;display:flex;flex-direction:column;justify-content:center;padding:0 4px;overflow:hidden;border:{{ b.borda }};border-radius:2px;background:{{ b.bg }};opacity:{{ b.op }};cursor:pointer;font-size:12px;line-height:1.25;white-space:nowrap"><span style="font-weight:700;overflow:hidden;text-overflow:ellipsis">{{ b.curto }}</span><span style="font-size:11px;color:var(--texto-suave);overflow:hidden;text-overflow:ellipsis">{{ b.curto2 }}</span></div>
+165c188
+<       <span style="font-size:13px;color:var(--texto-suave)">{{ dragDica }}</span>
+---
+>       <sc-if value="{{ dragDicaVis }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:var(--texto-suave)">{{ dragDica }}</span></sc-if>
+192c215,216
+<                   <sc-if value="{{ iaAcoes }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid var(--borda-fraca)"><button type="button" onClick="{{ iaAplicar }}" style="flex:1 1 140px;min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">Aplicar proposta</button><button type="button" onClick="{{ iaDescartar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Descartar</button></div></sc-if>
+---
+>                   <sc-if value="{{ iaAcoes }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid var(--borda-fraca)"><button type="button" onClick="{{ iaAplicar }}" disabled="{{ iaAplOff }}" style="flex:1 1 140px;min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ iaAplO }}">{{ iaAplicarTxt }}</button><button type="button" onClick="{{ iaDescartar }}" disabled="{{ iaAplOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Descartar</button></div></sc-if>
+>                   <sc-if value="{{ iaTemGravErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="padding:10px 12px;border-top:1px solid var(--borda-fraca);font-size:14px;color:var(--aviso);text-wrap:pretty">{{ iaGravErro }}</span></sc-if>
+198c222,223
+<           <sc-if value="{{ iaEnv }}" hint-placeholder-val="{{ false }}"><article ref="{{ iaMsgRef }}" aria-busy="true" style="display:flex;flex-direction:column;gap:6px;padding:14px 0"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Assistente</span><span style="font-size:14px;color:var(--texto-suave)">Conferindo professores, turmas e salas…</span></article></sc-if>
+---
+>           <sc-if value="{{ iaEnv }}" hint-placeholder-val="{{ false }}"><article ref="{{ iaMsgRef }}" aria-busy="true" style="display:flex;flex-direction:column;gap:6px;padding:14px 0"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Assistente</span><span style="font-size:14px;color:var(--texto-suave)">Conferindo a grade e os horários ocupados…</span></article></sc-if>
+>           <sc-if value="{{ iaTemErro }}" hint-placeholder-val="{{ false }}"><div ref="{{ iaMsgRef }}" role="alert" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin:12px 0;padding:12px 14px;border:1px solid var(--aviso);border-radius:2px;background:var(--aviso-suave);color:var(--aviso);font-size:14px;text-wrap:pretty"><span>{{ iaErro }}</span><button type="button" onClick="{{ iaTentar }}" style="min-height:36px;padding:0 12px;border:1px solid var(--aviso);border-radius:2px;background:transparent;color:var(--aviso);font-size:14px;font-weight:500;cursor:pointer">Tentar de novo</button></div></sc-if>
+287c312
+<         <sc-for list="{{ diaAulas }}" as="a" hint-placeholder-count="3"><button type="button" onClick="{{ a.abrir }}" style="display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)"><span style="flex:none;width:96px;font-weight:600;font-variant-numeric:tabular-nums">{{ a.hora }}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-weight:500">{{ a.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ a.sub }}</span></span><span style="flex:none;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-suave)">{{ a.st }}</span></button></sc-for>
+---
+>         <sc-for list="{{ diaAulas }}" as="a" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;padding-right:12px;border-top:1px solid var(--borda-fraca)"><button type="button" onClick="{{ a.abrir }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 4px 8px 16px;border:0;background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)"><span style="flex:none;width:96px;font-weight:600;font-variant-numeric:tabular-nums">{{ a.hora }}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-weight:500">{{ a.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ a.sub }}</span></span><span style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-suave)"><span>{{ a.st }}</span><sc-if value="{{ a.chFeita }}" hint-placeholder-val="{{ false }}"><span style="color:var(--texto)">Chamada feita</span></sc-if></span></button><sc-if value="{{ a.chAtalho }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ a.chAbrir }}" style="flex:none;min-height:36px;padding:0 10px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">{{ a.chTxt }}</button></sc-if></div></sc-for>
+313,314c338,339
+<     <span style="font-size:14px;color:var(--texto-suave)">{{ discResumo }}</span>
+<     <button type="button" onClick="{{ novaDisc }}" style="display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Nova disciplina</button>
+---
+>     <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;color:var(--texto-suave)">{{ discResumo }}</span><sc-if value="{{ temDiscAjuda }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--texto-suave)">{{ discAjuda }}</span></sc-if></span>
+>     <sc-if value="{{ discAdmin }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ novaSala }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Nova sala</button><button type="button" onClick="{{ novaDisc }}" style="display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Nova disciplina</button></div></sc-if>
+315a341
+>   <sc-if value="{{ msgDiscVis }}" hint-placeholder-val="{{ false }}"><div role="status" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span>{{ msgDisc }}</span><button type="button" onClick="{{ fecharMsgDisc }}" style="min-height:32px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer">Ok</button></div></sc-if>
+321,322c347,348
+<           <button type="button" onClick="{{ d.abrir }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));align-items:center;gap:8px 20px;padding:12px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)">
+<             <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><span style="font-weight:600">{{ d.nome }}</span><sc-if value="{{ d.temCh }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid var(--aviso);border-radius:2px;color:var(--aviso);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Choque</span></sc-if><sc-if value="{{ d.semH }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px dashed var(--texto);border-radius:2px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Sem horário</span></sc-if></span><span style="font-size:13px;color:var(--texto-suave)">{{ d.prof }} · {{ d.sala }}</span></span>
+---
+>           <div style="display:flex;align-items:center;gap:8px;padding-right:12px;border-top:1px solid var(--borda-fraca)"><button type="button" onClick="{{ d.abrir }}" style="flex:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));align-items:center;gap:8px 20px;padding:12px 16px;border:0;background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)">
+>             <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><span style="font-weight:600">{{ d.nome }}</span><sc-if value="{{ d.temCh }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid var(--aviso);border-radius:2px;color:var(--aviso);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Choque</span></sc-if><sc-if value="{{ d.semH }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px dashed var(--texto);border-radius:2px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Sem horário</span></sc-if></span><span style="font-size:13px;color:var(--texto-suave)">{{ d.prof }} · <span style="color:{{ d.salaCor }}">{{ d.sala }}</span></span></span>
+325c351
+<           </button>
+---
+>           </button><sc-if value="{{ d.editarVis }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ d.editar }}" style="flex:none;min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Editar grade</button></sc-if></div>
+343,345c369,372
+<           <sc-if value="{{ p.normal }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ p.aprovar }}" disabled="{{ p.aprovarOff }}" style="min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ p.aprovarO }}">Aprovar</button><button type="button" onClick="{{ p.pedirSug }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer">Sugerir outro horário</button><button type="button" onClick="{{ p.pedirRec }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer" style-hover="border-color:var(--aviso);color:var(--aviso)">Recusar</button></div></sc-if>
+<           <sc-if value="{{ p.rec }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Motivo da recusa</span><textarea rows="2" value="{{ p.recMotivo }}" onChange="{{ p.setRec }}" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"></textarea></label><span role="alert" style="min-height:18px;font-size:13px;color:var(--aviso)">{{ p.recErro }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.confRec }}" style="min-height:40px;padding:0 14px;border:1px solid var(--aviso);border-radius:2px;background:var(--superficie);color:var(--aviso);font-size:14px;font-weight:500;cursor:pointer">Recusar pedido</button><button type="button" onClick="{{ p.cancelar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Voltar</button></div></div></sc-if>
+<           <sc-if value="{{ p.sug }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;flex-wrap:wrap;gap:8px"><input type="date" aria-label="Data sugerida" value="{{ p.sugF.data }}" onChange="{{ p.setSugData }}" style="flex:1 1 150px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><input type="time" aria-label="Início" value="{{ p.sugF.ini }}" onChange="{{ p.setSugIni }}" style="flex:1 1 110px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><input type="time" aria-label="Fim" value="{{ p.sugF.fim }}" onChange="{{ p.setSugFim }}" style="flex:1 1 110px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><select aria-label="Sala" value="{{ p.sugF.sala }}" onChange="{{ p.setSugSala }}" style="flex:1 1 160px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div><span style="font-size:13px;color:{{ p.sugCkCor }}">{{ p.sugCk }}</span><span role="alert" style="min-height:18px;font-size:13px;color:var(--aviso)">{{ p.sugErro }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.confSug }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">Enviar sugestão</button><button type="button" onClick="{{ p.cancelar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Voltar</button></div></div></sc-if>
+---
+>           <sc-if value="{{ p.temGravErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size:14px;color:var(--aviso);text-wrap:pretty">{{ p.gravErro }}</span></sc-if>
+>           <sc-if value="{{ p.normal }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ p.aprovar }}" disabled="{{ p.aprovarOff }}" style="min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ p.aprovarO }}">{{ p.apTxt }}</button><button type="button" onClick="{{ p.pedirSug }}" disabled="{{ p.ocupado }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer">Sugerir outro horário</button><button type="button" onClick="{{ p.pedirRec }}" disabled="{{ p.ocupado }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer" style-hover="border-color:var(--aviso);color:var(--aviso)">Recusar</button></div></sc-if>
+>           <sc-if value="{{ p.rec }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Motivo da recusa</span><textarea rows="2" value="{{ p.recMotivo }}" onChange="{{ p.setRec }}" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"></textarea></label><span role="alert" style="min-height:18px;font-size:13px;color:var(--aviso)">{{ p.recErro }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.confRec }}" disabled="{{ p.ocupado }}" style="min-height:40px;padding:0 14px;border:1px solid var(--aviso);border-radius:2px;background:var(--superficie);color:var(--aviso);font-size:14px;font-weight:500;cursor:pointer">{{ p.recTxt }}</button><button type="button" onClick="{{ p.cancelar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Voltar</button></div></div></sc-if>
+>           <sc-if value="{{ p.sug }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;flex-wrap:wrap;gap:8px"><input type="date" aria-label="Data sugerida" value="{{ p.sugF.data }}" onChange="{{ p.setSugData }}" style="flex:1 1 150px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><input type="time" aria-label="Início" value="{{ p.sugF.ini }}" onChange="{{ p.setSugIni }}" style="flex:1 1 110px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><input type="time" aria-label="Fim" value="{{ p.sugF.fim }}" onChange="{{ p.setSugFim }}" style="flex:1 1 110px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><select aria-label="Sala" value="{{ p.sugF.sala }}" onChange="{{ p.setSugSala }}" style="flex:1 1 160px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div><span style="font-size:13px;color:{{ p.sugCkCor }}">{{ p.sugCk }}</span><span role="alert" style="min-height:18px;font-size:13px;color:var(--aviso)">{{ p.sugErro }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.confSug }}" disabled="{{ p.ocupado }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">{{ p.sugTxt }}</button><button type="button" onClick="{{ p.cancelar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Voltar</button></div></div></sc-if>
+370c397
+<         <button type="submit" disabled="{{ pEnvOff }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ pEnvO }}">Enviar para análise</button>
+---
+>         <button type="submit" disabled="{{ pEnvOff }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ pEnvO }}">{{ pEnvTxt }}</button>
+379c406
+<             <sc-if value="{{ p.ehSug }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--texto-suave)">{{ p.original }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.aceitar }}" style="min-height:36px;padding:0 12px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">Aceitar sugestão</button><button type="button" onClick="{{ p.recusar }}" style="min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Recusar</button></div></sc-if>
+---
+>             <sc-if value="{{ p.ehSug }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--texto-suave)">{{ p.original }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.aceitar }}" disabled="{{ p.sgOff }}" style="min-height:36px;padding:0 12px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">{{ p.acTxt }}</button><button type="button" onClick="{{ p.recusar }}" disabled="{{ p.sgOff }}" style="min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">{{ p.rsTxt }}</button></div><sc-if value="{{ p.sgTemErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size:14px;color:var(--aviso);text-wrap:pretty">{{ p.sgErro }}</span></sc-if></sc-if>
+386a414
+> </sc-if>
+388,389c416,417
+<   <div onClick="{{ fecharPainel }}" style="position:{{ pPos }};left:0;right:0;top:{{ pTop }};height:{{ pH }};z-index:40;background:var(--texto);opacity:.18"></div>
+<   <aside role="dialog" aria-modal="true" aria-label="{{ painelTitulo }}" style="position:{{ pPos }};z-index:41;top:{{ pTop }};right:0;height:{{ pH }};width:min(460px,100%);display:flex;flex-direction:column;background:var(--superficie);border-left:1px solid var(--borda-fraca)">
+---
+>   <div onClick="{{ fecharPainel }}" style="position:{{ pPos }};left:{{ pLeft }};right:{{ pRight }};top:{{ pTop }};height:{{ pH }};z-index:40;background:var(--texto);opacity:.18"></div>
+>   <aside role="dialog" aria-modal="true" aria-label="{{ painelTitulo }}" style="position:{{ pPos }};z-index:41;top:{{ pTop }};right:{{ pRight }};height:{{ pH }};width:min(460px,100%);display:flex;flex-direction:column;background:var(--superficie);border-left:1px solid var(--borda-fraca)">
+397a426,432
+>         <sc-if value="{{ paChVis }}" hint-placeholder-val="{{ false }}">
+>           <div data-chamada-aula="" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--borda);border-radius:2px">
+>             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Chamada</span><sc-if value="{{ paChFeita }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Chamada feita</span></sc-if></div>
+>             <button type="button" onClick="{{ paCh }}" disabled="{{ paChOff }}" aria-describedby="dica-chamada" style="min-height:44px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:{{ paChPrim }};color:{{ paChCor }};font-size:15px;font-weight:500;cursor:pointer;opacity:{{ paChO }}">{{ paChTxt }}</button>
+>             <sc-if value="{{ paChTemDica }}" hint-placeholder-val="{{ false }}"><span id="dica-chamada" style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ paChDica }}</span></sc-if>
+>           </div>
+>         </sc-if>
+405a441,473
+>       <sc-if value="{{ pCham }}" hint-placeholder-val="{{ false }}">
+>         <button type="button" onClick="{{ ch.voltar }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px 0 6px;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg>Aula</button>
+>         <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ ch.rotulo }}</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:30px;line-height:1.1">{{ ch.disc }}</span><span style="font-size:14px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ ch.quando }}</span></div>
+>         <sc-if value="{{ ch.bloqueio }}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:12px 14px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px">{{ ch.bloqueioTxt }}</div></sc-if>
+>         <sc-if value="{{ ch.temAlunos }}" hint-placeholder-val="{{ true }}">
+>           <div style="display:flex;flex-direction:column">
+>             <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding-bottom:12px"><span role="status" aria-live="polite" style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:36px;font-weight:500;line-height:1">{{ ch.contador }}</span><span style="font-size:14px;color:var(--texto-suave)">presentes · {{ ch.faltaTxt }}</span></span><sc-if value="{{ ch.editavel }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ ch.todos }}" style="flex:none;white-space:nowrap;min-height:40px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Todos presentes</button></sc-if></div>
+>             <sc-for list="{{ ch.alunos }}" as="a" hint-placeholder-count="6">
+>               <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-top:1px solid var(--borda-fraca)">
+>                 <span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border:1px solid var(--borda);border-radius:50%;font-size:12px;font-weight:600;color:var(--texto-suave)">{{ a.iniciais }}</span>
+>                 <span style="flex:1;min-width:0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.nome }}</span>
+>                 <div role="radiogroup" aria-label="{{ a.nome }}" style="display:inline-flex;padding:3px;gap:2px;border:1px solid var(--borda);border-radius:2px"><button type="button" role="radio" aria-checked="{{ a.p }}" onClick="{{ a.marcarP }}" style="min-height:40px;padding:0 12px;border:0;border-radius:2px;background:{{ a.pBg }};color:{{ a.pCor }};font-size:14px;font-weight:{{ a.pPeso }};cursor:{{ a.cursor }}">Presente</button><button type="button" role="radio" aria-checked="{{ a.f }}" onClick="{{ a.marcarF }}" style="min-height:40px;padding:0 12px;border:0;border-radius:2px;background:{{ a.fBg }};color:{{ a.fCor }};font-size:14px;font-weight:{{ a.fPeso }};cursor:{{ a.cursor }}">Ausente</button></div>
+>               </div>
+>             </sc-for>
+>           </div>
+>         </sc-if>
+>         <sc-if value="{{ ch.semAlunos }}" hint-placeholder-val="{{ false }}"><dc-import name="EstadoLista" tipo="vazio" mensagem="{{ semAlunosTxt }}" hint-size="100%,140px"></dc-import></sc-if>
+>         <sc-if value="{{ ch.editavel }}" hint-placeholder-val="{{ true }}">
+>           <div style="position:sticky;bottom:-32px;display:flex;flex-direction:column;gap:8px;padding:12px 0 16px;background:var(--superficie);border-top:1px solid var(--borda-fraca)">
+>             <span role="alert" style="min-height:20px;font-size:14px;color:var(--aviso);text-wrap:pretty">{{ chamErro }}</span>
+>             <button type="button" onClick="{{ ch.salvar }}" disabled="{{ ch.off }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ ch.op }}">{{ ch.botao }}</button>
+>           </div>
+>         </sc-if>
+>       </sc-if>
+>       <sc-if value="{{ pNovo }}" hint-placeholder-val="{{ false }}">
+>         <form onSubmit="{{ salvarNovo }}" style="display:flex;flex-direction:column;gap:14px">
+>           <sc-if value="{{ novoVoltaVis }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ novoVoltar }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px 0 6px;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg>Disciplina</button></sc-if>
+>           <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ novoTitulo }}</span><span style="font-size:14px;color:var(--texto-suave);text-wrap:pretty">{{ novoAjuda }}</span></div>
+>           <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Nome</span><input value="{{ nomeF }}" onChange="{{ setNome }}" placeholder="{{ novoPh }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px" style-focus="border-color:var(--texto)"></label>
+>           <span role="alert" style="min-height:20px;font-size:14px;color:var(--aviso);text-wrap:pretty">{{ nomeErro }}</span>
+>           <button type="submit" disabled="{{ novoOff }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ novoO }}">{{ novoBotao }}</button>
+>         </form>
+>       </sc-if>
+424c492
+<           <button type="submit" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Publicar no calendário</button>
+---
+>           <button type="submit" disabled="{{ efOff }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ efO }}">{{ efBotao }}</button>
+454c522
+<           <button type="submit" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Salvar disciplina</button>
+---
+>           <button type="submit" disabled="{{ dfOff }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ dfO }}">{{ dfBotao }}</button>
+463c531
+< <script type="text/x-dc" data-dc-script data-props="{&quot;perfil&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Escola&quot;,&quot;Professor&quot;,&quot;Aluno&quot;],&quot;default&quot;:&quot;Escola&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;relogio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Ao vivo&quot;,&quot;Terça 08:40&quot;,&quot;Quarta 10:20&quot;,&quot;Quinta 14:00&quot;],&quot;default&quot;:&quot;Ao vivo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;embutido&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Protótipo&quot;}}">
+---
+> <script type="text/x-dc" data-dc-script data-props="{&quot;perfil&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Escola&quot;,&quot;Professor&quot;,&quot;Aluno&quot;],&quot;default&quot;:&quot;Escola&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;relogio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Ao vivo&quot;,&quot;Terça 08:40&quot;,&quot;Quarta 10:20&quot;,&quot;Quinta 14:00&quot;],&quot;default&quot;:&quot;Ao vivo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;embutido&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Escola / Grade e agenda / Carregando&quot;,&quot;Escola / Grade e agenda / Erro ao carregar&quot;,&quot;Escola / Aula / Chamada de hoje&quot;,&quot;Escola / Aula / Chamada feita&quot;,&quot;Escola / Aula / Aula futura&quot;,&quot;Escola / Aula / Feriado&quot;,&quot;Escola / Aula / Cancelada&quot;,&quot;Escola / Aula / Semestre encerrado&quot;,&quot;Escola / Chamada / Aberta&quot;,&quot;Escola / Chamada / Salvando&quot;,&quot;Escola / Chamada / Erro de gravação&quot;,&quot;Professor / Aula / Chamada de hoje&quot;,&quot;Escola / Remarcação / Salvando&quot;,&quot;Escola / Remarcação / Erro de gravação&quot;,&quot;Escola / Disciplina / Salvando&quot;,&quot;Escola / Disciplina / Erro de gravação&quot;,&quot;Escola / Disciplina / Sem turma e sem sala&quot;,&quot;Escola / Quadro / Sem turma e sem sala&quot;,&quot;Escola / Quadro / Vazio&quot;,&quot;Escola / Evento / Salvando&quot;,&quot;Escola / Evento / Erro de gravação&quot;,&quot;Escola / Pedidos / Aprovando&quot;,&quot;Escola / Pedidos / Erro de gravação&quot;,&quot;Professor / Pedido / Salvando&quot;,&quot;Professor / Pedido / Erro de gravação&quot;,&quot;Professor / Sugestão / Salvando&quot;,&quot;Escola / Assistente / Enviando&quot;,&quot;Escola / Assistente / Só texto&quot;,&quot;Escola / Assistente / Proposta com Não coube&quot;,&quot;Escola / Assistente / Aplicando&quot;,&quot;Escola / Assistente / Erro: não configurado&quot;,&quot;Escola / Assistente / Erro: limite de uso&quot;,&quot;Escola / Assistente / Erro: sem conexão&quot;,&quot;Escola / Nova turma&quot;,&quot;Escola / Nova sala&quot;,&quot;Escola / Nova turma / Já cadastrada&quot;,&quot;Escola / Reverter / Confirmar&quot;,&quot;Escola / Reverter / Salvando&quot;,&quot;Escola / Reverter / Erro de gravação&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;iaErroSimulado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nenhum&quot;,&quot;Não configurado&quot;,&quot;Limite de uso&quot;,&quot;Sem conexão&quot;],&quot;default&quot;:&quot;Nenhum&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;falhaGravacao&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;falhaCarga&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;soEditor&quot;:{&quot;editor&quot;:null,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;discId&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string|number&quot;},&quot;base&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;profs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;aoSalvar&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(d)=>void&quot;},&quot;aoFechar&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=>void&quot;},&quot;turmas&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{id,nome}[]&quot;},&quot;alunos&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{id,nome,turma}[]&quot;},&quot;turmaAluno&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;aoNovaTurma&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(t)=>void&quot;}}">
+484,485c552,557
+< const nomeTurma = id => (TURMAS.find(t => t.id === id) || {}).nome || id;
+< const nomeSala = id => (SALAS.find(t => t.id === id) || {}).nome || id || '—';
+---
+> const nomeTurma = id => !id ? 'Sem turma' : (TURMAS.find(t => t.id === id) || {}).nome || id;
+> const nomeSala = id => !id ? 'Sem sala' : (SALAS.find(t => t.id === id) || {}).nome || id;
+> const MSG_GRAV = 'Não consegui salvar. Confira a conexão e tente de novo.';
+> const ALUNOS_T = { '1A': ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Rocha', 'Elisa Nunes', 'Fabio Neri'], '2A': ['Gabriel Costa', 'Helena Martins', 'Igor Pereira', 'Julia Ramos', 'Kaique Santos'], '3A': ['Larissa Melo', 'Mateus Freitas', 'Natália Cunha', 'Otávio Barros', 'Paula Teixeira', 'Rafael Moura'] };
+> const CHAM0 = { '3-0-2026-10-05': { i0: true, i1: true, i2: false, i3: true, i4: true, i5: true }, '4-0-2026-10-05': { i0: true, i1: true, i2: true, i3: false, i4: true } };
+> const IA_ERROS = { 'Não configurado': 'O assistente não está configurado neste servidor.', 'Limite de uso': 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.', 'Sem conexão': 'Não consegui falar com o assistente. Tente de novo.' };
+550c622,623
+<     recusando: null, recMotivo: '', recErro: '', sugerindo: null, sug: { data: '', ini: '', fim: '', sala: '' }, sugErro: '' };
+---
+>     recusando: null, recMotivo: '', recErro: '', sugerindo: null, sug: { data: '', ini: '', fim: '', sala: '' }, sugErro: '',
+>     carga: 'ok', salvando: null, erroG: {}, chamadas: CHAM0, chamF: {}, chamErro: '', canceladas: {}, semEnc: false, iaErro: '', iaUltimo: '', reverter: false, nomeF: '', nomeErro: '', perfilF: null, relF: null };
+558a632,635
+>     if (this.props.soEditor) setTimeout(() => this.iniciarEditor(), 0);
+>     else if (this.props.base) this.sincBase(true);
+>     if (this.props.abaInicial && this.props.abaInicial !== 'quadro') this.setState({ aba: this.props.abaInicial });
+>     if ((this.props.estado ?? 'Normal') !== 'Normal') setTimeout(() => this.aplicarEstado(this.props.estado), 0);
+560c637
+<   componentWillUnmount() { if (this._sp) this._sp.style.overflow = this._spOv || ''; clearInterval(this.iv); clearTimeout(this.iaT); this.ro && this.ro.disconnect(); document.removeEventListener('keydown', this.onKey); }
+---
+>   componentWillUnmount() { if (this._sp) this._sp.style.overflow = this._spOv || ''; clearInterval(this.iv); clearTimeout(this.iaT); clearTimeout(this.gT); clearTimeout(this.cT); this.ro && this.ro.disconnect(); document.removeEventListener('keydown', this.onKey); }
+566c643,644
+<     return { top: Math.max(0, sp.getBoundingClientRect().top - r.getBoundingClientRect().top), h: sp.clientHeight };
+---
+>     const a = sp.getBoundingClientRect(), b = r.getBoundingClientRect();
+>     return { top: a.top - b.top, h: sp.clientHeight, left: a.left - b.left, right: b.right - (a.left + sp.clientWidth) };
+574a653
+>       if (!o.painel && prev.painel && this.props.soEditor && this.props.aoFechar) setTimeout(() => this.props.aoFechar(), 0);
+578,579c657,664
+<   componentDidUpdate(pp) { if (pp.perfil !== this.props.perfil) this.setState({ aba: 'quadro', eixo: null, fTurma: '', fProf: '', fDisc: '', fSala: '', painel: null, pend: null, diaM: null }); }
+<   perfil() { return { Escola: 'escola', Professor: 'prof', Aluno: 'aluno' }[this.props.perfil ?? 'Escola'] || 'escola'; }
+---
+>   componentDidUpdate(pp) {
+>     if (pp.estado !== this.props.estado && (this.props.estado ?? 'Normal') !== 'Normal') this.aplicarEstado(this.props.estado);
+>     if (this.props.soEditor && pp.discId !== this.props.discId) this.iniciarEditor();
+>     if (!this.props.soEditor && this.props.base && pp.base !== this.props.base) this.sincBase(false);
+>     if (pp.perfil !== this.props.perfil) this.setState({ aba: 'quadro', eixo: null, fTurma: '', fProf: '', fDisc: '', fSala: '', painel: null, pend: null, diaM: null }); }
+>   tAluno() { return this.props.alunos ? (this.props.turmaAluno || null) : TURMA_DEMO; }
+>   alunosDaTurma(t) { return this.props.alunos ? this.props.alunos.filter(a => t && a.turma === t).map(a => ({ id: a.id, nome: a.nome })) : (ALUNOS_T[t] || []).map((nome, k) => ({ id: 'i' + k, nome })); }
+>   perfil() { return { Escola: 'escola', Professor: 'prof', Aluno: 'aluno' }[this.state.perfilF || this.props.perfil || 'Escola'] || 'escola'; }
+581c666
+<     const S = { 'Terça 08:40': '2026-10-06T08:40', 'Quarta 10:20': '2026-10-07T10:20', 'Quinta 14:00': '2026-10-08T14:00' }[this.props.relogio ?? 'Ao vivo'];
+---
+>     const S = this.state.relF || { 'Terça 08:40': '2026-10-06T08:40', 'Quarta 10:20': '2026-10-07T10:20', 'Quinta 14:00': '2026-10-08T14:00' }[this.props.relogio ?? 'Ao vivo'];
+586c671
+<   escopo(st, P) { return P === 'prof' ? st.discs.filter(d => d.prof === PROF_DEMO) : P === 'aluno' ? st.discs.filter(d => d.turma === TURMA_DEMO) : st.discs; }
+---
+>   escopo(st, P) { return P === 'prof' ? st.discs.filter(d => d.prof === PROF_DEMO) : P === 'aluno' ? st.discs.filter(d => !!this.tAluno() && d.turma === this.tAluno()) : st.discs; }
+602c687
+<     r.forEach(i => { i.feriado = fer[i.data] || ''; });
+---
+>     r.forEach(i => { i.feriado = fer[i.data] || ''; i.cancelada = !!st.canceladas[i.key]; i.feita = !!st.chamadas[i.key]; });
+614,615c699,700
+<       if (A.d.turma === B.d.turma) rs.push(['turma', nomeTurma(A.d.turma)]);
+<       if (A.sala === B.sala) rs.push(['sala', nomeSala(A.sala)]);
+---
+>       if (A.d.turma && A.d.turma === B.d.turma) rs.push(['turma', nomeTurma(A.d.turma)]);
+>       if (A.sala && A.sala === B.sala) rs.push(['sala', nomeSala(A.sala)]);
+633,634c718,719
+<     if (d.turma === c.turma) return nomeTurma(c.turma) + ' já tem ' + d.nome + ' neste horário (' + fx + ').';
+<     if (sala === c.sala) return nomeSala(c.sala) + ' já está com ' + d.nome + ' · ' + nomeTurma(d.turma) + ' neste horário (' + fx + ').';
+---
+>     if (d.turma && d.turma === c.turma) return nomeTurma(c.turma) + ' já tem ' + d.nome + ' neste horário (' + fx + ').';
+>     if (sala && sala === c.sala) return nomeSala(c.sala) + ' já está com ' + d.nome + ' · ' + nomeTurma(d.turma) + ' neste horário (' + fx + ').';
+660c745
+<     const minhas = P === 'prof' ? [...new Set(st.discs.filter(d => d.prof === PROF_DEMO).map(d => d.turma))] : P === 'aluno' ? [TURMA_DEMO] : null;
+---
+>     const minhas = P === 'prof' ? [...new Set(st.discs.filter(d => d.prof === PROF_DEMO).map(d => d.turma))] : P === 'aluno' ? [this.tAluno()] : null;
+664c749,857
+<   abrirAula(i) { this.setState({ painel: { tipo: 'aula', key: i.key, tkey: i.tkey, disc: i.disc.id, data: i.data, ini: i.ini, fim: i.fim, sala: i.sala, itipo: i.tipo, pendente: !!i.pendente, remarcada: !!i.remarcada, feriado: i.feriado, pedido: i.pedido ? i.pedido.id : null } }); }
+---
+>   abrirAula(i) { this.setState({ painel: { tipo: 'aula', key: i.key, tkey: i.tkey, disc: i.disc.id, data: i.data, ini: i.ini, fim: i.fim, sala: i.sala, itipo: i.tipo, pendente: !!i.pendente, remarcada: !!i.remarcada, feriado: i.feriado, cancelada: !!i.cancelada, pedido: i.pedido ? i.pedido.id : null } }); }
+>   chamadaInfo(pn, st, now, P) {
+>     const vis = P !== 'aluno' && !pn.pendente && (pn.itipo === 'grade' || pn.itipo === 'extra'), feita = !!st.chamadas[pn.key];
+>     let off = '';
+>     if (st.semEnc) off = 'Semestre encerrado em ' + SEM.fim.split('-').reverse().join('/') + ': somente leitura.';
+>     else if (pn.cancelada) off = 'Aula cancelada.';
+>     else if (pn.feriado) off = 'Sem aula: ' + pn.feriado + '.';
+>     else if (pn.data > now.data) off = 'A chamada abre no dia da aula.';
+>     return { vis, feita, off, txt: feita ? 'Revisar chamada' : 'Fazer chamada' };
+>   }
+>   abrirChamada(i) {
+>     const pn = { tipo: 'chamada', key: i.key, tkey: i.tkey, disc: i.disc.id, data: i.data, ini: i.ini, fim: i.fim, sala: i.sala, itipo: i.tipo, pendente: !!i.pendente, remarcada: !!i.remarcada, feriado: i.feriado, cancelada: !!i.cancelada, pedido: i.pedido ? i.pedido.id : null };
+>     this.setState(s => ({ painel: pn, chamF: Object.assign({}, s.chamadas[i.key] || {}), chamErro: '', erroG: Object.assign({}, s.erroG, { chamada: '' }) }));
+>   }
+>   gravar(chave, fazer) {
+>     if (this.state.salvando) return;
+>     this.setState(s => ({ salvando: chave, erroG: Object.assign({}, s.erroG, { [chave]: '' }) }));
+>     clearTimeout(this.gT);
+>     this.gT = setTimeout(() => {
+>       if (this.props.falhaGravacao) return this.setState(s => ({ salvando: null, erroG: Object.assign({}, s.erroG, { [chave]: MSG_GRAV }) }));
+>       this.setState({ salvando: null }); fazer();
+>     }, this.rm ? 300 : 700);
+>   }
+>   sv(chave, txt) { return this.state.salvando === chave ? 'Salvando…' : txt; }
+>   tentarCarregar() { this.setState({ carga: 'carregando' }); clearTimeout(this.cT); this.cT = setTimeout(() => this.setState({ carga: this.props.falhaCarga ? 'erro' : 'ok' }), this.rm ? 400 : 900); }
+>   abrirNovo(tipo, volta) { this.setState({ painel: { tipo, volta: volta || null }, nomeF: '', nomeErro: '' }); }
+>   salvarNovo(e) {
+>     e.preventDefault(); const st = this.state, tipo = st.painel.tipo, nome = st.nomeF.trim(), lista = tipo === 'turma' ? TURMAS : SALAS;
+>     if (!nome) return this.setState({ nomeErro: tipo === 'turma' ? 'Dê um nome à turma.' : 'Dê um nome à sala.' });
+>     if (lista.some(x => x.nome.trim().toLowerCase() === nome.toLowerCase())) return this.setState({ nomeErro: tipo === 'turma' ? 'Turma já cadastrada.' : 'Sala já cadastrada.' });
+>     this.gravar(tipo, () => {
+>       const id = (tipo === 'turma' ? 't' : 's') + Date.now(); lista.push({ id, nome }); if (tipo === 'turma' && this.props.aoNovaTurma) this.props.aoNovaTurma({ id, nome });
+>       const volta = this.state.painel && this.state.painel.volta;
+>       if (volta) this.setState(s => ({ painel: volta.painel, dF: Object.assign({}, volta.dF, { [tipo]: id }), dOk: '', dErro: '' }));
+>       else this.setState({ painel: null, msgDisc: (tipo === 'turma' ? 'Turma ' : 'Sala ') + nome + ' cadastrada.' });
+>     });
+>   }
+>   convBase(base) { return (base || []).map(d => Object.assign({}, d, { sigla: d.sigla || d.nome.split(' ').map(p => p[0]).join('').slice(0, 3).toUpperCase(), grade: (d.grade || []).map(g => Object.assign({}, g)) })); }
+>   sincBase(primeira) {
+>     const k = JSON.stringify(this.props.base || []) + JSON.stringify((this.props.profs || []).map(p => p.ocupados));
+>     if (k === this._baseK) return; this._baseK = k;
+>     const discs = this.convBase(this.props.base), o = { discs };
+>     if (this.props.profs && this.props.profs.length) o.profs = this.props.profs;
+>     if (primeira) {
+>       const mapa = {}; DISC0.forEach(g => { const p = discs.find(d => d.nome.trim().toLowerCase() === g.nome.trim().toLowerCase()); mapa[g.id] = p ? p.id : null; });
+>       o.eventos = EV0.map(e => e.disc == null ? e : Object.assign({}, e, { disc: mapa[e.disc] }));
+>       o.pedidos = PED0.filter(p => mapa[p.disc] != null).map(p => Object.assign({}, p, { disc: mapa[p.disc], prof: (discs.find(d => d.id === mapa[p.disc]) || {}).prof || p.prof }));
+>       o.chamadas = {}; o.remarc = [];
+>     }
+>     this.setState(o);
+>   }
+>   iniciarEditor() {
+>     const P = this.props, base = (P.base || []).map(d => Object.assign({ sigla: (d.nome || '').slice(0, 3).toUpperCase() }, d)), profs = P.profs && P.profs.length ? P.profs : this.state.profs;
+>     this.setState({ discs: base, profs }, () => { const d = base.find(x => String(x.id) === String(P.discId)); this.abrirDisc(d || null); });
+>   }
+>   aplicarEstado(nome) {
+>     clearTimeout(this.gT); clearTimeout(this.iaT); clearTimeout(this.cT);
+>     const prof = /^Professor/.test(nome), TER = '2026-10-06T10:20', W = '2026-10-05';
+>     const reset = { perfilF: prof ? 'Professor' : 'Escola', relF: null, carga: 'ok', salvando: null, erroG: {}, painel: null, pend: null, msg: null, reverter: false, semEnc: false, canceladas: {}, discs: DISC0, pedidos: PED0, remarc: [], chamadas: CHAM0,
+>       iaAberto: false, iaMsgs: [], iaTexto: '', iaEnv: false, iaProp: null, iaFeito: null, iaErro: '', aba: 'quadro', eixo: 'dias', semana: null, fTurma: '', fProf: '', fDisc: '', fSala: '', soChoques: false };
+>     const abrir = (key, data, comoCh) => () => { const st = this.state, i = this.instSemana(segDe(data), st, this.ferMap(st.eventos), this.perfil()).find(x => x.key === key); if (i) comoCh ? this.abrirChamada(i) : this.abrirAula(i); };
+>     const discX = { id: 10, nome: 'Projeto Integrador', sigla: 'PI', turma: null, prof: 2, sala: null, carga: 40, grade: [gr(5, 2, null)] };
+>     const Q = 'Resolva os choques e monte a grade das disciplinas sem horário.';
+>     const conv = q => { const r = this.iaResponder(q); return { iaAberto: true, iaMsgs: [{ papel: 'usuario', texto: q }, { papel: 'ia', texto: r.resposta }], iaProp: r.moves && (r.moves.length || r.rec.length) ? { moves: r.moves, rec: r.rec, idx: 1 } : null, iaUltimo: q }; };
+>     const remarcar = (cb) => () => { const st = this.state, i = this.instSemana(W, st, this.ferMap(st.eventos), 'escola').find(x => x.key === '3-0-2026-10-05'); if (i) { this.propor(i, { dia: 1, ini: '15:30', fim: '17:10' }); if (cb) setTimeout(cb, 0); } };
+>     const E = {
+>       'Escola / Grade e agenda / Carregando': [{ carga: 'carregando' }],
+>       'Escola / Grade e agenda / Erro ao carregar': [{ carga: 'erro' }],
+>       'Escola / Aula / Chamada de hoje': [{ relF: TER, semana: W }, abrir('7-0-2026-10-06', '2026-10-06')],
+>       'Escola / Aula / Chamada feita': [{ relF: TER, semana: W }, abrir('3-0-2026-10-05', '2026-10-05')],
+>       'Escola / Aula / Aula futura': [{ relF: TER, semana: W }, abrir('3-1-2026-10-07', '2026-10-07')],
+>       'Escola / Aula / Feriado': [{ relF: TER, semana: '2026-10-12' }, abrir('3-0-2026-10-12', '2026-10-12')],
+>       'Escola / Aula / Cancelada': [{ relF: TER, semana: W, canceladas: { '7-1-2026-10-09': true } }, abrir('7-1-2026-10-09', '2026-10-09')],
+>       'Escola / Aula / Semestre encerrado': [{ relF: TER, semana: W, semEnc: true }, abrir('7-0-2026-10-06', '2026-10-06')],
+>       'Escola / Chamada / Aberta': [{ relF: TER, semana: W }, abrir('7-0-2026-10-06', '2026-10-06', true)],
+>       'Escola / Chamada / Salvando': [{ relF: TER, semana: W }, abrir('7-0-2026-10-06', '2026-10-06', true), () => this.setState({ chamF: { i0: true, i1: true, i2: true, i3: false, i4: true, i5: true }, salvando: 'chamada' })],
+>       'Escola / Chamada / Erro de gravação': [{ relF: TER, semana: W }, abrir('7-0-2026-10-06', '2026-10-06', true), () => this.setState({ chamF: { i0: true, i1: true, i2: true, i3: false, i4: true, i5: true }, erroG: { chamada: MSG_GRAV } })],
+>       'Professor / Aula / Chamada de hoje': [{ relF: TER, semana: W }, abrir('1-0-2026-10-06', '2026-10-06')],
+>       'Escola / Remarcação / Salvando': [{ relF: TER, semana: W }, remarcar(() => this.setState({ salvando: 'remarc-semana' }))],
+>       'Escola / Remarcação / Erro de gravação': [{ relF: TER, semana: W }, remarcar(() => this.setState({ erroG: { 'remarc-semana': MSG_GRAV } }))],
+>       'Escola / Disciplina / Salvando': [{ aba: 'disc' }, () => this.abrirDisc(DISC0[2]), () => this.setState({ salvando: 'disc' })],
+>       'Escola / Disciplina / Erro de gravação': [{ aba: 'disc' }, () => this.abrirDisc(DISC0[2]), () => this.setState({ erroG: { disc: MSG_GRAV } })],
+>       'Escola / Disciplina / Sem turma e sem sala': [{ aba: 'disc', discs: DISC0.concat(discX) }, () => this.abrirDisc(discX)],
+>       'Escola / Quadro / Sem turma e sem sala': [{ relF: TER, semana: W, discs: DISC0.concat(discX), fDisc: '10' }],
+>       'Escola / Quadro / Vazio': [{ discs: DISC0.map(d => Object.assign({}, d, { grade: [] })), pedidos: PED0.filter(p => p.status !== 'aprovada') }],
+>       'Escola / Evento / Salvando': [{ aba: 'ano' }, () => this.setState({ painel: { tipo: 'eventoForm', id: null }, eErro: '', eF: { tipo: 'prova', titulo: 'P3 de Python', data: '2026-11-17', fim: '', hi: '08:00', hf: '09:40', todas: false, turmas: ['1A'], disc: '1', desc: '' }, salvando: 'evento' })],
+>       'Escola / Evento / Erro de gravação': [{ aba: 'ano' }, () => this.setState({ painel: { tipo: 'eventoForm', id: null }, eErro: '', eF: { tipo: 'prova', titulo: 'P3 de Python', data: '2026-11-17', fim: '', hi: '08:00', hf: '09:40', todas: false, turmas: ['1A'], disc: '1', desc: '' }, erroG: { evento: MSG_GRAV } })],
+>       'Escola / Pedidos / Aprovando': [{ aba: 'pedidos', salvando: 'ap-2' }],
+>       'Escola / Pedidos / Erro de gravação': [{ aba: 'pedidos', erroG: { 'ap-2': MSG_GRAV } }],
+>       'Professor / Pedido / Salvando': [{ aba: 'pedidos', pF: { disc: '2', data: '2026-10-16', ini: '13:30', fim: '15:10', sala: 'lab', motivo: 'Revisão para a P2.' }, salvando: 'pedido' }],
+>       'Professor / Pedido / Erro de gravação': [{ aba: 'pedidos', pF: { disc: '2', data: '2026-10-16', ini: '13:30', fim: '15:10', sala: 'lab', motivo: 'Revisão para a P2.' }, erroG: { pedido: MSG_GRAV } }],
+>       'Professor / Sugestão / Salvando': [{ aba: 'pedidos', pedidos: PED0.map(p => p.id === 1 ? Object.assign({}, p, { status: 'sugestao', sug: { data: '2026-10-16', ini: '15:30', fim: '17:10', sala: 'lab' } }) : p), salvando: 'ac-1' }],
+>       'Escola / Assistente / Enviando': [{ iaAberto: true, iaMsgs: [{ papel: 'usuario', texto: Q }], iaEnv: true, iaUltimo: Q }],
+>       'Escola / Assistente / Só texto': [() => this.setState(conv('Tem algum choque na grade atual?'))],
+>       'Escola / Assistente / Proposta com Não coube': [() => this.setState(conv(Q))],
+>       'Escola / Assistente / Aplicando': [() => this.setState(Object.assign(conv(Q), { salvando: 'ia' }))],
+>       'Escola / Assistente / Erro: não configurado': [{ iaAberto: true, iaMsgs: [{ papel: 'usuario', texto: Q }], iaErro: IA_ERROS['Não configurado'], iaUltimo: Q }],
+>       'Escola / Assistente / Erro: limite de uso': [{ iaAberto: true, iaMsgs: [{ papel: 'usuario', texto: Q }], iaErro: IA_ERROS['Limite de uso'], iaUltimo: Q }],
+>       'Escola / Assistente / Erro: sem conexão': [{ iaAberto: true, iaMsgs: [{ papel: 'usuario', texto: Q }], iaErro: IA_ERROS['Sem conexão'], iaUltimo: Q }],
+>       'Escola / Nova turma': [{ aba: 'disc' }, () => this.abrirNovo('turma')],
+>       'Escola / Nova sala': [{ aba: 'disc' }, () => this.abrirNovo('sala')],
+>       'Escola / Nova turma / Já cadastrada': [{ aba: 'disc' }, () => this.abrirNovo('turma'), () => this.setState({ nomeF: '1º A', nomeErro: 'Turma já cadastrada.' })],
+>       'Escola / Reverter / Confirmar': [{ relF: TER, semana: W, remarc: [{ disc: 3, idx: 0, de: '2026-10-05', data: '2026-10-05', ini: '15:30', fim: '17:10' }], msg: { t: 'Algoritmos · 1º A remarcada só nesta semana: segunda 05/10, 15:30.', snap: { discs: DISC0, remarc: [] } }, reverter: true }],
+>       'Escola / Reverter / Salvando': [{ relF: TER, semana: W, remarc: [{ disc: 3, idx: 0, de: '2026-10-05', data: '2026-10-05', ini: '15:30', fim: '17:10' }], msg: { t: 'Algoritmos · 1º A remarcada só nesta semana: segunda 05/10, 15:30.', snap: { discs: DISC0, remarc: [] } }, reverter: true, salvando: 'reverter' }],
+>       'Escola / Reverter / Erro de gravação': [{ relF: TER, semana: W, remarc: [{ disc: 3, idx: 0, de: '2026-10-05', data: '2026-10-05', ini: '15:30', fim: '17:10' }], msg: { t: 'Algoritmos · 1º A remarcada só nesta semana: segunda 05/10, 15:30.', snap: { discs: DISC0, remarc: [] } }, reverter: true, erroG: { reverter: MSG_GRAV } }]
+>     }[nome];
+>     if (!E) return;
+>     super.setState(Object.assign({}, reset, typeof E[0] === 'object' ? E[0] : {}), () => { E.filter(x => typeof x === 'function').reduce((p, fn) => p.then(() => new Promise(r => { fn(); setTimeout(r, 30); })), Promise.resolve()); });
+>   }
+702c895
+<       this.setState(s => ({ remarc: s.remarc.filter(q => !(q.disc === d.id && q.idx === i.idx && q.de === i.dataOrig)).concat({ disc: d.id, idx: i.idx, de: i.dataOrig, data: p.novaData, ini: p.alvo.ini, fim: p.alvo.fim }), pend: null, msg: { t: txt + ' remarcada só nesta semana: ' + DIA_L[p.alvo.dia] + ' ' + ddmm(p.novaData) + ', ' + p.alvo.ini + '.', snap } }));
+---
+>       this.gravar('remarc-semana', () => this.setState(s => ({ remarc: s.remarc.filter(q => !(q.disc === d.id && q.idx === i.idx && q.de === i.dataOrig)).concat({ disc: d.id, idx: i.idx, de: i.dataOrig, data: p.novaData, ini: p.alvo.ini, fim: p.alvo.fim }), pend: null, msg: { t: txt + ' remarcada só nesta semana: ' + DIA_L[p.alvo.dia] + ' ' + ddmm(p.novaData) + ', ' + p.alvo.ini + '.', snap } })));
+705c898
+<       this.setState(s => ({ discs: s.discs.map(x => x.id !== d.id ? x : Object.assign({}, x, { grade: x.grade.map((g, k) => k !== i.idx ? g : Object.assign({}, g, { dia_semana: p.alvo.dia, hora_inicio: p.alvo.ini, hora_fim: p.alvo.fim })) })), pend: null, msg: { t: txt + ' agora fica na grade às ' + DIA_L[p.alvo.dia] + 's, ' + p.alvo.ini + '–' + p.alvo.fim + ', até o fim do semestre.', snap } }));
+---
+>       this.gravar('remarc-grade', () => { if (this.props.aoSalvar) { const nd = this.state.discs.find(x => x.id === d.id); if (nd) this.props.aoSalvar(Object.assign({}, nd, { grade: nd.grade.map((g, k) => k !== i.idx ? g : Object.assign({}, g, { dia_semana: p.alvo.dia, hora_inicio: p.alvo.ini, hora_fim: p.alvo.fim })) })); } this.setState(s => ({ discs: s.discs.map(x => x.id !== d.id ? x : Object.assign({}, x, { grade: x.grade.map((g, k) => k !== i.idx ? g : Object.assign({}, g, { dia_semana: p.alvo.dia, hora_inicio: p.alvo.ini, hora_fim: p.alvo.fim })) })), pend: null, msg: { t: txt + ' agora fica na grade às ' + DIA_L[p.alvo.dia] + 's, ' + p.alvo.ini + '–' + p.alvo.fim + ', até o fim do semestre.', snap } })); });
+726c919
+<     const W = st.semana || segDe(hoje), eixo = esc ? (st.eixo || 'prof') : 'dias';
+---
+>     const W = st.semana || segDe(hoje), eixo = esc ? (st.eixo || 'dias') : 'dias';
+728c921
+<     const fil = i => ids.has(i.disc.id) && (!st.fTurma || i.disc.turma === st.fTurma) && (!st.fProf || String(i.disc.prof) === st.fProf) && (!st.fDisc || String(i.disc.id) === st.fDisc) && (!st.fSala || i.sala === st.fSala);
+---
+>     const fil = i => ids.has(i.disc.id) && (!st.fTurma || (st.fTurma === '__sem' ? !i.disc.turma : i.disc.turma === st.fTurma)) && (!st.fProf || String(i.disc.prof) === st.fProf) && (!st.fDisc || String(i.disc.id) === st.fDisc) && (!st.fSala || (st.fSala === '__sem' ? !i.sala : i.sala === st.fSala));
+743a937
+>       else if (i.cancelada) r = { borda: '1px dashed var(--borda)', bg: 'var(--fundo)', op: 0.55, tag: 'Cancelada', tagCor: 'var(--texto-suave)' };
+762c956
+<       return Object.assign(e, { key: i.key, nome: d.nome, curto: d.sigla + ' ' + d.turma, l2: nomeTurma(d.turma) + ' · ' + nomeSala(i.sala), l3: (P === 'aluno' ? pn : pn.split(' ')[0]) + ' · ' + i.ini + '–' + i.fim, temTag: !!e.tag,
+---
+>       return Object.assign(e, { key: i.key, nome: d.nome, curto: d.sigla, curto2: nomeTurma(d.turma) + ' · ' + nomeSala(i.sala).replace('Lab. de Informática', 'Lab.').replace('Sala ', ''), l2: nomeTurma(d.turma) + ' · ' + nomeSala(i.sala), l3: (P === 'aluno' ? pn : pn.split(' ')[0]) + ' · ' + i.ini + '–' + i.fim, temTag: !!e.tag,
+763a958,959
+>         chIcone: modo === 'dias' && P !== 'aluno' && i.data === hoje && (i.tipo === 'grade' || (i.tipo === 'extra' && !i.pendente)) && !i.feriado && !i.cancelada && !st.semEnc, chFeita: !!i.feita, chLabel: (i.feita ? 'Revisar chamada de ' : 'Fazer chamada de ') + d.nome,
+>         chBg: i.feita ? 'var(--texto)' : 'var(--superficie)', chCor: i.feita ? 'var(--fundo)' : 'var(--texto)', chParar: ev => ev.stopPropagation(), chAbrir: ev => { ev.stopPropagation(); this.abrirChamada(i); }, padDir: modo === 'dias' && P !== 'aluno' && i.data === hoje ? '30px' : '6px',
+772c968,969
+<       return { dia: DIA_C[dia], data: ddmm(data), hdBg: data === hoje ? 'var(--sunken)' : 'var(--superficie)', hdPeso: data === hoje ? 700 : 600,
+---
+>       const nL = its.reduce((x, i) => Math.max(x, i._n || 1), 1);
+>       return { nL, dia: DIA_C[dia], data: ddmm(data), hdBg: data === hoje ? 'var(--sunken)' : 'var(--superficie)', hdPeso: data === hoje ? 700 : 600,
+794c991
+<       const its = instHoje.filter(i => i.disc.turma === TURMA_DEMO).sort((a, b) => hm(a.ini) - hm(b.ini)), c = its.find(i => hm(i.ini) <= nm && nm < hm(i.fim)), nx = its.find(i => hm(i.ini) > nm);
+---
+>       const its = instHoje.filter(i => i.disc.turma === this.tAluno()).sort((a, b) => hm(a.ini) - hm(b.ini)), c = its.find(i => hm(i.ini) <= nm && nm < hm(i.fim)), nx = its.find(i => hm(i.ini) > nm);
+804,805c1001,1002
+<       eixoVis: esc, eixos: [['prof', 'Professores'], ['dias', 'Dias × horários']].map(([id, l]) => ({ label: l, on: eixo === id, bg: eixo === id ? 'var(--texto)' : 'transparent', cor: eixo === id ? 'var(--fundo)' : 'var(--texto)', peso: eixo === id ? 600 : 500, ir: () => this.setState({ eixo: id, pend: null }) })),
+<       eixoDias: eixo === 'dias', eixoProf: eixo === 'prof',
+---
+>       eixoVis: esc, eixos: [['dias', 'Dias × horários'], ['prof', 'Professores']].map(([id, l]) => ({ label: l, on: eixo === id, bg: eixo === id ? 'var(--texto)' : 'transparent', cor: eixo === id ? 'var(--fundo)' : 'var(--texto)', peso: eixo === id ? 600 : 500, ir: () => this.setState({ eixo: id, pend: null }) })),
+>       ...(() => { const vz = !this.escopo(st, P).some(d => (d.grade || []).length) && !inst.some(i => i.tipo === 'extra'); return { quadroVazioMsg: P === 'aluno' && !this.tAluno() ? 'Você ainda não está numa turma. Fale com a secretaria.' : P === 'prof' ? 'Nenhuma aula sua na grade.' : 'Nenhuma aula na grade. Monte os horários ou peça ao assistente.', quadroVazio: vz, eixoDias: eixo === 'dias' && !vz, eixoProf: eixo === 'prof' && !vz, dragDicaVis: !vz }; })(),
+808c1005
+<       optTurmas: TURMAS.map(t => ({ v: t.id, l: t.nome })), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optDiscs: escD.map(d => ({ v: String(d.id), l: d.nome + ' · ' + nomeTurma(d.turma) })), optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })),
+---
+>       optTurmas: TURMAS.map(t => ({ v: t.id, l: t.nome })).concat(st.discs.some(d => !d.turma) ? [{ v: '__sem', l: 'Sem turma' }] : []), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optDiscs: escD.map(d => ({ v: String(d.id), l: d.nome + ' · ' + nomeTurma(d.turma) })), optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })).concat(st.discs.some(d => !d.sala || (d.grade || []).some(g => !g.sala && !d.sala)) ? [{ v: '__sem', l: 'Sem sala' }] : []),
+817c1014
+<       gridCols: '56px repeat(' + colDias.length + ',minmax(0,1fr))', gridMinW: narrow ? '0' : '760px', gridH: (G1 - G0) * PX + 'px',
+---
+>       gridCols: '56px ' + cols.map(c => narrow ? 'minmax(0,1fr)' : 'minmax(' + (c.nL * 132) + 'px,' + c.nL + 'fr)').join(' '), gridMinW: '0', gridH: (G1 - G0) * PX + 'px',
+823c1020
+<       pendErro: pd ? (pd.erroSemana || pd.erroGrade) : '', pendSemOff: !!(pd && pd.erroSemana), pendGrOff: !!(pd && pd.erroGrade), pendSemO: pd && pd.erroSemana ? 0.4 : 1, pendGrO: pd && pd.erroGrade ? 0.4 : 1,
+---
+>       pendErro: pd ? (pd.erroSemana || pd.erroGrade) : '', pendSemOff: !!(pd && pd.erroSemana) || !!st.salvando, pendGrOff: !!(pd && pd.erroGrade) || !!st.salvando, pendSemO: pd && pd.erroSemana ? 0.4 : 1, pendGrO: pd && pd.erroGrade ? 0.4 : 1,
+825,826c1022,1026
+<       confSemana: () => this.confirmar('semana'), confGrade: () => this.confirmar('grade'), cancelarPend: () => this.setState({ pend: null }),
+<       msgVis: !!st.msg, msgTxt: st.msg ? st.msg.t : '', desfazer: () => { const m = this.state.msg; if (m && m.snap) this.setState({ discs: m.snap.discs, remarc: m.snap.remarc, msg: { t: 'Desfeito.' } }); }, fecharMsg: () => this.setState({ msg: null }), temDesfazer: !!(st.msg && st.msg.snap)
+---
+>       confSemana: () => this.confirmar('semana'), confGrade: () => this.confirmar('grade'), cancelarPend: () => this.setState(s2 => ({ pend: null, erroG: Object.assign({}, s2.erroG, { 'remarc-semana': '', 'remarc-grade': '' }) })),
+>       pendSemTxt: this.sv('remarc-semana', 'Só nesta semana'), pendGrTxt: this.sv('remarc-grade', 'Na grade do semestre'), pendGravErro: st.erroG['remarc-semana'] || st.erroG['remarc-grade'] || '', pendTemGravErro: !!(st.erroG['remarc-semana'] || st.erroG['remarc-grade']), pendOcupado: !!st.salvando,
+>       msgVis: !!st.msg, msgTxt: st.msg ? st.msg.t : '', pedirReverter: () => this.setState({ reverter: true }), cancelarReverter: () => this.setState(s2 => ({ reverter: false, erroG: Object.assign({}, s2.erroG, { reverter: '' }) })), reverterVis: !!st.reverter, reverterNao: !st.reverter,
+>       confReverter: () => { const m = this.state.msg; if (m && m.snap) this.gravar('reverter', () => this.setState({ discs: m.snap.discs, remarc: m.snap.remarc, reverter: false, msg: { t: 'Revertido. A grade voltou ao que era antes.' } })); },
+>       revTxt: this.sv('reverter', 'Reverter'), revOff: !!st.salvando, revErro: st.erroG.reverter || '', revTemErro: !!st.erroG.reverter, fecharMsg: () => this.setState({ msg: null, reverter: false }), temDesfazer: !!(st.msg && st.msg.snap)
+829a1030
+>     if (this.props.turmas && this.props.turmas.length) TURMAS.splice(0, TURMAS.length, ...this.props.turmas);
+832c1033
+<     const tabs = esc ? [['quadro', 'Quadro semanal'], ['ano', 'Ano letivo'], ['disc', 'Disciplinas'], ['pedidos', 'Pedidos de aula extra', nPend]] : P === 'prof' ? [['quadro', 'Minha semana'], ['ano', 'Ano letivo'], ['pedidos', 'Aulas extras', nSug]] : [['quadro', 'Minha semana'], ['ano', 'Ano letivo']];
+---
+>     const tabs = esc ? [['quadro', 'Quadro semanal'], ['ano', 'Ano letivo'], ['disc', 'Disciplinas'], ['pedidos', 'Pedidos de aula extra', nPend]] : P === 'prof' ? [['quadro', 'Minha semana'], ['ano', 'Ano letivo'], ['disc', 'Disciplinas'], ['pedidos', 'Aulas extras', nSug]] : [['quadro', 'Minha semana'], ['ano', 'Ano letivo']];
+835c1036,1037
+<     return Object.assign(aba === 'quadro' ? this.valsQuadro(st, P, now, fer) : {}, aba === 'quadro' && esc ? this.valsIa(st) : {}, aba === 'ano' ? this.valsAno(st, P, now, fer) : {}, aba === 'disc' ? this.valsDisc(st, now, fer) : {}, aba === 'pedidos' ? this.valsPed(st, P) : {}, this.valsPainel(st, P, now, fer), {
+---
+>     if (this.props.soEditor) return Object.assign(this.valsPainel(st, P, now, fer), { raiz: this.raiz, dicaRef: this.dicaRef, conteudoVis: false, rotulo: '', subtitulo: '', abas: [], raizMinH: '0', raizBg: 'transparent', raizMaxW: 'none', raizPad: '0', raizOvx: 'visible', pPos: 'absolute', pTop: (st.pGeo || {}).top + 'px', pH: (st.pGeo || {}).h + 'px', pLeft: (st.pGeo || {}).left + 'px', pRight: (st.pGeo || {}).right + 'px' });
+>     return Object.assign(aba === 'quadro' && st.carga === 'ok' ? this.valsQuadro(st, P, now, fer) : {}, aba === 'quadro' && esc ? this.valsIa(st) : {}, aba === 'ano' ? this.valsAno(st, P, now, fer) : {}, aba === 'disc' ? this.valsDisc(st, now, fer) : {}, aba === 'pedidos' ? this.valsPed(st, P) : {}, this.valsPainel(st, P, now, fer), {
+837,839c1039,1041
+<       ...(() => { const emb = !!this.props.embutido, g = st.pGeo || { top: 0, h: 0 }; return { raizMinH: emb ? '0' : '100vh', raizBg: emb ? 'transparent' : 'var(--fundo)', raizMaxW: emb ? 'none' : '1320px', raizPad: emb ? '0' : 'clamp(20px,4cqi,40px) clamp(16px,3cqi,40px) 96px',
+<         pPos: emb ? 'absolute' : 'fixed', pTop: emb ? g.top + 'px' : '0', pH: emb ? g.h + 'px' : '100vh' }; })(),
+<       rotulo: (esc ? 'Escola' : P === 'prof' ? me : nomeTurma(TURMA_DEMO)) + ' · semestre ' + SEM.nome,
+---
+>       ...(() => { const emb = !!this.props.embutido, g = st.pGeo || { top: 0, h: 0, left: 0, right: 0 }; return { raizMinH: emb ? '0' : '100vh', raizBg: emb ? 'transparent' : 'var(--fundo)', raizMaxW: emb ? 'none' : '1320px', raizPad: emb ? '0' : 'clamp(20px,4cqi,40px) clamp(16px,3cqi,40px) 96px',
+>         pPos: emb ? 'absolute' : 'fixed', pTop: emb ? g.top + 'px' : '0', pH: emb ? g.h + 'px' : '100vh', pLeft: emb ? g.left + 'px' : '0', pRight: emb ? g.right + 'px' : '0', raizOvx: emb ? 'visible' : 'hidden' }; })(),
+>       rotulo: (esc ? 'Escola' : P === 'prof' ? me : nomeTurma(this.tAluno())) + ' · semestre ' + SEM.nome,
+842c1044,1047
+<       abaQuadro: aba === 'quadro', abaAno: aba === 'ano', abaDisc: aba === 'disc', abaPed: aba === 'pedidos'
+---
+>       abaQuadro: aba === 'quadro' && st.carga === 'ok', abaAno: aba === 'ano' && st.carga === 'ok', abaDisc: aba === 'disc' && st.carga === 'ok', abaPed: aba === 'pedidos' && st.carga === 'ok',
+>       conteudoVis: !this.props.soEditor, skQuadro: st.carga === 'carregando' && aba === 'quadro', skAno: st.carga === 'carregando' && aba === 'ano', skLista: st.carga === 'carregando' && (aba === 'disc' || aba === 'pedidos'), cargaErro: st.carga === 'erro',
+>       tentarCarregar: () => this.tentarCarregar(), skCols: [0, 1, 2, 3, 4].map(k => ({ blocos: [[34 + k * 6, 100], [150, 100], [400 - k * 4, 100]].concat(k % 2 ? [[520, 100]] : []).map(([t, h]) => ({ top: t + 'px', h: h + 'px' })) })), skMeses: Array.from({ length: 12 }, (_, k) => ({ k })),
+>       skRef: el => { if (el && el.animate && !this.rm && !el._sk) { el._sk = 1; el.animate([{ opacity: 1 }, { opacity: 0.45 }, { opacity: 1 }], { duration: 1400, iterations: Infinity }); } }
+888,889c1093,1098
+<     this.setState(s => ({ iaMsgs: s.iaMsgs.concat({ papel: 'usuario', texto: t }), iaTexto: '', iaEnv: true }));
+<     clearTimeout(this.iaT); this.iaT = setTimeout(() => { const r = this.iaResponder(t); this.setState(s => Object.assign({ iaEnv: false, iaMsgs: s.iaMsgs.concat({ papel: 'ia', texto: r.resposta }) }, r.moves && (r.moves.length || r.rec.length) ? { iaProp: { moves: r.moves, rec: r.rec, idx: s.iaMsgs.length }, iaFeito: null } : {})); }, this.rm ? 500 : 1000);
+---
+>     this.setState(s => ({ iaMsgs: s.iaMsgs.concat({ papel: 'usuario', texto: t }), iaTexto: '', iaEnv: true, iaErro: '', iaUltimo: t }));
+>     this.iaResp(t);
+>   }
+>   iaTentar() { const t = this.state.iaUltimo; if (!t || this.state.iaEnv) return; this.setState({ iaErro: '', iaEnv: true }); this.iaResp(t); }
+>   iaResp(t) {
+>     clearTimeout(this.iaT); this.iaT = setTimeout(() => { const er = IA_ERROS[this.props.iaErroSimulado ?? 'Nenhum']; if (er) return this.setState({ iaEnv: false, iaErro: er }); const r = this.iaResponder(t); this.setState(s => Object.assign({ iaEnv: false, iaMsgs: s.iaMsgs.concat({ papel: 'ia', texto: r.resposta }) }, r.moves && (r.moves.length || r.rec.length) ? { iaProp: { moves: r.moves, rec: r.rec, idx: s.iaMsgs.length }, iaFeito: null } : {})); }, this.rm ? 500 : 1000);
+897c1106
+<     this.setState({ discs, iaFeito: n ? 'Aplicado. Ainda restam ' + n + (n === 1 ? ' choque' : ' choques') + ' no quadro.' : 'Aplicado. O quadro está sem choques.', msg: { t: 'Proposta do assistente aplicada na grade do semestre.', snap } });
+---
+>     this.gravar('ia', () => { if (this.props.aoSalvar) p.moves.map(m => m.discId).filter((x, i, a) => a.indexOf(x) === i).forEach(id => { const d = discs.find(x => x.id === id); if (d) this.props.aoSalvar(d); }); this.setState({ discs, iaFeito: n ? 'Aplicado. Ainda restam ' + n + (n === 1 ? ' choque' : ' choques') + ' no quadro.' : 'Aplicado. O quadro está sem choques.', msg: { t: 'Proposta do assistente aplicada na grade do semestre.', snap } }); });
+903a1113
+>       iaTemErro: !!st.iaErro, iaErro: st.iaErro, iaTentar: () => this.iaTentar(), iaAplicarTxt: this.sv('ia', 'Aplicar proposta'), iaAplOff: !!st.salvando, iaAplO: st.salvando === 'ia' ? 0.6 : 1, iaGravErro: st.erroG.ia || '', iaTemGravErro: !!st.erroG.ia,
+923c1133
+<     this.setState(s => ({ eventos: id ? s.eventos.map(x => x.id === id ? obj : x) : s.eventos.concat(obj), painel: { tipo: 'evento', id: obj.id }, msgAno: id ? 'Evento atualizado.' : 'Evento publicado no calendário.', ref: obj.data }));
+---
+>     this.gravar('evento', () => this.setState(s => ({ eventos: id ? s.eventos.map(x => x.id === id ? obj : x) : s.eventos.concat(obj), painel: { tipo: 'evento', id: obj.id }, msgAno: id ? 'Evento atualizado.' : 'Evento publicado no calendário.', ref: obj.data })));
+938c1148
+<       escopoAno: esc ? 'A escola vê o calendário de todas as turmas.' : P === 'prof' ? 'Você vê os eventos gerais e os das turmas em que dá aula.' : 'Você vê os eventos gerais e os do ' + nomeTurma(TURMA_DEMO) + '.',
+---
+>       escopoAno: esc ? 'A escola vê o calendário de todas as turmas.' : P === 'prof' ? 'Você vê os eventos gerais e os das turmas em que dá aula.' : 'Você vê os eventos gerais e os do ' + nomeTurma(this.tAluno()) + '.',
+968c1178,1180
+<         return { hora: i.ini + '–' + i.fim, nome: i.disc.nome + ' · ' + nomeTurma(i.disc.turma), sub: nomeSala(i.sala) + ' · ' + this.profNome(i.disc.prof), st: i.feriado ? 'Sem aula · feriado' : i.pendente ? 'Extra em análise' : cur ? 'Agora' : passado ? 'Dada' : 'Prevista', forte: cur, abrir: () => this.abrirAula(i) }; });
+---
+>         const ci = this.chamadaInfo({ key: i.key, itipo: i.tipo, pendente: !!i.pendente, cancelada: !!i.cancelada, feriado: i.feriado, data: i.data }, st, now, P);
+>         return { hora: i.ini + '–' + i.fim, nome: i.disc.nome + ' · ' + nomeTurma(i.disc.turma), sub: nomeSala(i.sala) + ' · ' + this.profNome(i.disc.prof), st: i.feriado ? 'Sem aula · feriado' : i.cancelada ? 'Cancelada' : i.pendente ? 'Extra em análise' : cur ? 'Agora' : passado ? 'Dada' : 'Prevista', forte: cur, abrir: () => this.abrirAula(i),
+>           chFeita: ci.vis && ci.feita, chAtalho: ci.vis && !ci.off, chTxt: ci.feita ? 'Revisar chamada' : 'Fazer chamada', chAbrir: () => this.abrirChamada(i) }; });
+981,982c1193,1195
+<       : { nome: '', turma: '1A', prof: '', sala: '101', carga: '60', grade: [{ k: 1, dia: '1', ini: '08:00', fim: '09:40', sala: '101' }] };
+<     this.setState({ painel: { tipo: 'disc', id: d ? d.id : null }, dF: f, dErro: '', dOk: '' });
+---
+>       : (this.props.soEditor ? { nome: '', turma: '', prof: '', sala: '', carga: '60', grade: [{ k: 1, dia: '1', ini: '08:00', fim: '09:40', sala: '' }] } : { nome: '', turma: '1A', prof: '', sala: '101', carga: '60', grade: [{ k: 1, dia: '1', ini: '08:00', fim: '09:40', sala: '101' }] });
+>     f.turma = f.turma || ''; f.sala = f.sala || ''; f.grade.forEach(g => { g.sala = g.sala || ''; });
+>     this.setState(s => ({ painel: { tipo: 'disc', id: d ? d.id : null }, dF: f, dErro: '', dOk: '', erroG: Object.assign({}, s.erroG, { disc: '' }) }));
+996c1209
+<     if (st.discs.some(d => d.id !== id && d.turma === f.turma && d.nome.trim().toLowerCase() === f.nome.trim().toLowerCase())) return erro('Essa turma já tem uma disciplina com esse nome.');
+---
+>     if (st.discs.some(d => d.id !== id && (d.turma || '') === (f.turma || '') && d.nome.trim().toLowerCase() === f.nome.trim().toLowerCase())) return erro('Essa turma já tem uma disciplina com esse nome.');
+1000,1001c1213,1214
+<     const obj = { id: nid, nome, sigla: (st.discs.find(d => d.id === id) || {}).sigla || nome.split(' ').map(p => p[0]).join('').slice(0, 3).toUpperCase(), turma: f.turma, prof: f.prof ? +f.prof : null, sala: f.sala, carga: c, grade: f.grade.map(r => ({ dia_semana: +r.dia, hora_inicio: r.ini, hora_fim: r.fim, sala: r.sala })) };
+<     this.setState(s => ({ discs: id ? s.discs.map(d => d.id === id ? obj : d) : s.discs.concat(obj), painel: { tipo: 'disc', id: nid }, dErro: '', dOk: obj.grade.length ? 'Grade salva: ' + obj.grade.length + (obj.grade.length === 1 ? ' aula' : ' aulas') + ' por semana.' : 'Salvo. Sem horários, a disciplina não aparece no quadro.' }));
+---
+>     const obj = { id: nid, nome, sigla: (st.discs.find(d => d.id === id) || {}).sigla || nome.split(' ').map(p => p[0]).join('').slice(0, 3).toUpperCase(), turma: f.turma || null, prof: f.prof ? +f.prof : null, sala: f.sala || null, carga: c, grade: f.grade.map(r => ({ dia_semana: +r.dia, hora_inicio: r.ini, hora_fim: r.fim, sala: r.sala || null })) };
+>     this.gravar('disc', () => { if (this.props.aoSalvar) this.props.aoSalvar(obj); this.setState(s => ({ discs: id ? s.discs.map(d => d.id === id ? obj : d) : s.discs.concat(obj), painel: { tipo: 'disc', id: nid }, dErro: '', dOk: obj.grade.length ? 'Grade salva: ' + obj.grade.length + (obj.grade.length === 1 ? ' aula' : ' aulas') + ' por semana.' : 'Salvo. Sem horários, a disciplina não aparece no quadro.' })); });
+1004c1217
+<     const ch = this.choques(st.discs, st.profs);
+---
+>     const ch = this.choques(st.discs, st.profs), P = this.perfil(), esc = P === 'escola', escD = this.escopo(st, P), pag = !!this.props.aoAbrirDisc;
+1005a1219
+>       discAdmin: esc, discAjuda: pag ? 'Toque numa disciplina para abrir alunos, chamada, notas e avisos.' : '', temDiscAjuda: pag, novaSala: () => this.abrirNovo('sala'), msgDiscVis: !!st.msgDisc, msgDisc: st.msgDisc || '', fecharMsgDisc: () => this.setState({ msgDisc: '' }),
+1007c1221
+<       turmasD: TURMAS.map(t => { const ds = st.discs.filter(d => d.turma === t.id); const aulas = ds.reduce((x, d) => x + (d.grade || []).length, 0);
+---
+>       turmasD: TURMAS.concat(escD.some(d => !d.turma) ? [{ id: null, nome: 'Sem turma' }] : []).filter(t => escD.some(d => (d.turma || null) === t.id) || esc).map(t => { const ds = escD.filter(d => (d.turma || null) === t.id); const aulas = ds.reduce((x, d) => x + (d.grade || []).length, 0);
+1010c1224
+<             return { nome: d.nome, prof: this.profNome(d.prof), sala: nomeSala(d.sala), horarios: (d.grade || []).length ? d.grade.map(x => DIA_C[x.dia_semana] + ' ' + x.hora_inicio).join(' · ') : 'Sem horário',
+---
+>             return { nome: d.nome, prof: this.profNome(d.prof), sala: nomeSala(d.sala), salaCor: d.sala ? 'var(--texto-suave)' : 'var(--texto-fraco, var(--texto-suave))', horarios: (d.grade || []).length ? d.grade.map(x => DIA_C[x.dia_semana] + ' ' + x.hora_inicio).join(' · ') : 'Sem horário',
+1012c1226
+<               projCor: !(d.grade || []).length || falta > 0.05 ? 'var(--aviso)' : 'var(--texto-suave)', temCh, semH: !(d.grade || []).length, abrir: () => this.abrirDisc(d) }; }) }; })
+---
+>               projCor: !(d.grade || []).length || falta > 0.05 ? 'var(--aviso)' : 'var(--texto-suave)', temCh, semH: !(d.grade || []).length, abrir: () => pag ? this.props.aoAbrirDisc(d.id) : this.abrirDisc(d), editarVis: esc && pag, editar: () => this.abrirDisc(d) }; }) }; })
+1021c1235
+<     this.setState(s => ({ pedidos: [{ id: Date.now(), prof: PROF_DEMO, disc: +f.disc, data: f.data, ini: f.ini, fim: f.fim, sala: f.sala, motivo: f.motivo.trim(), status: 'pendente', resposta: '', sug: null }].concat(s.pedidos), pF: { disc: f.disc, data: '', ini: '', fim: '', sala: f.sala, motivo: '' }, pMsg: { erro: false, t: 'Pedido enviado. A escola analisa e você vê a resposta aqui.' } }));
+---
+>     this.gravar('pedido', () => this.setState(s => ({ pedidos: [{ id: Date.now(), prof: PROF_DEMO, disc: +f.disc, data: f.data, ini: f.ini, fim: f.fim, sala: f.sala, motivo: f.motivo.trim(), status: 'pendente', resposta: '', sug: null }].concat(s.pedidos), pF: { disc: f.disc, data: '', ini: '', fim: '', sala: f.sala, motivo: '' }, pMsg: { erro: false, t: 'Pedido enviado. A escola analisa e você vê a resposta aqui.' } })));
+1035c1249,1250
+<             aprovar: () => { const c2 = this.pedCheck(p, p, this.state); if (c2) return; this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', resposta: '' }) : x), msgPed: 'Aula extra aprovada. Ela entra no quadro e na semana dos alunos.' })); },
+---
+>             apTxt: this.sv('ap-' + p.id, 'Aprovar'), recTxt: this.sv('rec-' + p.id, 'Recusar pedido'), sugTxt: this.sv('sug-' + p.id, 'Enviar sugestão'), ocupado: !!st.salvando, gravErro: st.erroG['ap-' + p.id] || st.erroG['rec-' + p.id] || st.erroG['sug-' + p.id] || '', temGravErro: !!(st.erroG['ap-' + p.id] || st.erroG['rec-' + p.id] || st.erroG['sug-' + p.id]),
+>             aprovar: () => { const c2 = this.pedCheck(p, p, this.state); if (c2) return; this.gravar('ap-' + p.id, () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', resposta: '' }) : x), msgPed: 'Aula extra aprovada. Ela entra no quadro e na semana dos alunos.' }))); },
+1039c1254
+<             confRec: () => { if (!this.state.recMotivo.trim()) return this.setState({ recErro: 'Escreva o motivo da recusa. O professor vai ver.' }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: s.recMotivo.trim() }) : x), recusando: null, msgPed: 'Pedido recusado. O professor vê o motivo.' })); },
+---
+>             confRec: () => { if (!this.state.recMotivo.trim()) return this.setState({ recErro: 'Escreva o motivo da recusa. O professor vai ver.' }); this.gravar('rec-' + p.id, () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: s.recMotivo.trim() }) : x), recusando: null, msgPed: 'Pedido recusado. O professor vê o motivo.' }))); },
+1042c1257
+<             confSug: () => { const c4 = this.pedCheck(p, this.state.sug, this.state); if (c4) return this.setState({ sugErro: 'Esse horário também tem choque. ' + c4 }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'sugestao', sug: Object.assign({}, s.sug) }) : x), sugerindo: null, msgPed: 'Sugestão enviada. O professor aceita ou recusa.' })); } }); }),
+---
+>             confSug: () => { const c4 = this.pedCheck(p, this.state.sug, this.state); if (c4) return this.setState({ sugErro: 'Esse horário também tem choque. ' + c4 }); this.gravar('sug-' + p.id, () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'sugestao', sug: Object.assign({}, s.sug) }) : x), sugerindo: null, msgPed: 'Sugestão enviada. O professor aceita ou recusa.' }))); } }); }),
+1051,1052c1266,1267
+<       pCkVis: !!(f.disc && f.data && f.ini && f.fim), pCk: ck ? 'Choque: ' + ck : 'Horário livre para você, a turma e a sala.', pCkCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', pEnvOff: !!ck, pEnvO: ck ? 0.4 : 1,
+<       pMsgVis: !!st.pMsg, pMsg: st.pMsg ? st.pMsg.t : '', pMsgCor: st.pMsg && st.pMsg.erro ? 'var(--aviso)' : 'var(--texto)',
+---
+>       pCkVis: !!(f.disc && f.data && f.ini && f.fim), pCk: ck ? 'Choque: ' + ck : 'Horário livre para você, a turma e a sala.', pCkCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', pEnvOff: !!ck || !!st.salvando, pEnvO: ck ? 0.4 : st.salvando === 'pedido' ? 0.6 : 1, pEnvTxt: this.sv('pedido', 'Enviar para análise'),
+>       pMsgVis: !!(st.pMsg || st.erroG.pedido || st.erroG['ac-x']), pMsg: st.erroG.pedido || (st.pMsg ? st.pMsg.t : ''), pMsgCor: st.erroG.pedido || (st.pMsg && st.pMsg.erro) ? 'var(--aviso)' : 'var(--texto)',
+1054,1055c1269,1271
+<         aceitar: () => { const c5 = this.pedCheck(p, p.sug, this.state); if (c5) return this.setState({ pMsg: { erro: true, t: 'A sugestão deixou de estar livre: ' + c5 } }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', data: p.sug.data, ini: p.sug.ini, fim: p.sug.fim, sala: p.sug.sala, sug: null }) : x), pMsg: { erro: false, t: 'Sugestão aceita. A aula extra está no quadro.' } })); },
+<         recusar: () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: 'Você recusou a sugestão da escola.', sug: null }) : x) })) }); }),
+---
+>         acTxt: this.sv('ac-' + p.id, 'Aceitar sugestão'), rsTxt: this.sv('rs-' + p.id, 'Recusar'), sgOff: !!st.salvando, sgErro: st.erroG['ac-' + p.id] || st.erroG['rs-' + p.id] || '', sgTemErro: !!(st.erroG['ac-' + p.id] || st.erroG['rs-' + p.id]),
+>         aceitar: () => { const c5 = this.pedCheck(p, p.sug, this.state); if (c5) return this.setState({ pMsg: { erro: true, t: 'A sugestão deixou de estar livre: ' + c5 } }); this.gravar('ac-' + p.id, () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', data: p.sug.data, ini: p.sug.ini, fim: p.sug.fim, sala: p.sug.sala, sug: null }) : x), pMsg: { erro: false, t: 'Sugestão aceita. A aula extra está no quadro.' } }))); },
+>         recusar: () => this.gravar('rs-' + p.id, () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: 'Você recusou a sugestão da escola.', sug: null }) : x) }))) }); }),
+1059c1275
+<     const pn = st.painel, esc = P === 'escola', base = { painelVis: !!pn, fecharPainel: () => this.setState({ painel: null }), pAula: false, pEv: false, pEvForm: false, pDisc: false, painelTitulo: '' };
+---
+>     const pn = st.painel, esc = P === 'escola', base = { painelVis: !!pn, fecharPainel: () => this.setState({ painel: null }), pAula: false, pEv: false, pEvForm: false, pDisc: false, pCham: false, pNovo: false, painelTitulo: '' };
+1067c1283
+<         status: pn.feriado ? 'Sem aula: ' + pn.feriado : pn.pendente ? 'Aula extra aguardando análise da escola' : cur ? 'Acontecendo agora' : passado ? 'Aula dada' : pn.remarcada ? 'Remarcada só nesta semana' : pn.itipo === 'extra' ? 'Aula extra aprovada' : 'Prevista',
+---
+>         status: pn.feriado ? 'Sem aula: ' + pn.feriado : pn.cancelada ? 'Aula cancelada' : pn.pendente ? 'Aula extra aguardando análise da escola' : cur ? 'Acontecendo agora' : passado ? 'Aula dada' : pn.remarcada ? 'Remarcada só nesta semana' : pn.itipo === 'extra' ? 'Aula extra aprovada' : 'Prevista',
+1068a1285,1286
+>         ...(() => { const ci = this.chamadaInfo(pn, st, now, P), inst = { key: pn.key, tkey: pn.tkey, disc: d, data: pn.data, ini: pn.ini, fim: pn.fim, sala: pn.sala, tipo: pn.itipo, pendente: pn.pendente, remarcada: pn.remarcada, feriado: pn.feriado, cancelada: pn.cancelada, pedido: pn.pedido ? { id: pn.pedido } : null };
+>           return { paChVis: ci.vis, paChFeita: ci.vis && ci.feita, paChOff: !!ci.off, paChDica: ci.off, paChTemDica: !!ci.off, paChTxt: ci.txt, paChO: ci.off ? 0.4 : 1, paChPrim: ci.feita ? 'var(--superficie)' : 'var(--texto)', paChCor: ci.feita ? 'var(--texto)' : 'var(--fundo)', paCh: () => { if (!ci.off) this.abrirChamada(inst); } }; })(),
+1070a1289,1308
+>     if (pn.tipo === 'chamada') {
+>       const d = st.discs.find(x => x.id === pn.disc); if (!d) return base;
+>       const lista = this.alunosDaTurma(d.turma), m = st.chamF || {}, feita = !!st.chamadas[pn.key], ci = this.chamadaInfo(pn, st, now, P), ed = !ci.off;
+>       const al = lista.map((a0, k) => { const nome = a0.nome, id = a0.id, v = m[id] != null ? m[id] : m['i' + k], p = v === true, fl = v === false;
+>         return { nome, iniciais: nome.split(' ').map(x => x[0]).slice(0, 2).join(''), p, f: fl, pBg: p ? 'var(--texto)' : 'transparent', pCor: p ? 'var(--fundo)' : 'var(--texto)', fBg: fl ? 'var(--texto)' : 'transparent', fCor: fl ? 'var(--fundo)' : 'var(--texto)', pPeso: p ? 600 : 500, fPeso: fl ? 600 : 500, cursor: ed ? 'pointer' : 'default',
+>           marcarP: () => { if (ed) this.setState(s => ({ chamF: Object.assign({}, s.chamF, { [id]: true }), chamErro: '' })); }, marcarF: () => { if (ed) this.setState(s => ({ chamF: Object.assign({}, s.chamF, { [id]: false }), chamErro: '' })); } }; });
+>       const pres = al.filter(x => x.p).length, semMarca = al.filter(x => !x.p && !x.f).length;
+>       const voltar = () => this.abrirAula({ key: pn.key, tkey: pn.tkey, disc: d, data: pn.data, ini: pn.ini, fim: pn.fim, sala: pn.sala, tipo: pn.itipo, pendente: pn.pendente, remarcada: pn.remarcada, feriado: pn.feriado, cancelada: pn.cancelada, pedido: pn.pedido ? { id: pn.pedido } : null });
+>       return Object.assign(base, { painelTitulo: 'Chamada', pCham: true, ch: { rotulo: pn.itipo === 'extra' ? 'Aula extra' : 'Aula da grade', disc: d.nome + ' · ' + nomeTurma(d.turma), quando: DIA_L[dsem(pn.data)] + ', ' + ddmm(pn.data) + ' · ' + pn.ini + '–' + pn.fim + ' · ' + nomeSala(pn.sala),
+>           bloqueio: !ed, bloqueioTxt: ci.off, editavel: ed, alunos: al, temAlunos: al.length > 0, semAlunos: !al.length, contador: pres + '/' + al.length, faltaTxt: semMarca ? semMarca + ' sem marcar' : 'todos marcados',
+>           todos: () => this.setState(s => { const c = Object.assign({}, s.chamF); lista.forEach(x => { c[x.id] = true; }); return { chamF: c, chamErro: '' }; }), voltar,
+>           salvar: () => { const S = this.state, falt = lista.filter((x, k) => S.chamF[x.id] == null && S.chamF['i' + k] == null).length; if (falt) return this.setState({ chamErro: 'Marque todos os alunos. ' + (falt === 1 ? 'Falta 1.' : 'Faltam ' + falt + '.') }); const snapF = {}; lista.forEach((x, k) => { snapF[x.id] = S.chamF[x.id] != null ? S.chamF[x.id] : S.chamF['i' + k]; }); this.gravar('chamada', () => { this.setState(s => ({ chamadas: Object.assign({}, s.chamadas, { [pn.key]: snapF }) }), voltar); }); },
+>           botao: this.sv('chamada', feita ? 'Salvar alterações' : 'Salvar chamada'), off: !!st.salvando, op: st.salvando === 'chamada' ? 0.6 : 1 }, chamErro: st.chamErro || st.erroG.chamada || '', semAlunosTxt: d.turma ? 'Nenhum aluno cadastrado no ' + nomeTurma(d.turma) + '. Escolha a turma no cadastro do aluno.' : 'Disciplina sem turma: não há alunos para a chamada.' });
+>     }
+>     if (pn.tipo === 'turma' || pn.tipo === 'sala') {
+>       const t = pn.tipo === 'turma';
+>       return Object.assign(base, { painelTitulo: t ? 'Turma' : 'Sala', pNovo: true, novoTitulo: t ? 'Nova turma' : 'Nova sala', novoAjuda: t ? 'Só o nome. A turma passa a aparecer nos seletores da grade e do calendário.' : 'Só o nome. A sala passa a aparecer nos seletores da grade e dos pedidos.', novoPh: t ? '1º B' : 'Sala 103',
+>         nomeF: st.nomeF, setNome: e => this.setState({ nomeF: e.target.value, nomeErro: '' }), nomeErro: st.nomeErro || st.erroG[pn.tipo] || '', novoBotao: this.sv(pn.tipo, t ? 'Cadastrar turma' : 'Cadastrar sala'), novoOff: !!st.salvando, novoO: st.salvando === pn.tipo ? 0.6 : 1, salvarNovo: e => this.salvarNovo(e),
+>         novoVoltaVis: !!pn.volta, novoVoltar: () => this.setState({ painel: pn.volta.painel, dF: pn.volta.dF }) });
+>     }
+1083c1321
+<         optDiscE: st.discs.filter(d => f.todas || f.turmas.includes(d.turma)).map(d => ({ v: String(d.id), l: d.nome + ' · ' + nomeTurma(d.turma) })), eErro: st.eErro, salvarEvento: ev => this.salvarEvento(ev) });
+---
+>         optDiscE: st.discs.filter(d => f.todas || f.turmas.includes(d.turma)).map(d => ({ v: String(d.id), l: d.nome + ' · ' + nomeTurma(d.turma) })), eErro: st.eErro || st.erroG.evento || '', efBotao: this.sv('evento', 'Publicar no calendário'), efOff: !!st.salvando, efO: st.salvando === 'evento' ? 0.6 : 1, salvarEvento: ev => this.salvarEvento(ev) });
+1086,1087c1324,1325
+<       const f = st.dF, errs = this.errosDisc(f, pn.id), set = k => e => this.setDF(k, e.target.value);
+<       const c = pn.id ? this.carga(st.discs.find(x => x.id === pn.id), st, fer, now.data, now.min) : null;
+---
+>       const f = st.dF, errs = this.errosDisc(f, pn.id), set = k => e => { const v = e.target.value; if (v === '__nova') return this.abrirNovo(k === 'turma' ? 'turma' : 'sala', { painel: pn, dF: st.dF }); this.setDF(k, v); };
+>       const c = pn.id && st.discs.find(x => x.id === pn.id) ? this.carga(st.discs.find(x => x.id === pn.id), st, fer, now.data, now.min) : null;
+1089c1327
+<         optTurmas: TURMAS.map(t => ({ v: t.id, l: t.nome })), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })),
+---
+>         optTurmas: [{ v: '', l: 'Sem turma' }].concat(TURMAS.map(t => ({ v: t.id, l: t.nome })), []), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optSalas: [{ v: '', l: 'Sem sala' }].concat(SALAS.map(s => ({ v: s.id, l: s.nome })), this.props.soEditor ? [] : [{ v: '__nova', l: '+ Nova sala…' }]),
+1091,1092c1329,1330
+<         dfLinhas: f.grade.map((r, i) => ({ n: String(i + 1), dia: r.dia, ini: r.ini, fim: r.fim, sala: r.sala, nota: errs[i] || 'Livre para o professor, a turma e a sala.', notaCor: errs[i] ? 'var(--aviso)' : 'var(--texto-suave)', borda: errs[i] ? 'var(--aviso)' : 'var(--borda)',
+<           setDia: e => this.setLinhaD(r.k, 'dia', e.target.value), setIni: e => this.setLinhaD(r.k, 'ini', e.target.value), setFim: e => this.setLinhaD(r.k, 'fim', e.target.value), setSala: e => this.setLinhaD(r.k, 'sala', e.target.value),
+---
+>         dfLinhas: f.grade.map((r, i) => ({ n: String(i + 1), dia: r.dia, ini: r.ini, fim: r.fim, sala: r.sala || '', nota: errs[i] || 'Livre para o professor, a turma e a sala.', notaCor: errs[i] ? 'var(--aviso)' : 'var(--texto-suave)', borda: errs[i] ? 'var(--aviso)' : 'var(--borda)',
+>           setDia: e => this.setLinhaD(r.k, 'dia', e.target.value), setIni: e => this.setLinhaD(r.k, 'ini', e.target.value), setFim: e => this.setLinhaD(r.k, 'fim', e.target.value), setSala: e => { if (e.target.value === '__nova') return this.abrirNovo('sala', { painel: pn, dF: st.dF }); this.setLinhaD(r.k, 'sala', e.target.value); },
+1095c1333
+<         dErro: st.dErro, dOk: st.dOk, temDOk: !!st.dOk, salvarDisc: e => this.salvarDisc(e) });
+---
+>         dErro: st.dErro || st.erroG.disc || '', dOk: st.dOk, temDOk: !!st.dOk, salvarDisc: e => this.salvarDisc(e), dfBotao: this.sv('disc', 'Salvar disciplina'), dfOff: !!st.salvando, dfO: st.salvando === 'disc' ? 0.6 : 1 });

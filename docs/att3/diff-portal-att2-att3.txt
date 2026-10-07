@@ -1,0 +1,270 @@
+18a19
+> html[data-sem-italico] *{font-style:normal !important}
+572a574
+>   <sc-if value="{{ hubVoltarVis }}" hint-placeholder-val="{{ false }}"><button onClick="{{ hubVoltar }}" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;margin-bottom:16px;padding:0 12px 0 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg>Turmas</button></sc-if>
+575c577
+<       <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ alunosTotalTxt }}</span>
+---
+>       <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ alunosRotuloTopo }}</span>
+578c580
+<     <sc-if value="{{ alunosAdmin }}" hint-placeholder-val="{{ true }}"><button onClick="{{ abrirNovoAluno }}" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:8px;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;transition:transform 80ms" style-active="transform:scale(.98)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Novo aluno</button></sc-if>
+---
+>     <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-if value="{{ hubNovaBtnVis }}" hint-placeholder-val="{{ false }}"><button onClick="{{ abrirHubNova }}" style="flex:none;white-space:nowrap;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Nova turma</button></sc-if><sc-if value="{{ alunosAdmin }}" hint-placeholder-val="{{ true }}"><button onClick="{{ abrirNovoAluno }}" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:8px;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;transition:transform 80ms" style-active="transform:scale(.98)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Novo aluno</button></sc-if></div>
+579a582,637
+>   <sc-if value="{{ hubMsgVis }}" hint-placeholder-val="{{ false }}"><div role="status" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:16px;border:1px solid {{ hubMsgBorda }};border-radius:2px;background:{{ hubMsgBg }};color:{{ hubMsgCor }};font-size:14px"><span style="text-wrap:pretty">{{ hubMsg }}</span><button onClick="{{ fecharHubMsg }}" style="flex:none;min-height:32px;padding:0 10px;border:1px solid currentColor;border-radius:2px;background:transparent;color:inherit;font-size:13px;cursor:pointer">Ok</button></div></sc-if>
+>   <sc-if value="{{ hubNovaVis }}" hint-placeholder-val="{{ false }}">
+>     <form onSubmit="{{ hubCriar }}" style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;padding:16px;margin-bottom:16px;background:var(--superficie);border:1px solid var(--texto)">
+>       <label style="flex:1 1 220px;display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Nome da turma</span><input value="{{ hubNome }}" onChange="{{ setHubNome }}" placeholder="1º B" style="width:100%;min-height:44px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px" style-focus="border-color:var(--texto)"></label>
+>       <button type="submit" style="min-height:44px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Criar turma</button>
+>       <button type="button" onClick="{{ fecharHubNova }}" style="min-height:44px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px;cursor:pointer">Cancelar</button>
+>       <span role="alert" style="flex:1 1 100%;min-height:18px;font-size:14px;color:var(--aviso)">{{ hubErro }}</span>
+>     </form>
+>   </sc-if>
+>   <sc-if value="{{ hubVis }}" hint-placeholder-val="{{ false }}">
+>     <div data-hub-turmas="" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:12px">
+>       <sc-for list="{{ hubCards }}" as="c" hint-placeholder-count="4">
+>         <button onClick="{{ c.abrir }}" style="display:flex;flex-direction:column;gap:14px;padding:18px;border:{{ c.borda }};border-radius:2px;background:var(--superficie);font-family:inherit;text-align:left;color:var(--texto);cursor:pointer;transition:border-color 120ms linear" style-hover="border-color:var(--texto)">
+>           <span style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:28px;line-height:1">{{ c.nome }}</span><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ c.nTxt }}</span></span>
+>           <span style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--borda-fraca);border:1px solid var(--borda-fraca)">
+>             <span style="display:flex;flex-direction:column;gap:2px;padding:8px;background:var(--superficie)"><span style="font-size:11px;color:var(--texto-suave)">Média</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:22px;font-weight:500;color:{{ c.mediaCor }}">{{ c.media }}</span></span>
+>             <span style="display:flex;flex-direction:column;gap:2px;padding:8px;background:var(--superficie)"><span style="font-size:11px;color:var(--texto-suave)">Frequência</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:22px;font-weight:500;color:{{ c.freqCor }}">{{ c.freq }}</span></span>
+>             <span style="display:flex;flex-direction:column;gap:2px;padding:8px;background:var(--superficie)"><span style="font-size:11px;color:var(--texto-suave)">Em risco</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:22px;font-weight:500;color:{{ c.riscoCor }}">{{ c.risco }}</span></span>
+>           </span>
+>           <sc-if value="{{ c.temDiscs }}" hint-placeholder-val="{{ true }}"><span style="display:flex;flex-wrap:wrap;gap:4px"><sc-for list="{{ c.discs }}" as="d" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border:1px solid var(--borda);border-radius:2px;font-size:12px;font-weight:500">{{ d.nome }}</span></sc-for></span></sc-if>
+>           <span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ c.aulasTxt }}</span>
+>         </button>
+>       </sc-for>
+>     </div>
+>   </sc-if>
+>   <sc-if value="{{ turmaVis }}" hint-placeholder-val="{{ false }}">
+>     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:1px;margin-bottom:20px;background:var(--borda-fraca);border:1px solid var(--borda-fraca)">
+>       <sc-for list="{{ turmaStats }}" as="t" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:4px;padding:16px 18px;background:var(--superficie)"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ t.l }}</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:36px;line-height:1;color:{{ t.c }}">{{ t.v }}</span></div></sc-for>
+>     </div>
+>     <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;align-items:flex-start">
+>       <section style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+>         <h2 style="margin:0;padding:14px 16px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Disciplinas da turma</h2>
+>         <sc-for list="{{ turmaDiscs }}" as="d" hint-placeholder-count="2"><button onClick="{{ d.abrir }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:8px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;font-family:inherit;text-align:left;color:var(--texto);cursor:pointer" style-hover="background:var(--sunken)"><span style="display:flex;flex-direction:column"><span style="font-weight:500">{{ d.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ d.prof }}</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"></path></svg></button></sc-for>
+>         <sc-if value="{{ turmaSemDiscs }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:14px 16px;border-top:1px solid var(--borda-fraca);font-size:14px;color:var(--texto-suave)">Nenhuma disciplina ligada a esta turma. Escolha a turma no editor de disciplina, no Acadêmico.</p></sc-if>
+>       </section>
+>       <section style="flex:2 1 420px;min-width:0;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+>         <h2 style="margin:0;padding:14px 16px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Grade da semana</h2>
+>         <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--borda-fraca)">
+>           <sc-for list="{{ turmaGrade }}" as="g" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:6px;min-width:0;min-height:120px;padding:10px 8px;border-left:1px solid var(--borda-fraca)"><span style="font-weight:600">{{ g.dia }}</span><sc-for list="{{ g.itens }}" as="i" hint-placeholder-count="1"><span style="display:flex;flex-direction:column;padding:4px 6px;border:1px solid var(--borda);border-radius:2px;font-size:12px;line-height:1.25"><span style="font-variant-numeric:tabular-nums;color:var(--texto-suave)">{{ i.hora }}</span><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ i.nome }}</span></span></sc-for><sc-if value="{{ g.vazio }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--texto-suave)">—</span></sc-if></div></sc-for>
+>         </div>
+>       </section>
+>     </div>
+>     <sc-if value="{{ matTemDiscs }}" hint-placeholder-val="{{ false }}">
+>       <section data-matriculas-turma="" style="display:flex;flex-direction:column;margin-bottom:20px;background:var(--superficie);border:1px solid var(--borda-fraca)">
+>         <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;padding:14px 16px"><h2 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Matrículas</h2><span style="font-size:13px;color:var(--texto-suave)">Toque numa célula para matricular ou desmatricular.</span></div>
+>         <div style="overflow-x:auto">
+>           <div style="min-width:max-content">
+>             <div style="display:grid;grid-template-columns:{{ matCols }};gap:8px;align-items:end;padding:8px 16px;border-top:1px solid var(--borda-fraca)"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Aluno</span><sc-for list="{{ matCab }}" as="c" hint-placeholder-count="2"><span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:600">{{ c.nome }}</span><span style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:12px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ c.n }}</span><button onClick="{{ c.todos }}" style="min-height:28px;padding:0 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:12px;cursor:pointer" style-hover="border-color:var(--texto)">Todos</button></span></span></sc-for></div>
+>             <sc-for list="{{ matLinhas }}" as="l" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:{{ matCols }};gap:8px;align-items:center;min-height:52px;padding:6px 16px;border-top:1px solid var(--borda-fraca)"><span style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.nome }}</span><sc-for list="{{ l.cels }}" as="c" hint-placeholder-count="2"><button aria-pressed="{{ c.on }}" aria-label="{{ c.label }}" onClick="{{ c.ir }}" style="min-height:36px;padding:0 8px;border:1px solid var(--borda);border-radius:2px;background:{{ c.bg }};color:{{ c.cor }};font-size:13px;font-weight:500;cursor:pointer">{{ c.txt }}</button></sc-for></div></sc-for>
+>           </div>
+>         </div>
+>       </section>
+>     </sc-if>
+>     <h2 style="margin:0 0 12px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Alunos da turma</h2>
+>   </sc-if>
+>   <sc-if value="{{ listaVis }}" hint-placeholder-val="{{ true }}">
+593a652
+>   <sc-if value="{{ semTurmaVis }}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:10px 14px;margin-bottom:12px;border:1px solid var(--aviso);border-radius:2px;background:var(--aviso-suave);color:var(--aviso);font-size:14px;text-wrap:pretty">{{ semTurmaTxt }} Abra o aluno e escolha a turma.</div></sc-if>
+638a698
+>   </sc-if>
+641a702,703
+> <sc-if value="{{ acadDiscVis }}" hint-placeholder-val="{{ false }}"><button onClick="{{ voltarAcad }}" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;margin-bottom:16px;padding:0 12px 0 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg>Acadêmico · Disciplinas</button></sc-if>
+> <sc-if value="{{ gaEdVis }}" hint-placeholder-val="{{ false }}"><dc-import name="GradeAgenda" so-editor="{{ true }}" turmas="{{ gaTurmas }}" alunos="{{ gaAlunos }}" ao-nova-turma="{{ gaNovaTurma }}" embutido="{{ true }}" perfil="Escola" disc-id="{{ gaDiscId }}" base="{{ gaBase }}" profs="{{ gaProfs }}" ao-salvar="{{ gaSalvar }}" ao-fechar="{{ gaFechar }}" hint-size="100%,1px"></dc-import></sc-if>
+939c1001
+< <dc-import name="Grade e Agenda" perfil="{{ gradePerfil }}" embutido="{{ true }}" hint-size="100%,900px"></dc-import>
+---
+> <dc-import name="GradeAgenda" perfil="{{ gradePerfil }}" estado="{{ gradeEstado }}" turmas="{{ gaTurmas }}" alunos="{{ gaAlunos }}" turma-aluno="{{ gaTurmaAluno }}" ao-nova-turma="{{ gaNovaTurma }}" aba-inicial="{{ gaAbaIni }}" base="{{ gaBase }}" profs="{{ gaProfs }}" ao-salvar="{{ gaSalvar }}" ao-abrir-disc="{{ gaAbrirDisc }}" embutido="{{ true }}" hint-size="100%,900px"></dc-import>
+1026c1088
+<   <dc-import name="Grade e Agenda" perfil="{{ gradePerfil }}" embutido="{{ true }}" hint-size="100%,900px"></dc-import>
+---
+>   <dc-import name="GradeAgenda" perfil="{{ gradePerfil }}" estado="{{ gradeEstado }}" turmas="{{ gaTurmas }}" alunos="{{ gaAlunos }}" turma-aluno="{{ gaTurmaAluno }}" ao-nova-turma="{{ gaNovaTurma }}" aba-inicial="{{ gaAbaIni }}" base="{{ gaBase }}" profs="{{ gaProfs }}" ao-salvar="{{ gaSalvar }}" ao-abrir-disc="{{ gaAbrirDisc }}" embutido="{{ true }}" hint-size="100%,900px"></dc-import>
+1077c1139
+<     <button onClick="{{ irGrade }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:4px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="background:var(--sunken)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="1"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Grade e agenda</button>
+---
+>     <button onClick="{{ irGrade }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:4px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="background:var(--sunken)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="1"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Acadêmico</button>
+1170c1232
+<           <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ pa.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">Matrícula {{ pa.mat }} · {{ pa.idade }} anos</span></div>
+---
+>           <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ pa.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">Matrícula {{ pa.mat }} · {{ pa.idade }} anos · {{ pa.turmaTxt }}</span></div>
+1181a1244
+>           <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Turma</span><select value="{{ fTurma }}" onChange="{{ setFTurma }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="">Sem turma</option><sc-for list="{{ optTurmasAl }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select><span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ turmaAjuda }}</span></label>
+1254a1318
+>           <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Turma</span><select value="{{ fTurma }}" onChange="{{ setFTurma }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="">Sem turma</option><sc-for list="{{ optTurmasAl }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select><span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ turmaAjuda }}</span></label>
+1545c1609
+< <script type="text/x-dc" data-dc-script data-props="{&quot;inicio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Apresentação&quot;,&quot;Login&quot;,&quot;Primeiro acesso&quot;,&quot;Escola&quot;,&quot;Professor&quot;,&quot;Professor · sem permissão&quot;,&quot;Aluno&quot;,&quot;Escola · horários do professor&quot;,&quot;Escola · assistente vazio&quot;,&quot;Escola · assistente com proposta&quot;,&quot;Escola · assistente com erro&quot;],&quot;default&quot;:&quot;Apresentação&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;dispositivo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Desktop&quot;,&quot;Celular&quot;],&quot;default&quot;:&quot;Desktop&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Portal&quot;,&quot;Apple · SF + New York&quot;,&quot;Apple · só SF&quot;],&quot;default&quot;:&quot;Apple · SF + New York&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;movimento&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Seguir o sistema&quot;,&quot;Completo&quot;,&quot;Reduzido&quot;],&quot;default&quot;:&quot;Seguir o sistema&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Vazio&quot;,&quot;Carregando&quot;,&quot;Erro&quot;,&quot;Muitos itens&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;vista&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Protótipo&quot;,&quot;Sistema&quot;],&quot;default&quot;:&quot;Protótipo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Documentação&quot;},&quot;funcoesEstilo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Tinta&quot;,&quot;Espiral&quot;],&quot;default&quot;:&quot;Tinta&quot;,&quot;tsType&quot;:&quot;'Tinta' | 'Espiral'&quot;,&quot;section&quot;:&quot;Landing&quot;},&quot;iaEstado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Conversa livre&quot;,&quot;Vazio&quot;,&quot;Enviando&quot;,&quot;Só texto&quot;,&quot;Com proposta&quot;,&quot;Com \&quot;Não coube\&quot;&quot;,&quot;Aplicando&quot;,&quot;Aplicada&quot;,&quot;Erro: não configurado&quot;,&quot;Erro: limite de uso&quot;,&quot;Erro: sem conexão&quot;],&quot;default&quot;:&quot;Conversa livre&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Assistente de grade&quot;},&quot;iaErroSimulado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nenhum&quot;,&quot;Não configurado&quot;,&quot;Limite de uso&quot;,&quot;Sem conexão&quot;],&quot;default&quot;:&quot;Nenhum&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Assistente de grade&quot;}}">
+---
+> <script type="text/x-dc" data-dc-script data-props="{&quot;inicio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Apresentação&quot;,&quot;Login&quot;,&quot;Primeiro acesso&quot;,&quot;Escola&quot;,&quot;Professor&quot;,&quot;Professor · sem permissão&quot;,&quot;Aluno&quot;,&quot;Escola · horários do professor&quot;,&quot;Escola · assistente vazio&quot;,&quot;Escola · assistente com proposta&quot;,&quot;Escola · assistente com erro&quot;,&quot;Escola / Grade e agenda / Carregando&quot;,&quot;Escola / Grade e agenda / Erro ao carregar&quot;,&quot;Escola / Aula / Chamada de hoje&quot;,&quot;Escola / Aula / Chamada feita&quot;,&quot;Escola / Aula / Aula futura&quot;,&quot;Escola / Aula / Feriado&quot;,&quot;Escola / Aula / Cancelada&quot;,&quot;Escola / Aula / Semestre encerrado&quot;,&quot;Escola / Chamada / Aberta&quot;,&quot;Escola / Chamada / Salvando&quot;,&quot;Escola / Chamada / Erro de gravação&quot;,&quot;Professor / Aula / Chamada de hoje&quot;,&quot;Escola / Remarcação / Salvando&quot;,&quot;Escola / Remarcação / Erro de gravação&quot;,&quot;Escola / Disciplina / Salvando&quot;,&quot;Escola / Disciplina / Erro de gravação&quot;,&quot;Escola / Disciplina / Sem turma e sem sala&quot;,&quot;Escola / Quadro / Sem turma e sem sala&quot;,&quot;Escola / Quadro / Vazio&quot;,&quot;Escola / Evento / Salvando&quot;,&quot;Escola / Evento / Erro de gravação&quot;,&quot;Escola / Pedidos / Aprovando&quot;,&quot;Escola / Pedidos / Erro de gravação&quot;,&quot;Professor / Pedido / Salvando&quot;,&quot;Professor / Pedido / Erro de gravação&quot;,&quot;Professor / Sugestão / Salvando&quot;,&quot;Escola / Assistente / Enviando&quot;,&quot;Escola / Assistente / Só texto&quot;,&quot;Escola / Assistente / Proposta com Não coube&quot;,&quot;Escola / Assistente / Aplicando&quot;,&quot;Escola / Assistente / Erro: não configurado&quot;,&quot;Escola / Assistente / Erro: limite de uso&quot;,&quot;Escola / Assistente / Erro: sem conexão&quot;,&quot;Escola / Nova turma&quot;,&quot;Escola / Nova sala&quot;,&quot;Escola / Nova turma / Já cadastrada&quot;,&quot;Escola / Reverter / Confirmar&quot;,&quot;Escola / Reverter / Salvando&quot;,&quot;Escola / Reverter / Erro de gravação&quot;,&quot;Escola / Disciplinas / Editor da Grade e agenda&quot;],&quot;default&quot;:&quot;Apresentação&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;dispositivo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Desktop&quot;,&quot;Celular&quot;],&quot;default&quot;:&quot;Desktop&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Portal&quot;,&quot;Apple · SF + New York&quot;,&quot;Apple · só SF&quot;],&quot;default&quot;:&quot;Apple · SF + New York&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;movimento&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Seguir o sistema&quot;,&quot;Completo&quot;,&quot;Reduzido&quot;],&quot;default&quot;:&quot;Seguir o sistema&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Vazio&quot;,&quot;Carregando&quot;,&quot;Erro&quot;,&quot;Muitos itens&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;vista&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Protótipo&quot;,&quot;Sistema&quot;],&quot;default&quot;:&quot;Protótipo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Documentação&quot;},&quot;funcoesEstilo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Tinta&quot;,&quot;Espiral&quot;],&quot;default&quot;:&quot;Tinta&quot;,&quot;tsType&quot;:&quot;'Tinta' | 'Espiral'&quot;,&quot;section&quot;:&quot;Landing&quot;},&quot;iaEstado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Conversa livre&quot;,&quot;Vazio&quot;,&quot;Enviando&quot;,&quot;Só texto&quot;,&quot;Com proposta&quot;,&quot;Com \&quot;Não coube\&quot;&quot;,&quot;Aplicando&quot;,&quot;Aplicada&quot;,&quot;Erro: não configurado&quot;,&quot;Erro: limite de uso&quot;,&quot;Erro: sem conexão&quot;],&quot;default&quot;:&quot;Conversa livre&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Assistente de grade&quot;},&quot;iaErroSimulado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nenhum&quot;,&quot;Não configurado&quot;,&quot;Limite de uso&quot;,&quot;Sem conexão&quot;],&quot;default&quot;:&quot;Nenhum&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Assistente de grade&quot;},&quot;italico&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Com itálico&quot;,&quot;Sem itálico&quot;],&quot;default&quot;:&quot;Sem itálico&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;}}">
+1547,1551c1611,1615
+<   { id: 1, nome: 'Ana Souza', mat: '2026001', idade: 20, media: 9.0, email: 'ana@escola.com', hist: '2026.1' },
+<   { id: 2, nome: 'Bruno Lima', mat: '2026002', idade: 22, media: 6.0, email: 'bruno@escola.com', hist: '2026.1' },
+<   { id: 3, nome: 'Carla Dias', mat: '2026003', idade: 19, media: 3.8, email: null },
+<   { id: 4, nome: 'Diego Alves', mat: '2026004', idade: 21, media: 8.5, email: 'diego@escola.com' },
+<   { id: 5, nome: 'Eva Rocha', mat: '2026005', idade: 23, media: 6.3, email: null },
+---
+>   { id: 1, nome: 'Ana Souza', mat: '2026001', idade: 20, media: 9.0, email: 'ana@escola.com', hist: '2026.1', turma: '1A' },
+>   { id: 2, nome: 'Bruno Lima', mat: '2026002', idade: 22, media: 6.0, email: 'bruno@escola.com', hist: '2026.1', turma: '1A' },
+>   { id: 3, nome: 'Carla Dias', mat: '2026003', idade: 19, media: 3.8, email: null, turma: '2A' },
+>   { id: 4, nome: 'Diego Alves', mat: '2026004', idade: 21, media: 8.5, email: 'diego@escola.com', turma: '2A' },
+>   { id: 5, nome: 'Eva Rocha', mat: '2026005', idade: 23, media: 6.3, email: null, turma: '3A' },
+1554a1619
+> const TURMAS0 = [{ id: '1A', nome: '1º A' }, { id: '2A', nome: '2º A' }, { id: '3A', nome: '3º A' }];
+1579,1582c1644,1647
+<   { id: 1, nome: 'Python', carga_horaria: 40, professor_id: 1, grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }, { dia_semana: 4, hora_inicio: '08:00', hora_fim: '09:40' }] },
+<   { id: 2, nome: 'Banco de Dados', carga_horaria: 60, professor_id: 1, grade: [{ dia_semana: 2, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 3, hora_inicio: '08:00', hora_fim: '09:40' }] },
+<   { id: 3, nome: 'Algoritmos', carga_horaria: 80, professor_id: 2, grade: [{ dia_semana: 3, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40' }] },
+<   { id: 4, nome: 'Redes', carga_horaria: 30, professor_id: null, grade: [] }
+---
+>   { id: 1, nome: 'Python', carga_horaria: 40, professor_id: 1, turma: '1A', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }, { dia_semana: 4, hora_inicio: '08:00', hora_fim: '09:40' }] },
+>   { id: 2, nome: 'Banco de Dados', carga_horaria: 60, professor_id: 1, turma: '2A', grade: [{ dia_semana: 2, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 3, hora_inicio: '08:00', hora_fim: '09:40' }] },
+>   { id: 3, nome: 'Algoritmos', carga_horaria: 80, professor_id: 2, turma: '1A', grade: [{ dia_semana: 3, hora_inicio: '10:00', hora_fim: '11:40' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40' }] },
+>   { id: 4, nome: 'Redes', carga_horaria: 30, professor_id: null, turma: '3A', grade: [] }
+1586,1587c1651,1652
+<   escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'avisos', label: 'Avisos' }],
+<   prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
+---
+>   escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'avisos', label: 'Avisos' }],
+>   prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
+1701c1766
+<     fEmail: '', fOk: '', fGrade: [], fOcup: [], ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
+---
+>     fEmail: '', fOk: '', fGrade: [], fOcup: [], fTurma: '', turmas: TURMAS0, ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
+1735a1801
+>     if ((this.props.italico ?? 'Sem itálico') === 'Sem itálico') document.documentElement.setAttribute('data-sem-italico', ''); else document.documentElement.removeAttribute('data-sem-italico');
+1753c1819
+<     if (pp.fonte !== this.props.fonte) this.aplicarFonte();
+---
+>     if (pp.fonte !== this.props.fonte || pp.italico !== this.props.italico) this.aplicarFonte();
+1766a1833
+>     else if (/ \/ /.test(i)) { const pf = /^Professor/.test(i) ? 'prof' : 'escola', ed = i === 'Escola / Disciplinas / Editor da Grade e agenda'; this.entrarComo(pf, pf === 'prof' ? 1 : undefined); setTimeout(() => this.setState({ tela: ed ? 'disciplinas' : 'frequencia', gradeEstado: ed ? 'Normal' : i, gaEd: ed ? (this.state.discs[0] || {}).id || 'novo' : null }), 0); }
+1944c2011,2014
+<     const S = this.state;
+---
+>     const S = this.state; let acad = false;
+>     if (tela === 'disciplinas') { tela = 'frequencia'; acad = true; } else if (tela === 'boletim' && S.papel === 'escola') tela = 'alunos';
+>     if (S.acadDisc !== acad || tela === 'frequencia') this.setState({ acadDisc: acad, gaAbaIni: acad ? 'disc' : 'quadro' });
+>     if (tela === 'alunos' && S.tela !== 'alunos') this.setState({ hubTurma: null, hubNova: false, hubMsg: null });
+1972c2042
+<   abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fOcup: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
+---
+>   abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fOcup: [], fTurma: '', fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
+2066a2137,2160
+>   matsDaTurma(mats, discs, alunoIds, turma) { if (!turma) return mats; const m = Object.assign({}, mats); discs.filter(d => d.turma === turma).forEach(d => alunoIds.forEach(a => { m[a + '-' + d.id] = true; })); return m; }
+>   nomeT(id) { return id ? (this.state.turmas.find(t => t.id === id) || {}).nome || id : 'Sem turma'; }
+>   hubToggle(aid, did) {
+>     const S = this.state, k = aid + '-' + did, al = S.alunos.find(a => a.id === aid), d = S.discs.find(x => x.id === did);
+>     if (!this.ativo()) return this.setState({ hubMsg: { erro: true, t: 'Semestre encerrado: somente leitura.' } });
+>     if (!S.mats[k]) return this.setState(s => ({ mats: Object.assign({}, s.mats, { [k]: true }), hubMsg: { erro: false, t: al.nome + ' matriculado em ' + d.nome + '.' } }));
+>     const temNota = S.avals.some(v => v.did === did && S.notas[aid + '-' + v.id] != null), temFreq = S.aulas.some(a => a.disciplina_id === did && a.chamada && a.chamada[aid] != null);
+>     if (temNota || temFreq) return this.setState({ hubMsg: { erro: true, t: al.nome + ' já tem notas ou frequência em ' + d.nome + ': não dá para desmatricular.' } });
+>     this.setState(s => { const m = Object.assign({}, s.mats); delete m[k]; return { mats: m, hubMsg: { erro: false, t: al.nome + ' desmatriculado de ' + d.nome + '.' } }; });
+>   }
+>   hubCriarTurma(e) {
+>     e.preventDefault(); const S = this.state, nome = (S.hubNome || '').trim();
+>     if (!nome) return this.setState({ hubErro: 'Dê um nome à turma.' });
+>     if (S.turmas.some(t => t.nome.trim().toLowerCase() === nome.toLowerCase())) return this.setState({ hubErro: 'Turma já cadastrada.' });
+>     this.setState(s => ({ turmas: s.turmas.concat({ id: 't' + Date.now(), nome }), hubNova: false, hubNome: '', hubErro: '', hubMsg: { erro: false, t: 'Turma ' + nome + ' criada. Cadastre ou mova alunos para ela.' } }));
+>   }
+>   gaSalvar(obj) {
+>     const S = this.state, sem = this.ativo(); if (!sem) return;
+>     const atual = S.discs.find(d => d.id === obj.id) || {};
+>     const d = Object.assign({}, atual, { id: obj.id, nome: obj.nome, carga_horaria: obj.carga, professor_id: obj.prof, turma: obj.turma, sala: obj.sala });
+>     const r = this.gerarParaDisc(d, obj.grade.map(g => Object.assign({}, g)), sem, S.aulas);
+>     const novaT = obj.turma && obj.turma !== atual.turma;
+>     this.setState(s => { const m = novaT ? Object.assign({}, s.mats) : s.mats; if (novaT) s.alunos.filter(a => a.turma === obj.turma).forEach(a => { m[a.id + '-' + obj.id] = true; }); return { discs: s.discs.some(x => x.id === obj.id) ? s.discs.map(x => x.id === obj.id ? r.disc : x) : s.discs.concat(r.disc), aulas: r.aulas, selDisc: obj.id, mats: m }; });
+>   }
+2290c2384,2385
+<     this.setState(s => ({ alunos: s.alunos.map(a => a.id === id ? Object.assign({}, a, { nome: s.fNome.trim(), idade: parseInt(s.fIdade, 10), mat: s.fMat, email: em || null, provisoria: novoAcesso ? true : a.provisoria }) : a), editando: false, fErro: '', senhaProv: novoAcesso ? { email: em, senha: this.senhaNova(), copiado: false } : null }));
+---
+>     const nt = st.fTurma || null, mudou = nt && (!antes || antes.turma !== nt);
+>     this.setState(s => ({ alunos: s.alunos.map(a => a.id === id ? Object.assign({}, a, { nome: s.fNome.trim(), idade: parseInt(s.fIdade, 10), mat: s.fMat, email: em || null, provisoria: novoAcesso ? true : a.provisoria, turma: nt }) : a), mats: mudou ? this.matsDaTurma(s.mats, s.discs, [id], nt) : s.mats, editando: false, fErro: '', senhaProv: novoAcesso ? { email: em, senha: this.senhaNova(), copiado: false } : null }));
+2304,2305c2399,2400
+<     const novo = { id: Date.now(), nome, idade: parseInt(st.fIdade, 10), mat: st.fMat, email: em || null, provisoria: !!em };
+<     this.setState(s => Object.assign({ alunos: s.alunos.concat(novo), fErro: '' }, em ? { senhaProv: { email: em, senha: this.senhaNova(), copiado: false, criado: nome } } : { painel: null }));
+---
+>     const novo = { id: Date.now(), nome, idade: parseInt(st.fIdade, 10), mat: st.fMat, email: em || null, provisoria: !!em, turma: st.fTurma || null };
+>     this.setState(s => Object.assign({ alunos: s.alunos.concat(novo), mats: this.matsDaTurma(s.mats, s.discs, [novo.id], novo.turma), fErro: '' }, em ? { senhaProv: { email: em, senha: this.senhaNova(), copiado: false, criado: nome } } : { painel: null }));
+2882,2883c2977,2978
+<       disciplinas: !sistema && st.logado && tela === 'disciplinas', seletor: !sistema && st.logado && tela === 'boletim',
+<       boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia', grade: !sistema && st.logado && tela === 'grade',
+---
+>       disciplinas: !sistema && st.logado && (tela === 'disciplinas' || (tela === 'frequencia' && !!this.state.acadDisc)), seletor: !sistema && st.logado && tela === 'boletim',
+>       boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia' && !this.state.acadDisc, grade: !sistema && st.logado && tela === 'grade',
+2891c2986
+<     const todos = E === 'vazio' ? [] : base.map(a => this.vis(a));
+---
+>     const todos = E === 'vazio' ? [] : base.filter(a => this.state.papel !== 'escola' || this.state.hubTurma == null || (this.state.hubTurma === '__sem' ? !a.turma : a.turma === this.state.hubTurma)).map(a => this.vis(a));
+2998c3093
+<         editar: () => this.abrirDisc(selD), alunos: String(ddAl.length), alunosTxt: ddAl.length + ' de ' + reais.length,
+---
+>         editar: () => this.setState({ gaEd: selD.id }), alunos: String(ddAl.length), alunosTxt: ddAl.length + ' de ' + reais.length,
+3037,3038c3132,3133
+<       abasBaixo: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'disciplinas', 'alunos', 'frequencia'] : TL.map(t => t.id), resto = TL.filter(t => !ids.includes(t.id)); return ids.map(id => { const t = TL.find(x => x.id === id); const on = id === tela; return { label: t.label, on, peso: peso(on), cor: on ? TINTA : 'var(--texto-suave)', ir: () => this.ir(id) }; }).concat(resto.length ? [{ label: 'Mais', on: resto.some(t => t.id === tela), peso: 500, cor: 'var(--texto-suave)', ir: () => this.abrirPainel({ tipo: 'mais' }) }] : []); })(),
+<       abasMais: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'disciplinas', 'alunos', 'frequencia'] : TL.map(t => t.id); return TL.filter(t => !ids.includes(t.id)).map(t => ({ label: t.label, peso: t.id === tela ? 600 : 400, ir: () => this.ir(t.id) })); })(),
+---
+>       abasBaixo: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'alunos', 'frequencia', 'avisos'] : TL.map(t => t.id), resto = TL.filter(t => !ids.includes(t.id)); return ids.map(id => { const t = TL.find(x => x.id === id); const on = id === tela; return { label: t.label, on, peso: peso(on), cor: on ? TINTA : 'var(--texto-suave)', ir: () => this.ir(id) }; }).concat(resto.length ? [{ label: 'Mais', on: resto.some(t => t.id === tela), peso: 500, cor: 'var(--texto-suave)', ir: () => this.abrirPainel({ tipo: 'mais' }) }] : []); })(),
+>       abasMais: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'alunos', 'frequencia', 'avisos'] : TL.map(t => t.id); return TL.filter(t => !ids.includes(t.id)).map(t => ({ label: t.label, peso: t.id === tela ? 600 : 400, ir: () => this.ir(t.id) })); })(),
+3142c3237,3239
+<       alunosTotalTxt: meuProf ? `${todos.length} alunos nas suas disciplinas` : `${todos.length} alunos · turma 2026`, alunosTitulo: meuProf ? 'Meus alunos' : 'Alunos', alunosAdmin: ehEscola,
+---
+>       alunosRotuloTopo: this.state.papel !== 'escola' ? (meuProf ? `${todos.length} alunos nas suas disciplinas` : '') : this.state.hubTurma == null ? this.state.turmas.length + (this.state.turmas.length === 1 ? ' turma · ' : ' turmas · ') + this.state.alunos.length + ' alunos' : this.state.papel === 'escola' ? 'Turma · semestre ' + ((this.state.semestre || {}).nome || '') : null,
+>       alunosTotalTxtH: this.state.papel === 'escola' && this.state.hubTurma == null ? this.state.turmas.length + (this.state.turmas.length === 1 ? ' turma' : ' turmas') + ' · ' + this.state.alunos.length + ' alunos' : null,
+>       alunosTotalTxt: meuProf ? `${todos.length} alunos nas suas disciplinas` : `${todos.length} alunos · turma 2026`, alunosTitulo: meuProf ? 'Meus alunos' : this.state.hubTurma == null ? 'Alunos' : this.state.hubTurma === '__sem' ? 'Alunos sem turma' : this.nomeT(this.state.hubTurma), alunosAdmin: ehEscola,
+3152c3249
+<       abrirNovoAluno: () => this.abrirPainel({ tipo: 'novoAluno' }),
+---
+>       abrirNovoAluno: () => this.abrirPainel({ tipo: 'novoAluno' }, { fTurma: this.state.hubTurma && this.state.hubTurma !== '__sem' ? this.state.hubTurma : '' }),
+3205c3302
+<       abrirNovaDisc: () => this.abrirDisc(null),
+---
+>       abrirNovaDisc: () => this.setState({ gaEd: 'novo' }),
+3241c3338,3373
+<       gradePerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno', agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
+---
+>       gradePerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno', gradeEstado: st.gradeEstado || 'Normal',
+>       gaTurmas: this.state.turmas, gaAlunos: this.state.alunos.map(a => ({ id: a.id, nome: a.nome, turma: a.turma || null })), gaTurmaAluno: (this.state.alunos.find(a => a.id === 1) || {}).turma || '',
+>       gaNovaTurma: t => this.setState(s => ({ turmas: s.turmas.some(x => x.id === t.id) ? s.turmas : s.turmas.concat(t) })),
+>       fTurma: st.fTurma, setFTurma: e => this.setState({ fTurma: e.target.value, fErro: '' }), optTurmasAl: this.state.turmas.map(t => ({ v: t.id, l: t.nome })), turmaAjuda: 'Ao salvar, o aluno entra nas disciplinas dessa turma.',
+>       ...(() => { const n = this.state.alunos.filter(a => !a.turma).length; return { semTurmaVis: ehEscola && n > 0, semTurmaTxt: n + (n === 1 ? ' aluno sem turma: não entra automaticamente nas disciplinas.' : ' alunos sem turma: não entram automaticamente nas disciplinas.') }; })(),
+>       gaAbaIni: this.state.gaAbaIni || 'quadro', acadDiscVis: !!this.state.acadDisc && tela === 'frequencia', voltarAcad: () => this.setState({ acadDisc: false, gaAbaIni: 'disc' }),
+>       gaAbrirDisc: id => { this.setState({ selDisc: id, acadDisc: true, subAba: 'alunos', discQ: '', discProfF: '', semPerm: null }); const m = this.mainRef.current; if (m) m.scrollTop = 0; },
+>       ...(() => {
+>         const S = this.state, esc = S.papel === 'escola', ht = S.hubTurma;
+>         if (!esc) return { hubVis: false, turmaVis: false, listaVis: true, hubVoltarVis: false, hubNovaBtnVis: false, hubNovaVis: false };
+>         const vs = S.alunos.map(a => this.vis(a));
+>         const stat = arr => { const cm = arr.filter(a => a.s && a.s.media != null), cf = arr.filter(a => a.s && a.s.freq != null); return { media: cm.length ? cm.reduce((x, a) => x + a.s.media, 0) / cm.length : null, freq: cf.length ? cf.reduce((x, a) => x + a.s.freq, 0) / cf.length : null, risco: arr.filter(a => a.s && ((a.s.media != null && a.s.media < 6) || (a.s.freq != null && a.s.freq < 0.75))).length }; };
+>         const grupos = S.turmas.map(t => ({ id: t.id, nome: t.nome })).concat(S.alunos.some(a => !a.turma) ? [{ id: '__sem', nome: 'Sem turma' }] : []);
+>         const deT = id => vs.filter(a => id === '__sem' ? !a.turma : a.turma === id);
+>         const discsT = id => id === '__sem' ? [] : S.discs.filter(d => d.turma === id);
+>         const cards = grupos.map(g => { const al = deT(g.id), x = stat(al), ds = discsT(g.id), aulas = ds.reduce((n, d) => n + (d.grade || []).length, 0), sem = g.id === '__sem';
+>           return { nome: g.nome, nTxt: al.length + (al.length === 1 ? ' aluno' : ' alunos'), media: x.media == null ? '—' : fmt(x.media), mediaCor: x.media != null && x.media < 6 ? AVISO : TINTA, freq: x.freq == null ? '—' : pct(x.freq), freqCor: x.freq != null && x.freq < 0.75 ? AVISO : TINTA, risco: String(x.risco), riscoCor: x.risco ? AVISO : TINTA,
+>             discs: ds.map(d => ({ nome: d.nome })), temDiscs: ds.length > 0, discVazio: sem ? 'Sem turma, o aluno não entra automaticamente em disciplinas.' : 'Nenhuma disciplina ligada a esta turma.', aulasTxt: sem ? '' : aulas + (aulas === 1 ? ' aula por semana' : ' aulas por semana'),
+>             borda: sem ? '1px dashed var(--aviso)' : '1px solid var(--borda-fraca)', abrir: () => this.setState({ hubTurma: g.id, hubMsg: null, q: '', pagina: 1 }) }; });
+>         const r = { hubVis: ht == null, turmaVis: ht != null && ht !== '__sem', listaVis: ht != null, hubVoltarVis: ht != null, hubVoltar: () => this.setState({ hubTurma: null, hubMsg: null }), hubCards: cards,
+>           hubNovaBtnVis: ht == null, hubNovaVis: !!S.hubNova, abrirHubNova: () => this.setState({ hubNova: true, hubNome: '', hubErro: '' }), fecharHubNova: () => this.setState({ hubNova: false, hubErro: '' }), hubNome: S.hubNome || '', setHubNome: e => this.setState({ hubNome: e.target.value, hubErro: '' }), hubErro: S.hubErro || '', hubCriar: e => this.hubCriarTurma(e),
+>           hubMsgVis: !!S.hubMsg, hubMsg: S.hubMsg ? S.hubMsg.t : '', hubMsgCor: S.hubMsg && S.hubMsg.erro ? AVISO : TINTA, hubMsgBorda: S.hubMsg && S.hubMsg.erro ? AVISO : 'var(--borda)', hubMsgBg: S.hubMsg && S.hubMsg.erro ? 'var(--aviso-suave)' : 'var(--sunken)', fecharHubMsg: () => this.setState({ hubMsg: null }) };
+>         if (ht != null) {
+>           const g = grupos.find(x => x.id === ht) || { nome: 'Turma' }, al = deT(ht), x = stat(al), ds = discsT(ht);
+>           Object.assign(r, { turmaNome: g.nome, turmaStats: [['Alunos', String(al.length), TINTA], ['Média', x.media == null ? '—' : fmt(x.media), x.media != null && x.media < 6 ? AVISO : TINTA], ['Frequência', x.freq == null ? '—' : pct(x.freq), x.freq != null && x.freq < 0.75 ? AVISO : TINTA], ['Em risco', String(x.risco), x.risco ? AVISO : TINTA]].map(([l, v, c]) => ({ l, v, c })),
+>             turmaDiscs: ds.map(d => ({ nome: d.nome, prof: d.professor_id != null ? (S.profs.find(p => p.id === d.professor_id) || {}).nome || 'Sem professor' : 'Sem professor', abrir: () => { this.setState({ selDisc: d.id, subAba: 'alunos' }); this.ir('disciplinas'); } })), turmaTemDiscs: ds.length > 0, turmaSemDiscs: !ds.length,
+>             turmaGrade: [1, 2, 3, 4, 5].map(dia => ({ dia: DIA_C[dia], itens: ds.flatMap(d => (d.grade || []).filter(h => h.dia_semana === dia).map(h => ({ hora: h.hora_inicio, nome: d.nome, k: hm(h.hora_inicio) }))).sort((a, b) => a.k - b.k), vazio: !ds.some(d => (d.grade || []).some(h => h.dia_semana === dia)) })),
+>             matTemDiscs: ds.length > 0 && al.length > 0, matCols: 'minmax(160px,1.4fr) repeat(' + Math.max(1, ds.length) + ',minmax(110px,1fr))',
+>             matCab: ds.map(d => ({ nome: d.nome, n: al.filter(a => S.mats[a.id + '-' + d.id]).length + '/' + al.length, todos: () => { if (!this.ativo()) return; this.setState(s => { const m = Object.assign({}, s.mats); al.forEach(a => { m[a.id + '-' + d.id] = true; }); return { mats: m, hubMsg: { erro: false, t: 'Turma inteira matriculada em ' + d.nome + '.' } }; }); } })),
+>             matLinhas: al.map(a => ({ nome: a.nome, cels: ds.map(d => { const on = !!S.mats[a.id + '-' + d.id]; return { on, txt: on ? 'Matriculado' : '—', bg: on ? 'var(--texto)' : 'var(--superficie)', cor: on ? 'var(--fundo)' : 'var(--texto-suave)', label: (on ? 'Desmatricular ' : 'Matricular ') + a.nome + (on ? ' de ' : ' em ') + d.nome, ir: () => this.hubToggle(a.id, d.id) }; }) })) });
+>         }
+>         return r;
+>       })(),
+>       gaEdVis: st.gaEd != null, gaDiscId: st.gaEd == null ? '' : String(st.gaEd), gaFechar: () => this.setState({ gaEd: null }), gaSalvar: obj => this.gaSalvar(obj),
+>       gaBase: st.discs.map(d => ({ id: d.id, nome: d.nome, turma: d.turma || null, prof: d.professor_id != null ? d.professor_id : null, sala: d.sala || null, carga: d.carga_horaria, grade: (d.grade || []).map(g => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: g.sala || d.sala || null })) })),
+>       gaProfs: st.profs.map(p => ({ id: p.id, nome: p.nome, ocupados: p.ocupados || [] })), agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
+3365c3497
+<       pa: paAl ? Object.assign({}, paAl, {
+---
+>       pa: paAl ? Object.assign({}, paAl, { turmaTxt: this.nomeT(paAl.turma),
+3369c3501
+<         editar: () => this.setState({ editando: true, fNome: paAl.nome, fIdade: String(paAl.idade), fMat: paAl.mat, fEmail: paAl.email || '', fErro: '', senhaProv: null }),
+---
+>         editar: () => this.setState({ editando: true, fNome: paAl.nome, fIdade: String(paAl.idade), fMat: paAl.mat, fEmail: paAl.email || '', fTurma: paAl.turma || '', fErro: '', senhaProv: null }),
