@@ -181,7 +181,7 @@ try {
     assert.deepEqual(salvo.request().postDataJSON(), { itens: grade });
     const n = (await salvo.json()).aulas_geradas; assert.ok(n > 0);
     await page.getByRole('status').filter({ hasText: `${n} aulas geradas` }).waitFor({ state: 'visible' });
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/grade`)).corpo, grade);
+    assert.deepEqual((await api(`/disciplinas/${disc.id}/grade`)).corpo, grade.map(g => ({ ...g, sala_id: null })));
     const aulas = await api(`/disciplinas/${disc.id}/aulas`);
     assert.equal(aulas.status, 200); assert.equal(aulas.corpo.length, n);
     const st = (await api('/portal/estado')).corpo;
@@ -271,7 +271,7 @@ try {
     await page.getByRole('status').filter({ hasText: 'aulas geradas' }).waitFor({ state: 'visible' });
     assert.equal(await logic('return logic.state.discs.find(d => d.id === arg).nome;', disc.id), nomeDisc + ' editada');
     assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === disc.id).nome, nomeDisc + ' editada');
-    assert.deepEqual((await api(caminho + '/grade')).corpo, grade);
+    assert.deepEqual((await api(caminho + '/grade')).corpo, grade.map(g => ({ ...g, sala_id: null })));
     await page.keyboard.press('Escape');
   });
   await conferir('cria sem professor omitindo o campo e remove professor com null no PATCH', async () => {

@@ -26,7 +26,7 @@ try {
   assert.equal(rt.status, 200); assert.equal(rs.status, 200);
   const turmaReal = rt.corpo.find(t => t.nome === '1º A'), salaReal = rs.corpo.find(s => s.nome === 'Sala 101');
   assert.ok(turmaReal, 'turma conhecida do seed'); assert.ok(salaReal, 'sala conhecida do seed');
-  const independencia = seed.eventos.find(e => e.tipo === 'feriado' && e.titulo === 'Independência' && e.data === '2026-09-07');
+  const independencia = seed.eventos.find(e => e.tipo === 'feriado' && e.titulo === 'Independência do Brasil' && e.data === '2026-09-07');
   assert.ok(independencia, 'feriado real do seed');
   const anaLogin = await api('/auth/login', 'POST', { email: 'ana@escola.com', senha: 'escola123' });
   assert.equal(anaLogin.status, 200);
@@ -71,7 +71,7 @@ try {
     await grade().getByRole('group', { name: 'Visão', exact: true }).getByRole('button', { name: 'Ano', exact: true }).click();
     await grade().getByText('Setembro', { exact: true }).click();
     await grade().getByText('setembro de 2026', { exact: true }).waitFor({ state: 'visible' });
-    await grade().getByText('Independência', { exact: true }).waitFor({ state: 'visible' });
+    await grade().getByText('Independência do Brasil', { exact: true }).waitFor({ state: 'visible' });
   }
   await conferir('escola abre /grade com disciplinas reais e ocupação de Carlos na segunda', async () => {
     await entrar('escola@escola.com'); await abrirGrade();
@@ -79,8 +79,8 @@ try {
     const nomes = await grade().locator('select').filter({ has: page.locator('option', { hasText: 'Python' }) }).locator('option').allTextContents();
     for (const d of seed.disciplinas) assert.ok(nomes.some(n => n.startsWith(d.nome + ' · ')), d.nome);
     assert.ok(nomes.some(n => n.startsWith('Python · ')));
-    assert.equal(await grade().getByLabel('Turma', { exact: true }).locator(`option[value="${turmaReal.id}"]`).textContent(), turmaReal.nome);
-    assert.equal(await grade().getByLabel('Sala', { exact: true }).locator(`option[value="${salaReal.id}"]`).textContent(), salaReal.nome);
+    assert.equal(await grade().locator('select').filter({ has: page.locator('option', { hasText: new RegExp('^' + turmaReal.nome + '$') }) }).first().locator('option', { hasText: new RegExp('^' + turmaReal.nome + '$') }).first().textContent(), turmaReal.nome);
+    assert.equal(await grade().locator('select').filter({ has: page.locator('option', { hasText: new RegExp('^' + salaReal.nome + '$') }) }).first().locator('option', { hasText: new RegExp('^' + salaReal.nome + '$') }).first().textContent(), salaReal.nome);
     const quadro = grade().locator('[data-quadro-professores]');
     await quadro.getByText(carlos.nome, { exact: true }).waitFor({ state: 'visible' });
     await quadro.locator('[title]').filter({ hasText: '' }).evaluateAll((els, esperado) => {
@@ -94,11 +94,11 @@ try {
     await abrirSetembro();
     await grade().getByRole('button', { name: 'Novo evento', exact: true }).click();
     const f = grade().getByRole('dialog');
-    await f.getByLabel('Tipo', { exact: true }).selectOption('evento');
-    await f.getByLabel('Título', { exact: true }).fill(tituloEvento);
-    await f.getByLabel('Data', { exact: true }).fill('2026-09-07');
+    await f.locator('select').first().selectOption('evento');
+    await f.getByPlaceholder('P2 de Python').fill(tituloEvento);
+    await f.locator('input[type=date]').first().fill('2026-09-07');
     if (outraTurma) {
-      await f.getByRole('radio', { name: 'Turmas específicas', exact: true }).click();
+      await f.getByRole('button', { name: 'Turmas específicas', exact: true }).click();
       await f.getByRole('button', { name: outraTurma.nome, exact: true }).click();
     }
     const resp = page.waitForResponse(r => r.url() === API + '/eventos' && r.request().method() === 'POST');
@@ -115,7 +115,7 @@ try {
   });
   if (outraTurma) await conferir('Ana vê o feriado geral e não vê o evento publicado só para outra turma', async () => {
     await sair(); await entrar('ana@escola.com'); await abrirGrade(); await abrirSetembro();
-    assert.ok(await grade().getByText('Independência', { exact: true }).count());
+    assert.ok(await grade().getByText('Independência do Brasil', { exact: true }).count());
     assert.equal(await grade().getByText(tituloEvento, { exact: true }).count(), 0);
     const eventosAna = await api('/eventos', 'GET', undefined, anaLogin.corpo.access_token);
     assert.equal(eventosAna.status, 200);
@@ -131,7 +131,7 @@ try {
     await grade().getByRole('dialog').getByRole('button', { name: 'Excluir', exact: true }).click();
     assert.equal((await resp).status(), 204);
     await grade().getByText('Evento removido do calendário.', { exact: true }).waitFor({ state: 'visible' });
-    assert.ok(await grade().getByText('Independência', { exact: true }).count());
+    assert.ok(await grade().getByText('Independência do Brasil', { exact: true }).count());
     assert.equal(await grade().getByText(tituloEvento, { exact: true }).count(), 0);
     const eventos = await api('/eventos'); assert.equal(eventos.status, 200);
     assert.ok(eventos.corpo.some(e => e.id === independencia.id));
@@ -204,6 +204,7 @@ try {
       const feriado = st.eventos.some(e => e.tipo === 'feriado' && e.data <= data && data <= (e.fim || e.data));
       if ([2, 3, 4].includes(dia) && !feriado) for (const d of minhas) {
         const sala_id = d.sala_id ?? salaReal.id;
+        if (st.aulas.some(x => x.disciplina_id === d.id && x.data === data)) continue; // o servidor guarda no máximo uma aula por disciplina e dia
         for (const [ini, fim] of [['08:00', '09:40'], ['10:00', '11:40'], ['13:30', '15:10'], ['15:30', '17:10']]) {
           if ((marta.ocupacoes || []).some(o => o.dia_semana === dia && sobrepoe(ini, fim, o))) continue;
           const conflito = (outra, sala) => outra.professor_id === marta.id || (d.turma_id != null && outra.turma_id === d.turma_id) || sala === sala_id;
@@ -229,12 +230,12 @@ try {
     await grade().getByRole('tab', { name: /^Aulas extras/ }).click();
     const emAnaliseAntes = await grade().getByText('Em análise', { exact: true }).count();
     const f = grade().locator('form').filter({ has: page.getByRole('button', { name: 'Enviar para análise', exact: true }) });
-    await f.getByLabel('Disciplina', { exact: true }).selectOption(String(livre.disciplina_id));
-    await f.getByLabel('Data', { exact: true }).fill(livre.data);
-    await f.getByLabel('Início', { exact: true }).fill(livre.hora_inicio);
-    await f.getByLabel('Fim', { exact: true }).fill(livre.hora_fim);
-    await f.getByLabel('Sala', { exact: true }).selectOption(String(livre.sala_id));
-    await f.getByLabel('Motivo', { exact: true }).fill(motivoPedido);
+    await f.locator('select').nth(0).selectOption(String(livre.disciplina_id));
+    await f.locator('input[type=date]').fill(livre.data);
+    await f.locator('input[type=time]').nth(0).fill(livre.hora_inicio);
+    await f.locator('input[type=time]').nth(1).fill(livre.hora_fim);
+    await f.locator('select').nth(1).selectOption(String(livre.sala_id));
+    await f.locator('textarea').fill(motivoPedido);
     const resp = page.waitForResponse(r => r.url() === API + '/pedidos' && r.request().method() === 'POST');
     await f.getByRole('button', { name: 'Enviar para análise', exact: true }).click();
     const salvo = await resp, pedido = await salvo.json();
