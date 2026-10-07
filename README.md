@@ -74,7 +74,7 @@ node e2e/portal-rotas.mjs
 
 Link de produção: https://gestao-escola.felipefelipejulio242.workers.dev
 
-O front está publicado na Cloudflare (Workers com arquivos estáticos, ligado ao ramo `main` deste repositório), com o comando `npm run build` e a saída `dist`. A API roda em Docker na máquina da apresentação (`docker compose`, ver o README do back-end): sem `VITE_API_URL` no build, o front chama `http://localhost:8000`, e o navegador pede permissão de acesso à rede local na primeira chamada. Para apontar o front para uma API pública, defina `VITE_API_URL` com a URL dela antes do build. O arquivo `public/_redirects` manda todos os caminhos para `/index.html`, permitindo abrir e recarregar as URLs da SPA.
+O front está publicado na Cloudflare (Workers com arquivos estáticos, ligado ao ramo `main` deste repositório), com o comando `npm run build` e a saída `dist`. A API roda na Render (ver o README do back-end); a variável `VITE_API_URL` do build na Cloudflare aponta para ela (URL sem barra no final). Sem `VITE_API_URL`, o front chama `http://localhost:8000`, que é o uso local, inclusive com a API em Docker (nesse caso, como o site é https, o navegador pede permissão de acesso à rede local na primeira chamada). O arquivo `public/_redirects` manda todos os caminhos para `/index.html`, permitindo abrir e recarregar as URLs da SPA.
 
 ## Estrutura
 
