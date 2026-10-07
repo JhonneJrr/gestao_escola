@@ -12,7 +12,7 @@ Continuação de `2026-10-06-portar-canvas.md` (F1 pronta e commitada: `src/port
 - Perfil da API → `papel` do protótipo: `escola`→`'escola'`, `professor`→`'prof'`, `aluno`→`'aluno'`. `profId` = `usuario.id` quando `'prof'`.
 - Token em `localStorage` (chave `portal.token`). `Authorization: Bearer <token>` em toda chamada, menos no login. Backend em `import.meta.env.VITE_API_URL` (padrão `http://localhost:8000`).
 - Nenhuma dependência nova. Usar `axios` (já instalado) ou `fetch`; escolha o mais simples.
-- As quatro contas demo (`demos` no `renderVals`) continuam como estão: só preenchem o e-mail.
+- As quatro contas demo (`demos` no `renderVals`) e o handler delas continuam EXATAMENTE como estão no Portal.tsx (hoje preenchem e-mail, senha e papel; não limite nada, não reescreva).
 
 ## Tarefas
 
@@ -27,7 +27,7 @@ Continuação de `2026-10-06-portar-canvas.md` (F1 pronta e commitada: `src/port
 
 - `papel`, `profId` (acima) e `usuario` (o objeto de `/auth/me`, guardado em `state.usuario`). O protótipo FIXA o usuário logado em `renderVals()` (linhas ~1252-1253: `usuarioEmail`/`usuarioIniciais`/`usuarioNome` valem `escola@escola.com`/`Secretaria` para escola, o professor de `profs` para prof e `ana@escola.com`/`Ana Souza` para aluno) e assume o aluno logado como `id === 1` (linhas ~1027 e ~1228: `reais.find(a => a.id === 1)`), `primeiroEmail` com padrão `ana@escola.com`, e `selAluno: 1`. Troque cada uma dessas suposições por dados de `state.usuario` (aluno logado = `usuario.aluno_id`; nome do aluno vem de `alunos`; escola mostra `usuario.nome`/`usuario.email`). Procure no arquivo inteiro qualquer outra suposição de que o usuário é Ana, Carlos ou id 1 e relate as que não trocar.
 - `semestre` = `{id,nome,inicio,fim,encerrado_em}` com `encerrado_em` só a parte da data (`AAAA-MM-DD`) ou `null`; `null` se a API devolver `null`.
-- `hist` = `semestres_encerrados` na forma de `HIST0`: `{id,nome,inicio,fim,encerrado_em,resumo:[{disc,alunos,media,mediaCor,freq,freqCor,aprov,reprov,reprovCor}]}` com os campos do `resumo` JÁ FORMATADOS como no `HIST0` (`alunos` string; `media` com vírgula e uma casa, `—` se nulo; `freq` inteiro com `%`, `—` se nulo; `aprov`/`reprov` strings; `reprovCor` = `AVISO` se `reprov > 0` senão `TINTA`; `mediaCor`/`freqCor` = `TINTA`). Reaproveite `fmt`, `pct`, `AVISO`, `TINTA`.
+- `historico` (esta é a chave do `state` no Portal.tsx, linha ~150; NÃO `hist`; o `hist` que existe é um campo de cada aluno, ver `alunos` abaixo) = `semestres_encerrados` na forma de `HIST0`: `{id,nome,inicio,fim,encerrado_em,resumo:[{disc,alunos,media,mediaCor,freq,freqCor,aprov,reprov,reprovCor}]}` com os campos do `resumo` JÁ FORMATADOS como no `HIST0` (`alunos` string; `media` com vírgula e uma casa, `—` se nulo; `freq` inteiro com `%`, `—` se nulo; `aprov`/`reprov` strings; `reprovCor` = `AVISO` se `reprov > 0` senão `TINTA`; `mediaCor`/`freqCor` = `TINTA`). Reaproveite `fmt`, `pct`, `AVISO`, `TINTA`.
 - `profs` = `professores` → `{id,nome,email}`.
 - `alunos` = `alunos` → `{id,nome,mat:matricula,idade,media,email,hist:semestre_historico}`; `provisoria: true` só no próprio aluno logado quando `usuario.senha_provisoria`.
 - `discs` = `disciplinas` → `{id,nome,carga_horaria,professor_id,grade}`.
