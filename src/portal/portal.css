@@ -1,0 +1,10 @@
+/* GERADO por scripts/converter-canvas.mjs — não edite */
+
+html,body{margin:0;height:100%;background:var(--fundo)}
+a{color:var(--texto);text-underline-offset:3px}
+a:hover{color:var(--texto-suave)}
+:focus{outline:none}
+:focus-visible{outline:3px solid var(--texto);outline-offset:2px}
+input,select,textarea,button{font:inherit;color:inherit}
+
+html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}
