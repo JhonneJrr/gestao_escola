@@ -46,7 +46,7 @@ npm run converter
 npm run comparar
 ```
 
-O comparador usa Microsoft Edge via Playwright e compara o DOM do portal com o canvas em desktop e celular. Os parâmetros de diagnóstico como `?inicio=Professor` só funcionam em desenvolvimento.
+O comparador usa Microsoft Edge via Playwright e compara o DOM do portal com o canvas em desktop e celular. Os parâmetros de diagnóstico como `?inicio=Professor` só funcionam em desenvolvimento. Para rodar por partes, use `ESTADOS=<regex> npm run comparar` (a expressão vale para o nome de cada estado, por exemplo `ESTADOS="Chamada.*1280"`). Quando o próprio canvas muda de uma abertura para outra, o resultado sai como ANIMADO.
 
 Com API em `http://localhost:8000`, front em `http://localhost:5173` e Microsoft Edge instalado:
 
