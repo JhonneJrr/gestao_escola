@@ -4,14 +4,15 @@ import { DCLogic, criarDC } from "./dc";
 import Template from "./template";
 import { publicar, configurarRecarga } from "./loja";
 import { salvarOcupacoes, pedirGradeIA, erroGradeIA } from "./rede";
-import { montarEstado, fmt, pct, AVISO, TINTA, dataHoje } from "./adaptador";
+import { montarEstado, fmt, pct, AVISO, TINTA, dataHoje, alunosLoja, matriculasDe, turmaDoAluno } from "./adaptador";
 import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
 import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
   criarAluno, atualizarAluno, redefinirAluno, apagarAluno, criarDisciplina, atualizarDisciplina,
-  salvarGrade, apagarDisciplina, matricular as matricularAPI, desmatricular as desmatricularAPI } from "./rede";
+  salvarGrade, apagarDisciplina, criarTurma, matricular as matricularAPI, desmatricular as desmatricularAPI } from "./rede";
 import { criarAvaliacao, apagarAvaliacao, salvarNota, apagarNota, salvarChamada as salvarChamadaAPI,
   atualizarAula, criarAula, criarAviso, atualizarAviso, apagarAviso } from "./rede";
 
+const textoErro = erro => (erro && erro.detalhe) || 'Não consegui salvar. Confira a conexão e tente de novo.';
 const HOJE = dataHoje(new Date(), import.meta.env.DEV && new URLSearchParams(window.location.search).has('inicio'));
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const DIA_C = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -37,12 +38,13 @@ const gerarAulas = (d, de, ate) => {
   return r;
 };
 const TELAS_POR = {
-  escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'avisos', label: 'Avisos' }],
-  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
+  escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'avisos', label: 'Avisos' }],
+  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
   aluno: []
 };
 const TELAS = TELAS_POR.escola;
-const CAMINHOS = { inicio: '/', login: '/login', 'primeiro-acesso': '/primeiro-acesso', painel: '/painel', semestre: '/semestre', disciplinas: '/disciplinas', professores: '/professores', alunos: '/alunos', boletim: '/matriculas', frequencia: '/agenda', avisos: '/avisos', grade: '/grade', 'meu-painel': '/meu-painel' };
+// 'disciplinas' e 'boletim' não são mais abas: /disciplinas abre o Acadêmico na página da disciplina e /matriculas cai em Alunos (escola).
+const CAMINHOS ={ inicio: '/', login: '/login', 'primeiro-acesso': '/primeiro-acesso', painel: '/painel', semestre: '/semestre', disciplinas: '/disciplinas', professores: '/professores', alunos: '/alunos', boletim: '/matriculas', frequencia: '/agenda', avisos: '/avisos', grade: '/grade', 'meu-painel': '/meu-painel' };
 const IA_SUG = ['Monte a grade das disciplinas que ainda estão sem horário.', 'O professor Carlos só pode de manhã. Reorganize as disciplinas dele.', 'Tem algum choque na grade atual?'];
 const IA_ERROS = { 'Não configurado': 'O assistente não está configurado neste servidor.', 'Limite de uso': 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.', 'Sem conexão': 'Não consegui falar com o assistente. Tente de novo.' };
 const IA_BASE = { iaMsgs: [], iaTexto: '', iaEnviando: false, iaErro: '', iaProposta: null, iaRecusados: [], iaAplicando: false, iaResultado: null, iaPropIdx: -1, iaDescartada: false, iaUltimo: '' };
@@ -86,7 +88,7 @@ function molaLinear(k, z, ms) {
   return 'linear(' + pts.join(',') + ')';
 }
 
-const VISITANTE = { usuario: null, profs: [], profId: null, alunos: [], discs: [], semestre: null, historico: [], avisos: [], mats: {}, avals: [], notas: {}, aulas: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '' };
+const VISITANTE = { usuario: null, profs: [], profId: null, alunos: [], turmas: [], carga: 'ok', discs: [], semestre: null, historico: [], avisos: [], mats: {}, avals: [], notas: {}, aulas: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '' };
 
 class Component extends DCLogic {
   frameRef = React.createRef();
@@ -118,7 +120,7 @@ class Component extends DCLogic {
     funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, semPerm: null, rotaAviso: '', alunoErro: '',
     q: '', idadeMin: '', mediaMin: '', ordem: 'nome', pagina: 1,
     painel: null, painelUlt: null, fNome: '', fIdade: '', fMat: '', fErro: '',
-    fEmail: '', fOk: '', fGrade: [], fOcup: [], ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
+    fEmail: '', fOk: '', fGrade: [], fOcup: [], fTurma: '', gaEd: null, acadDisc: false, gaAbaIni: 'quadro', hubTurma: null, hubNova: false, hubNome: '', hubErro: '', hubMsg: null, hubGravando: false, ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
     cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuUser: false, menuAula: null, limpar: null, exportando: null, exportOk: null,
     semConfirm: false, semMsg: '', nsNome: '', nsInicio: '', nsFim: '', nsErro: '',
     discQ: '', matAluno: '', matMsg: null,
@@ -130,8 +132,12 @@ class Component extends DCLogic {
 
   publicarEstado() {
     const s = this.state;
+    // As listas derivadas só são refeitas quando a origem muda.
+    if (this._pubAlunos !== s.alunos) { this._pubAlunos = s.alunos; this._pubAlunosLoja = alunosLoja(s.alunos); }
+    if (this._pubMats !== s.mats) { this._pubMats = s.mats; this._pubMatriculas = matriculasDe(s.mats); }
     publicar({ perfil: s.papel, usuario: s.usuario, semestre: s.semestre, disciplinas: s.discs,
       professores: s.profs, aulas: s.aulas, turmas: s.turmas || [], salas: s.salas || [], eventos: s.eventos || [], pedidos: s.pedidos || [],
+      alunos: this._pubAlunosLoja, matriculas: this._pubMatriculas, turmaAluno: turmaDoAluno(s.usuario, s.alunos), carga: s.carga || 'ok',
       avisar: texto => this.setState({ rotaAviso: texto }),
       ...(import.meta.env.DEV ? { relogio: this.props.relogio } : {}),
       ...(import.meta.env.DEV && this.props.inicio !== undefined ? this.demoGrade : {}) });
@@ -167,7 +173,8 @@ class Component extends DCLogic {
   }
   componentWillUnmount() { aoExpirar(null); window.removeEventListener('popstate', this.aplicarRota); document.removeEventListener('keydown', this.onGlobalKey); document.removeEventListener('keydown', this.onKeyTrava); clearTimeout(this.iaT); clearTimeout(this.iaT2); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
   aplicarFonte() {
-    const f = this.props.fonte ?? 'Apple · SF + New York', de = document.documentElement.style;
+    if ((this.props.italico ?? 'Sem itálico') === 'Sem itálico') document.documentElement.setAttribute('data-sem-italico', ''); else document.documentElement.removeAttribute('data-sem-italico');
+    const f =this.props.fonte ?? 'Apple · SF + New York', de = document.documentElement.style;
     const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif';
     const NY = 'ui-serif, "New York", "Iowan Old Style", Georgia, serif';
     if (f === 'Portal') { de.removeProperty('--fonte-corpo'); de.removeProperty('--fonte-titulo'); }
@@ -184,7 +191,7 @@ class Component extends DCLogic {
   }
   componentDidUpdate(pp) {
     if (this.funcModoTinta) this.tintaKick();
-    if (pp.fonte !== this.props.fonte) this.aplicarFonte();
+    if (pp.fonte !== this.props.fonte || pp.italico !== this.props.italico) this.aplicarFonte();
     if (pp.movimento !== this.props.movimento) { this.aplicarMovimento(); this.forceUpdate(); }
     if (pp.inicio !== this.props.inicio) this.aplicarInicio();
     if (import.meta.env.DEV && pp.iaEstado !== this.props.iaEstado && (this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') { if (!this.state.logado || this.state.papel !== 'escola') this.entrarComo('escola'); setTimeout(() => this.iaEstadoAplicar(this.props.iaEstado), 0); }
@@ -216,15 +223,22 @@ class Component extends DCLogic {
     if (i === 'Apresentação') this.setState({ logado: false, papel: null, tela: 'inicio', painel: null });
     else if (i === 'Login') this.setState({ logado: false, papel: null, tela: 'login', painel: null }, () => this.abrirMergulho(null, null, true, geoLogin));
     else if (i === 'Professor') this.entrarComo('prof');
+    else if (/ \/ /.test(i)) {
+      const pf = /^Professor/.test(i) ? 'prof' : 'escola', ed = i === 'Escola / Disciplinas / Editor da Grade e agenda';
+      this.entrarComo(pf, pf === 'prof' ? 1 : undefined);
+      setTimeout(() => this.setState({ tela: ed ? 'disciplinas' : 'frequencia', gradeEstado: ed ? 'Normal' : i, gaEd: ed ? (this.state.discs[0] || {}).id || 'novo' : null }), 0);
+    }
     else if (/^Escola · /.test(i)) { this.entrarComo('escola'); if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); this.abrirFicha(this.state.profs[0]); } else await this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com \"Não coube\"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i]); }
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
     if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') await this.iaEstadoAplicar(this.props.iaEstado);
   }
   async carregarEstado(usuario) {
-    this.setState({ carregando: true });
-    const dados = await estado();
-    this.setState(Object.assign(montarEstado(usuario, dados), { carregando: false }));
+    this.setState({ carregando: true, carga: 'carregando' });
+    try {
+      const dados = await estado();
+      this.setState(Object.assign(montarEstado(usuario, dados), { carregando: false, carga: 'ok' }));
+    } catch (erro) { this.setState({ carga: 'erro' }); throw erro; }
     return true;
   }
   async recarregar() {
@@ -276,7 +290,7 @@ class Component extends DCLogic {
   sair(tela = 'inicio') {
     apagarToken(); this.limparMg();
     this.atualizarURL(tela);
-    this.setState(Object.assign({}, VISITANTE, { logado: false, papel: null, tela, painel: null, painelUlt: null, loginSenha: '', menuUser: false, navAberta: false, carregando: false, saindo: false, mg: null, primeiroEmail: '', primeiroPapel: null, sAtual: '', sNova: '', sConf: '', fErro: '', senhaOk: false, senhaProv: null, gnDraft: {} }));
+    this.setState(Object.assign({}, VISITANTE, { logado: false, papel: null, tela, painel: null, painelUlt: null, loginSenha: '', menuUser: false, navAberta: false, carregando: false, saindo: false, mg: null, primeiroEmail: '', primeiroPapel: null, sAtual: '', sNova: '', sConf: '', fErro: '', senhaOk: false, senhaProv: null, gnDraft: {}, gaEd: null, acadDisc: false, gaAbaIni: 'quadro', hubTurma: null, hubNova: false, hubMsg: null }));
   }
   preCarregar(papel) {
     return this.carregamento;
@@ -461,11 +475,17 @@ class Component extends DCLogic {
     this.ir(tela, true);
   };
   ir(tela, substituir = false) {
-    const S = this.state;
+    const S = this.state; let acad = false;
+    if (tela === 'disciplinas') { tela = 'frequencia'; acad = true; } else if (tela === 'boletim' && S.papel === 'escola') tela = 'alunos';
+    else if (tela === 'boletim' && S.papel === 'prof') { tela = 'frequencia'; acad = true; if (S.discs.length) this.setState({ subAba: 'notas' }); }
     if (!S.logado && !['inicio', 'login', 'primeiro-acesso'].includes(tela)) tela = 'login';
     if (S.logado && S.papel && !(tela === 'grade' || (S.papel === 'aluno' ? tela === 'meu-painel' : this.telas().some(t => t.id === tela)))) { this.setState({ rotaAviso: 'Essa tela não faz parte do perfil ' + (S.papel === 'prof' ? 'Professor' : S.papel === 'aluno' ? 'Aluno' : 'Escola') + '. Você voltou ao início.' }); tela = S.papel === 'aluno' ? 'meu-painel' : this.telas()[0].id; }
     else if (S.rotaAviso) this.setState({ rotaAviso: '' });
-    this.atualizarURL(tela, substituir);
+    if (tela !== 'frequencia') acad = false;
+    // O Acadêmico tem duas URLs: /agenda (quadro) e /disciplinas (página da disciplina).
+    this.atualizarURL(acad ? 'disciplinas' : tela, substituir);
+    if (S.acadDisc !== acad || tela === 'frequencia') this.setState({ acadDisc: acad, gaAbaIni: acad ? 'disc' : 'quadro' });
+    if (tela === 'alunos' && S.tela !== 'alunos') this.setState({ hubTurma: null, hubNova: false, hubMsg: null });
     if (!S.logado && tela === 'inicio' && S.mg) return this.fecharMergulho(substituir);
     if (S.semPerm) this.setState({ semPerm: null });
     const el = this.telaRef.current, m = this.mainRef.current, de = this.state.tela;
@@ -492,7 +512,7 @@ class Component extends DCLogic {
     this.telaAnims = filhos.map((c, i) => c.animate([{ opacity: 0, transform: 'translateX(' + (dir * 14) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: i * 20, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
   }
   fecharPainel = () => this.setState({ painel: null, senhaProv: null, menuAula: null, confDesm: null, desmErro: null });
-  abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fOcup: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
+  abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fOcup: [], fTurma: '', fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
   agRef = React.createRef();
   popRef = el => { if (el && el.animate && !this.rm) el.animate([{ opacity: 0, transform: 'translateY(-4px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 160, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
   fecharMenus = e => {
@@ -688,6 +708,93 @@ class Component extends DCLogic {
       this.setState({ confDesm: null, desmErro: null, matMsg: { erro: false, t: (al ? al.nome : 'Aluno') + ' desmatriculado de ' + (d ? d.nome : 'disciplina') + '.' } });
     } catch (erro) { this.setState({ confDesm: null, desmErro: { k, t: erro.detalhe } }); }
   }
+  // ---------- hub de turmas (tela Alunos da escola) ----------
+  nomeT(id, nome) { return id ? (this.state.turmas.find(t => t.id === id) || {}).nome || nome || id : 'Sem turma'; }
+  hubMsgErro(erro) { this.setState({ hubMsg: { erro: true, t: textoErro(erro) } }); }
+  async hubToggle(aid, did) {
+    const S = this.state, k = aid + '-' + did, al = S.alunos.find(a => a.id === aid), d = S.discs.find(x => x.id === did), matriculado = !!S.mats[k];
+    if (S.hubGravando) return;
+    if (!this.ativo()) return this.setState({ hubMsg: { erro: true, t: 'Semestre encerrado: somente leitura.' } });
+    if (matriculado) {
+      const temNota = S.avals.some(v => v.did === did && S.notas[aid + '-' + v.id] != null), temFreq = S.aulas.some(a => a.disciplina_id === did && a.chamada && a.chamada[aid] != null);
+      if (temNota || temFreq) return this.setState({ hubMsg: { erro: true, t: al.nome + ' já tem notas ou frequência em ' + d.nome + ': não dá para desmatricular.' } });
+    }
+    this.setState({ hubGravando: true });
+    try {
+      if (matriculado) await desmatricularAPI(aid, did); else await matricularAPI(aid, did);
+      await this.recarregar();
+      this.setState({ hubMsg: { erro: false, t: al.nome + (matriculado ? ' desmatriculado de ' : ' matriculado em ') + d.nome + '.' } });
+    } catch (erro) { this.hubMsgErro(erro); }
+    finally { this.setState({ hubGravando: false }); }
+  }
+  async hubTodos(d, alunos) {
+    if (this.state.hubGravando) return;
+    if (!this.ativo()) return this.setState({ hubMsg: { erro: true, t: 'Semestre encerrado: somente leitura.' } });
+    this.setState({ hubGravando: true });
+    // Uma chamada por aluno que ainda não está na disciplina; a primeira falha vira a mensagem.
+    const faltam = alunos.filter(a => !this.state.mats[a.id + '-' + d.id]);
+    let feitos = 0, falha = null;
+    try {
+      for (const a of faltam) {
+        try { await matricularAPI(a.id, d.id); feitos++; } catch (erro) { if (!falha) falha = { a, erro }; }
+      }
+      await this.recarregar();
+      this.setState({ hubMsg: falha ? { erro: true, t: 'Matriculei ' + feitos + ' de ' + faltam.length + ' em ' + d.nome + '. ' + falha.a.nome + ': ' + textoErro(falha.erro) } : { erro: false, t: 'Turma inteira matriculada em ' + d.nome + '.' } });
+    } catch (erro) { this.hubMsgErro(erro); }
+    finally { this.setState({ hubGravando: false }); }
+  }
+  async hubCriarTurma(e) {
+    e.preventDefault(); const S = this.state, nome = (S.hubNome || '').trim();
+    if (S.hubGravando) return;
+    if (!nome) return this.setState({ hubErro: 'Dê um nome à turma.' });
+    if (S.turmas.some(t => t.nome.trim().toLowerCase() === nome.toLowerCase())) return this.setState({ hubErro: 'Turma já cadastrada.' });
+    this.setState({ hubGravando: true });
+    try {
+      await criarTurma(nome); await this.recarregar();
+      this.setState({ hubNova: false, hubNome: '', hubErro: '', hubMsg: { erro: false, t: 'Turma ' + nome + ' criada. Cadastre ou mova alunos para ela.' } });
+    } catch (erro) { this.setState({ hubErro: textoErro(erro) }); }
+    finally { this.setState({ hubGravando: false }); }
+  }
+  // A GradeAgenda grava sozinha; o Portal só relê o estado do servidor.
+  async recarregarComAviso() { try { await this.recarregar(); } catch (erro) { this.setState({ rotaAviso: textoErro(erro) }); } }
+  async gaSalvar(obj) {
+    await this.recarregarComAviso();
+    const d = obj && obj.id != null ? this.state.discs.find(x => String(x.id) === String(obj.id)) : null;
+    if (d) this.setState({ selDisc: d.id });
+  }
+  gaAbrirDisc(id) {
+    const d = this.state.discs.find(x => String(x.id) === String(id));
+    this.setState({ selDisc: d ? d.id : id, acadDisc: true, subAba: 'alunos', discQ: '', discProfF: '', semPerm: null });
+    this.atualizarURL('disciplinas');
+    const m = this.mainRef.current; if (m) m.scrollTop = 0;
+  }
+  voltarAcad() { this.setState({ acadDisc: false, gaAbaIni: 'disc' }); this.atualizarURL('frequencia'); }
+  valsHub(ehEscola) {
+    const S = this.state, ht = S.hubTurma;
+    if (!ehEscola) return { hubVis: false, turmaVis: false, listaVis: true, hubVoltarVis: false, hubNovaBtnVis: false, hubNovaVis: false };
+    const vs = S.alunos.map(a => this.vis(a));
+    const stat = arr => { const cm = arr.filter(a => a.s && a.s.media != null), cf = arr.filter(a => a.s && a.s.freq != null); return { media: cm.length ? cm.reduce((x, a) => x + a.s.media, 0) / cm.length : null, freq: cf.length ? cf.reduce((x, a) => x + a.s.freq, 0) / cf.length : null, risco: arr.filter(a => a.s && ((a.s.media != null && a.s.media < 6) || (a.s.freq != null && a.s.freq < 0.75))).length }; };
+    const grupos = S.turmas.map(t => ({ id: t.id, nome: t.nome })).concat(S.alunos.some(a => !a.turma) ? [{ id: '__sem', nome: 'Sem turma' }] : []);
+    const deT = id => vs.filter(a => id === '__sem' ? !a.turma : a.turma === id);
+    const discsT = id => id === '__sem' ? [] : S.discs.filter(d => d.turma === id);
+    const cards = grupos.map(g => { const al = deT(g.id), x = stat(al), ds = discsT(g.id), aulas = ds.reduce((n, d) => n + (d.grade || []).length, 0), sem = g.id === '__sem';
+      return { nome: g.nome, nTxt: al.length + (al.length === 1 ? ' aluno' : ' alunos'), media: x.media == null ? '—' : fmt(x.media), mediaCor: x.media != null && x.media < 6 ? AVISO : TINTA, freq: x.freq == null ? '—' : pct(x.freq), freqCor: x.freq != null && x.freq < 0.75 ? AVISO : TINTA, risco: String(x.risco), riscoCor: x.risco ? AVISO : TINTA,
+        discs: ds.map(d => ({ nome: d.nome })), temDiscs: ds.length > 0, discVazio: sem ? 'Sem turma, o aluno não entra automaticamente em disciplinas.' : 'Nenhuma disciplina ligada a esta turma.', aulasTxt: sem ? '' : aulas + (aulas === 1 ? ' aula por semana' : ' aulas por semana'),
+        borda: sem ? '1px dashed var(--aviso)' : '1px solid var(--borda-fraca)', abrir: () => this.setState({ hubTurma: g.id, hubMsg: null, q: '', pagina: 1 }) }; });
+    const r = { hubVis: ht == null, turmaVis: ht != null && ht !== '__sem', listaVis: ht != null, hubVoltarVis: ht != null, hubVoltar: () => this.setState({ hubTurma: null, hubMsg: null }), hubCards: cards,
+      hubNovaBtnVis: ht == null, hubNovaVis: !!S.hubNova, abrirHubNova: () => this.setState({ hubNova: true, hubNome: '', hubErro: '' }), fecharHubNova: () => this.setState({ hubNova: false, hubErro: '' }), hubNome: S.hubNome || '', setHubNome: e => this.setState({ hubNome: e.target.value, hubErro: '' }), hubErro: S.hubErro || '', hubCriar: e => this.hubCriarTurma(e),
+      hubMsgVis: !!S.hubMsg, hubMsg: S.hubMsg ? S.hubMsg.t : '', hubMsgCor: S.hubMsg && S.hubMsg.erro ? AVISO : TINTA, hubMsgBorda: S.hubMsg && S.hubMsg.erro ? AVISO : 'var(--borda)', hubMsgBg: S.hubMsg && S.hubMsg.erro ? 'var(--aviso-suave)' : 'var(--sunken)', fecharHubMsg: () => this.setState({ hubMsg: null }) };
+    if (ht != null) {
+      const g = grupos.find(x => x.id === ht) || { nome: 'Turma' }, al = deT(ht), x = stat(al), ds = discsT(ht);
+      Object.assign(r, { turmaNome: g.nome, turmaStats: [['Alunos', String(al.length), TINTA], ['Média', x.media == null ? '—' : fmt(x.media), x.media != null && x.media < 6 ? AVISO : TINTA], ['Frequência', x.freq == null ? '—' : pct(x.freq), x.freq != null && x.freq < 0.75 ? AVISO : TINTA], ['Em risco', String(x.risco), x.risco ? AVISO : TINTA]].map(([l, v, c]) => ({ l, v, c })),
+        turmaDiscs: ds.map(d => ({ nome: d.nome, prof: d.professor_id != null ? (S.profs.find(p => p.id === d.professor_id) || {}).nome || 'Sem professor' : 'Sem professor', abrir: () => { this.setState({ selDisc: d.id, subAba: 'alunos' }); this.ir('disciplinas'); } })), turmaTemDiscs: ds.length > 0, turmaSemDiscs: !ds.length,
+        turmaGrade: [1, 2, 3, 4, 5].map(dia => ({ dia: DIA_C[dia], itens: ds.flatMap(d => (d.grade || []).filter(h => h.dia_semana === dia).map(h => ({ hora: h.hora_inicio, nome: d.nome, k: hm(h.hora_inicio) }))).sort((a, b) => a.k - b.k), vazio: !ds.some(d => (d.grade || []).some(h => h.dia_semana === dia)) })),
+        matTemDiscs: ds.length > 0 && al.length > 0, matCols: 'minmax(160px,1.4fr) repeat(' + Math.max(1, ds.length) + ',minmax(110px,1fr))',
+        matCab: ds.map(d => ({ nome: d.nome, n: al.filter(a => S.mats[a.id + '-' + d.id]).length + '/' + al.length, todos: () => this.hubTodos(d, al) })),
+        matLinhas: al.map(a => ({ nome: a.nome, cels: ds.map(d => { const on = !!S.mats[a.id + '-' + d.id]; return { on, txt: on ? 'Matriculado' : '—', bg: on ? 'var(--texto)' : 'var(--superficie)', cor: on ? 'var(--fundo)' : 'var(--texto-suave)', label: (on ? 'Desmatricular ' : 'Matricular ') + a.nome + (on ? ' de ' : ' em ') + d.nome, ir: () => this.hubToggle(a.id, d.id) }; }) })) });
+    }
+    return r;
+  }
   abrirChamada(au) { this.abrirPainel({ tipo: 'chamada', id: au.aula_id }, { cham: Object.assign({}, au.chamada || {}) }); }
   async salvarChamada() {
     const st = this.state, au = st.aulas.find(a => a.aula_id === (st.painel || {}).id);
@@ -782,9 +889,13 @@ class Component extends DCLogic {
     const id = (this.state.painel || {}).id, er = this.validarAluno(id); if (er) return this.setState({ fErro: er });
     const st = this.state, em = st.fEmail.trim().toLowerCase();
     try {
-      const salvo = await atualizarAluno(id, { nome: st.fNome.trim(), idade: parseInt(st.fIdade, 10), matricula: st.fMat, ...(em ? { email: em } : {}) });
+      const salvo = await atualizarAluno(id, { nome: st.fNome.trim(), idade: parseInt(st.fIdade, 10), matricula: st.fMat, turma_id: st.fTurma ? Number(st.fTurma) : null, ...(em ? { email: em } : {}) });
       await this.recarregar();
-      this.setState({ editando: false, fErro: '', senhaProv: salvo.senha_provisoria_texto ? { email: em, senha: salvo.senha_provisoria_texto, copiado: false } : null });
+      const senhaProv = salvo.senha_provisoria_texto ? { email: em, senha: salvo.senha_provisoria_texto, copiado: false } : null;
+      const mantidas = salvo.matriculas_mantidas || [];
+      // O servidor mantém a matrícula onde já há nota ou presença: o aviso fica no formulário, que continua aberto.
+      if (mantidas.length) this.setState({ editando: true, fErro: 'Mantido em: ' + mantidas.map(m => m.disciplina_nome).join(', ') + ' (já tem nota ou presença).', senhaProv });
+      else this.setState({ editando: false, fErro: '', senhaProv });
     } catch (erro) { this.setState({ fErro: erro.detalhe }); }
   }
   async cadastrarProf(e) {
@@ -803,7 +914,7 @@ class Component extends DCLogic {
     const er = this.validarAluno(null); if (er) return this.setState({ fErro: er });
     const st = this.state, em = st.fEmail.trim().toLowerCase(), nome = st.fNome.trim();
     try {
-      const criado = await criarAluno({ nome, idade: parseInt(st.fIdade, 10), matricula: st.fMat, ...(em ? { email: em } : {}) });
+      const criado = await criarAluno({ nome, idade: parseInt(st.fIdade, 10), matricula: st.fMat, turma_id: st.fTurma ? Number(st.fTurma) : null, ...(em ? { email: em } : {}) });
       await this.recarregar();
       this.setState(Object.assign({ fErro: '' }, em ? { senhaProv: { email: em, senha: criado.senha_provisoria_texto, copiado: false, criado: nome } } : { painel: null }));
     } catch (erro) { this.setState({ fErro: erro.detalhe }); }
@@ -1415,8 +1526,8 @@ class Component extends DCLogic {
     const idx = this.telas().findIndex(t => t.id === tela);
     const v = {
       sistema, landing: !sistema && !st.logado && tela !== 'primeiro-acesso', primeiro: !sistema && !st.logado && tela === 'primeiro-acesso', semestre: !sistema && st.logado && tela === 'semestre', login: false, painel: !sistema && st.logado && tela === 'painel', alunos: !sistema && st.logado && tela === 'alunos',
-      disciplinas: !sistema && st.logado && tela === 'disciplinas', seletor: !sistema && st.logado && tela === 'boletim',
-      boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia', grade: !sistema && st.logado && tela === 'grade',
+      disciplinas: !sistema && st.logado && (tela === 'disciplinas' || (tela === 'frequencia' && !!S0.acadDisc)), seletor: !sistema && st.logado && tela === 'boletim',
+      boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia' && !S0.acadDisc, grade: !sistema && st.logado && tela === 'grade',
       avisos: !sistema && st.logado && tela === 'avisos', professores: !sistema && st.logado && ehEscola && tela === 'professores', meu: !sistema && st.logado && tela === 'meu-painel'
     };
     const peso = on => on ? 600 : 500;
@@ -1424,7 +1535,7 @@ class Component extends DCLogic {
 
     // alunos
     const base = st.alunos.concat(muitos && !meuProf ? EXTRAS.map((n, i) => ({ id: 100 + i, nome: n, mat: String(2026007 + i), idade: 18 + (i * 5) % 9, fixo: i % 9 === 4 ? { media: null, freq: null, linha: [] } : { media: ((i * 37) % 66 + 32) / 10, freq: 0.55 + ((i * 13) % 46) / 100, linha: [], presencas: 0, faltas: 0, comNota: 0 } })) : []);
-    const todos = E === 'vazio' ? [] : base.map(a => this.vis(a));
+    const todos = E === 'vazio' ? [] : base.filter(a => S0.papel !== 'escola' || S0.hubTurma == null || (S0.hubTurma === '__sem' ? !a.turma : a.turma === S0.hubTurma)).map(a => this.vis(a));
     let lista = todos.filter(a => {
       const q = st.q.trim().toLowerCase();
       if (q && !a.nome.toLowerCase().includes(q) && !a.mat.includes(q)) return false;
@@ -1531,7 +1642,7 @@ class Component extends DCLogic {
       const nav = st.avals.filter(a => a.did === selD.id).length, nAu = st.aulas.filter(a => a.disciplina_id === selD.id && a.status !== 'cancelada').length;
       const slug = selD.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
       dd = { prof: profNome(selD), profCor: selD.professor_id == null ? AVISO : TINTA, nome: selD.nome, meta: selD.carga_horaria + 'h · ' + nav + (nav === 1 ? ' avaliação' : ' avaliações') + ' · ' + nAu + (nAu === 1 ? ' aula' : ' aulas') + ' no semestre', gradeTxt: gradeTxt(selD.grade), semGrade: !(selD.grade || []).length,
-        editar: () => this.abrirDisc(selD), alunos: String(ddAl.length), alunosTxt: ddAl.length + ' de ' + reais.length,
+        editar: () => this.setState({ gaEd: selD.id }), alunos: String(ddAl.length), alunosTxt: ddAl.length + ' de ' + reais.length,
         mediaTxt: mm == null ? '—' : fmt(mm), mediaCor: mm != null && mm < 6 ? AVISO : TINTA, freqTxt: ff == null ? '—' : pct(ff), freqCor: ff != null && ff < 0.75 ? AVISO : TINTA,
         excluir: () => this.excluirDisc(selD.id),
         exportar: () => this.exportar('disc', 'frequencia-' + slug + '-' + semNome + '.csv', [['Aluno', 'Matrícula', 'Presenças', 'Aulas com chamada', 'Frequência', 'Média']].concat(ddAl.map(a => { const o = this.fr(a.id, selD.id), m = this.discMedia(a.id, selD.id); return [a.nome, a.mat, o.p, o.t, o.t ? pct(o.p / o.t) : '', m ? fmt(m.m) : '']; }))),
@@ -1571,8 +1682,8 @@ class Component extends DCLogic {
       navO: st.navAberta ? 1 : 0, navT: st.navAberta || this.rm ? 'none' : 'translateY(-6px)', navPE: st.navAberta ? 'auto' : 'none',
       abas: this.telas().map((t, i) => ({ label: t.label, atalho: 'Alt ' + (i + 1), on: t.id === tela, peso: peso(t.id === tela), ir: () => this.ir(t.id) })),
       abasInferiores: compact && ehProf && st.logado && !sistema,
-      abasBaixo: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'disciplinas', 'alunos', 'frequencia'] : TL.map(t => t.id), resto = TL.filter(t => !ids.includes(t.id)); return ids.map(id => { const t = TL.find(x => x.id === id); const on = id === tela; return { label: t.label, on, peso: peso(on), cor: on ? TINTA : 'var(--texto-suave)', ir: () => this.ir(id) }; }).concat(resto.length ? [{ label: 'Mais', on: resto.some(t => t.id === tela), peso: 500, cor: 'var(--texto-suave)', ir: () => this.abrirPainel({ tipo: 'mais' }) }] : []); })(),
-      abasMais: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'disciplinas', 'alunos', 'frequencia'] : TL.map(t => t.id); return TL.filter(t => !ids.includes(t.id)).map(t => ({ label: t.label, peso: t.id === tela ? 600 : 400, ir: () => this.ir(t.id) })); })(),
+      abasBaixo: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'alunos', 'frequencia', 'avisos'] : TL.map(t => t.id), resto = TL.filter(t => !ids.includes(t.id)); return ids.map(id => { const t = TL.find(x => x.id === id); const on = id === tela; return { label: t.label, on, peso: peso(on), cor: on ? TINTA : 'var(--texto-suave)', ir: () => this.ir(id) }; }).concat(resto.length ? [{ label: 'Mais', on: resto.some(t => t.id === tela), peso: 500, cor: 'var(--texto-suave)', ir: () => this.abrirPainel({ tipo: 'mais' }) }] : []); })(),
+      abasMais: (() => { const TL = this.telas(), ids = TL.length > 5 ? ['painel', 'alunos', 'frequencia', 'avisos'] : TL.map(t => t.id); return TL.filter(t => !ids.includes(t.id)).map(t => ({ label: t.label, peso: t.id === tela ? 600 : 400, ir: () => this.ir(t.id) })); })(),
 
       // sistema
       escalaEspaco: [[4, 'ícone ↔ texto'], [8, 'rótulo ↔ campo'], [12, 'entre campos, chips'], [16, 'padding de linha, --espaco'], [24, 'entre blocos'], [32, 'cabeçalho ↔ conteúdo'], [48, 'entre seções'], [64, 'respiro final']].map(([n, uso], i) => ({ px: n + 'px', nome: `s${i + 1} · ${n}px`, uso })),
@@ -1672,7 +1783,8 @@ class Component extends DCLogic {
       painelRotulo: (ehEscola ? 'Escola' : meuProf ? meuProf.nome : 'Turma 2026') + ' · semestre ' + semNome,
 
       // alunos
-      alunosTotalTxt: meuProf ? `${todos.length} alunos nas suas disciplinas` : `${todos.length} alunos · turma 2026`, alunosTitulo: meuProf ? 'Meus alunos' : 'Alunos', alunosAdmin: ehEscola,
+      alunosRotuloTopo: S0.papel !== 'escola' ? (meuProf ? `${todos.length} alunos nas suas disciplinas` : '') : S0.hubTurma == null ? S0.turmas.length + (S0.turmas.length === 1 ? ' turma · ' : ' turmas · ') + S0.alunos.length + ' alunos' : 'Turma · semestre ' + ((S0.semestre || {}).nome || ''),
+      alunosTotalTxt: meuProf ? `${todos.length} alunos nas suas disciplinas` : `${todos.length} alunos · turma 2026`, alunosTitulo: meuProf ? 'Meus alunos' : S0.hubTurma == null ? 'Alunos' : S0.hubTurma === '__sem' ? 'Alunos sem turma' : this.nomeT(S0.hubTurma), alunosAdmin: ehEscola,
       colMedia: meuProf ? 'Média na sua disciplina' : 'Média', colFreq: meuProf ? 'Freq. na sua disciplina' : 'Frequência', paAdmin: ehEscola, paMediaRot: meuProf ? 'Média na sua disciplina' : 'Média', paFreqRot: meuProf ? 'Frequência na sua disciplina' : 'Frequência', q: st.q, idadeMin: st.idadeMin, mediaMin: st.mediaMin,
       setQ: e => this.setState({ q: e.target.value, pagina: 1 }), setIdadeMin: e => this.setState({ idadeMin: e.target.value, pagina: 1 }), setMediaMin: e => this.setState({ mediaMin: e.target.value, pagina: 1 }),
       limparFiltros: () => this.setState({ q: '', idadeMin: '', mediaMin: '', pagina: 1 }), limparO: st.q || st.idadeMin || st.mediaMin ? 1 : 0,
@@ -1682,7 +1794,10 @@ class Component extends DCLogic {
       alunosMediaLista: `média ${comM.length ? fmt(comM.reduce((x, a) => x + a.s.media, 0) / comM.length) : '—'} · frequência ${comF.length ? pct(comF.reduce((x, a) => x + a.s.freq, 0) / comF.length) : '—'}`,
       semAnterior: pag <= 1, semProxima: pag >= paginas, antO: pag <= 1 ? 0.4 : 1, proxO: pag >= paginas ? 0.4 : 1,
       paginaAnterior: () => this.setState({ pagina: Math.max(1, pag - 1) }), paginaProxima: () => this.setState({ pagina: Math.min(paginas, pag + 1) }),
-      abrirNovoAluno: () => this.abrirPainel({ tipo: 'novoAluno' }),
+      abrirNovoAluno: () => this.abrirPainel({ tipo: 'novoAluno' }, { fTurma: S0.hubTurma && S0.hubTurma !== '__sem' ? S0.hubTurma : '' }),
+      fTurma: st.fTurma, setFTurma: e => this.setState({ fTurma: e.target.value, fErro: '' }), optTurmasAl: S0.turmas.map(t => ({ v: t.id, l: t.nome })), turmaAjuda: 'Ao salvar, o aluno entra nas disciplinas dessa turma.',
+      ...(() => { const n = S0.alunos.filter(a => !a.turma).length; return { semTurmaVis: ehEscola && n > 0, semTurmaTxt: n + (n === 1 ? ' aluno sem turma: não entra automaticamente nas disciplinas.' : ' alunos sem turma: não entram automaticamente nas disciplinas.') }; })(),
+      ...this.valsHub(ehEscola),
 
       // disciplinas
       discTotalTxt: st.discs.length + (st.discs.length === 1 ? ' disciplina' : ' disciplinas') + ' · semestre ' + semNome, discQ: st.discQ, setDiscQ: set('discQ'),
@@ -1735,7 +1850,7 @@ class Component extends DCLogic {
       alunoOpcoes: selD ? st.alunos.map(a => ({ v: String(a.id), l: a.nome + (st.mats[a.id + '-' + selD.id] ? ' · já matriculado' : '') })) : [],
       matAluno: st.matAluno, setMatAluno: set('matAluno'),
       discOk: !discEstado, discEstado,
-      abrirNovaDisc: () => this.abrirDisc(null),
+      abrirNovaDisc: () => this.setState({ gaEd: 'novo' }),
       ddSemana: (() => {
         if (!selD) return [];
         const dias = [1, 2, 3, 4, 5]; if (st.discs.some(d => (d.grade || []).some(h => h.dia_semana === 6))) dias.push(6); if (st.discs.some(d => (d.grade || []).some(h => h.dia_semana === 7))) dias.push(7);
@@ -1771,7 +1886,15 @@ class Component extends DCLogic {
 
       // agenda
       agRef: this.agRef, agenda, agOk: !agendaEstado, agendaEstado,
-      gradePerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno', agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
+      gradePerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno', gradeEstado: st.gradeEstado || 'Normal',
+      // Valores do protótipo para a GradeAgenda; em produção ela lê os dados do store e só usa as ações abaixo.
+      gaTurmas: S0.turmas, gaAlunos: S0.alunos.map(a => ({ id: a.id, nome: a.nome, turma: a.turma || null })), gaTurmaAluno: turmaDoAluno(S0.usuario, S0.alunos),
+      gaNovaTurma: () => this.recarregarComAviso(),
+      gaAbaIni: S0.gaAbaIni || 'quadro', acadDiscVis: !!S0.acadDisc && tela === 'frequencia', voltarAcad: () => this.voltarAcad(),
+      gaAbrirDisc: id => this.gaAbrirDisc(id),
+      gaEdVis: S0.gaEd != null, gaDiscId: S0.gaEd == null ? '' : String(S0.gaEd), gaFechar: () => this.setState({ gaEd: null }), gaSalvar: obj => this.gaSalvar(obj),
+      gaBase: st.discs.map(d => ({ id: d.id, nome: d.nome, turma: d.turma || null, prof: d.professor_id != null ? d.professor_id : null, sala: d.sala || null, carga: d.carga_horaria, grade: (d.grade || []).map(g => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: g.sala || d.sala || null })) })),
+      gaProfs: st.profs.map(p => ({ id: p.id, nome: p.nome, ocupados: p.ocupados || [] })), agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
       agFiltroVis: ehEscola, agProfF: st.agProfF, agDiscF: st.agDiscF, setAgProfF: e => this.setState({ agProfF: e.target.value }), setAgDiscF: e => this.setState({ agDiscF: e.target.value }),
       agFiltrado: !!(st.agProfF || st.agDiscF), limparAgFiltro: () => this.setState({ agProfF: '', agDiscF: '' }), temAgErro: !!st.agErro, agErro: st.agErro, fecharAgErro: () => this.setState({ agErro: '' }),
       temRotaAviso: !!st.rotaAviso, rotaAviso: st.rotaAviso, fecharRotaAviso: () => this.setState({ rotaAviso: '' }),
@@ -1895,11 +2018,11 @@ class Component extends DCLogic {
       spAluno: !!st.senhaProv && !st.senhaProv.criado, spNovo: !!st.senhaProv && !!st.senhaProv.criado, novoForm: !(st.senhaProv && st.senhaProv.criado),
       sp: st.senhaProv ? { email: st.senhaProv.email, senha: st.senhaProv.senha, copiarTxt: st.senhaProv.copiado ? 'Copiada' : 'Copiar', copiar: () => this.copiar(st.senhaProv.senha), criadoTxt: st.senhaProv.criado ? st.senhaProv.criado + ' cadastrado.' : '' } : {},
       alunoErro: st.alunoErro || '', paVer: !st.editando, paEditando: !!st.editando, salvarAluno: e => this.salvarAluno(e), cancelarEdicao: () => this.setState({ editando: false, fErro: '' }),
-      pa: paAl ? Object.assign({}, paAl, {
+      pa: paAl ? Object.assign({}, paAl, { turmaTxt: this.nomeT(paAl.turma, paAl.turma_nome),
         presencas: String(paAl.s.presencas ?? 0), faltas: String(paAl.s.faltas ?? 0), faltasCor: paAl.s.freq != null && paAl.s.freq < 0.75 ? AVISO : TINTA, comNota: String(paAl.s.comNota ?? 0), bol: paAl.fixo ? [] : this.boletim(paAl.id),
         temEmail: !!paAl.email, acessoTxt: paAl.email || 'Sem e-mail de acesso. Edite o aluno para criar um.', acessoCor: paAl.email ? TINTA : 'var(--texto-suave)',
         redefinir: () => this.redefinirSenhaAluno(paAl),
-        editar: () => this.setState({ editando: true, fNome: paAl.nome, fIdade: String(paAl.idade), fMat: paAl.mat, fEmail: paAl.email || '', fErro: '', senhaProv: null }),
+        editar: () => this.setState({ editando: true, fNome: paAl.nome, fIdade: String(paAl.idade), fMat: paAl.mat, fEmail: paAl.email || '', fTurma: paAl.turma || '', fErro: '', senhaProv: null }),
         discs: st.discs.filter(d => st.mats[paAl.id + '-' + d.id]).map(d => { const k = paAl.id + '-' + d.id, conf = st.confDesm === k; return { nome: d.nome, normal: !conf, confirmando: conf, podeDesm: ehEscola && !bloqueado, label: 'Desmatricular de ' + d.nome, pedir: () => this.setState({ confDesm: k, desmErro: null }), cancelar: () => this.setState({ confDesm: null }), confirmar: () => this.desmatricular(paAl.id, d.id) }; }),
         semDiscs: !st.discs.some(d => st.mats[paAl.id + '-' + d.id]),
         desmErro: st.desmErro && st.desmErro.k.indexOf(paAl.id + '-') === 0 ? st.desmErro.t : ''
