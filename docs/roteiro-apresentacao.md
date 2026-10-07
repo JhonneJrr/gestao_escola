@@ -2,7 +2,7 @@
 
 Tempo: 8 a 10 minutos. Contas (senha de todas: `escola123`): `escola@escola.com`, `prof@escola.com` (Prof. Carlos: Python e Banco de Dados), `marta@escola.com` (Profa. Marta: Algoritmos), `ana@escola.com` (aluna).
 
-Antes de começar: abra o link da API uns 5 minutos antes (a Render gratuita dorme e a primeira chamada leva até 1 minuto), deixe duas janelas do navegador logadas e uma em branco, e o DevTools na aba Network já aberto na janela da demonstração.
+Antes de começar: suba a API uns 5 minutos antes (`wsl -d Ubuntu -- sh -c "service docker start; cd /mnt/c/Users/Administrator/Documents/gestao-alunos && docker compose up -d"`), confira `http://localhost:8000/docs`, abra o site, entre uma vez e clique em Permitir no pedido de acesso à rede local do navegador; deixe duas janelas do navegador logadas e uma em branco, e o DevTools na aba Network já aberto na janela da demonstração.
 
 ## 1. O que é (30 s)
 
@@ -33,11 +33,11 @@ Como Escola:
 
 ## 5. Produção e fecho (1 min)
 
-- Link do front: A PREENCHER. Link da API: A PREENCHER (`/docs` para o Swagger).
-- Arquitetura: Cloudflare Pages (front), Render (API), Neon (PostgreSQL).
+- Link do front: https://gestao-escola.felipefelipejulio242.workers.dev. API: `http://localhost:8000` (`/docs` para o Swagger), em contêiner na máquina da apresentação.
+- Arquitetura: Cloudflare Workers (front estático), API FastAPI e PostgreSQL em contêineres Docker (`docker compose`).
 - Testes: 55 verificações ponta a ponta no navegador contra a API real e mais de 300 testes de backend com banco real.
 
 ## Se algo falhar na hora
 
-- Tela em branco ou erro de rede logo ao entrar: a API ainda estava dormindo; espere 1 minuto e recarregue.
-- Dados bagunçados por testes ao vivo: o seed refaz tudo (`python seed.py --apagar-tudo` apontando para o banco da Neon) em segundos.
+- Erro de rede logo ao entrar: a API não está no ar (rode o comando do início e confira `http://localhost:8000/`) ou a permissão de rede local foi negada (cadeado da barra de endereço > permissões do site > permitir acesso à rede local, e recarregue).
+- Dados bagunçados por testes ao vivo: o seed refaz tudo em segundos (`wsl -d Ubuntu -- sh -c "cd /mnt/c/Users/Administrator/Documents/gestao-alunos && docker compose exec -T api python seed.py --apagar-tudo"`).
