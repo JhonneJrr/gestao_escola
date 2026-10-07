@@ -3,8 +3,8 @@ import React from 'react';
 import { DCLogic, criarDC } from './dc';
 import Template from './componentes/GradeEAgendaTemplate';
 import { lerLoja, assinar, recarregarLoja } from './loja';
-import { salvarGrade, atualizarAula, criarDisciplina, atualizarDisciplina, pedirGradeIA, erroGradeIA } from './rede';
-const itensAPI = grade => grade.map(({ dia_semana, hora_inicio, hora_fim }) => ({ dia_semana, hora_inicio, hora_fim }));
+import { salvarGrade, atualizarAula, criarDisciplina, atualizarDisciplina, pedirGradeIA, erroGradeIA, criarEvento, atualizarEvento, apagarEvento, criarPedido, aprovarPedido, recusarPedido, sugerirPedido, aceitarSugestao, recusarSugestao } from './rede';
+import { itensGradeAPI as itensAPI, disciplinaAPI, eventoAPI, pedidoAPI, horarioAPI } from './adaptador';
 const pD = s => { const p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); };
 const sD = d => d.toISOString().slice(0, 10);
 const addD = (s, n) => sD(new Date(pD(s).getTime() + n * 864e5));
@@ -45,7 +45,9 @@ class GradeAgenda extends DCLogic {
   semestre() { return lerLoja().semestre || { nome: '—', inicio: '', fim: '' }; }
   ano() { const s = this.semestre(), ano = (s.inicio || this.agora().data).slice(0, 4); return lerLoja().ano || { inicio: ano + '-01-01', fim: s.fim || ano + '-12-31' }; }
   profId() { const s = lerLoja(); return s.perfil === 'prof' ? s.usuario?.id : (import.meta.env.DEV ? s.profDemo : null); }
-  turmaId() { return lerLoja().usuario?.turma_id ?? (import.meta.env.DEV ? lerLoja().turmaDemo : undefined); }
+  demo() { return import.meta.env.DEV && lerLoja().profDemo != null; }
+  turmaId() { return this.demo() ? lerLoja().turmaDemo : undefined; }
+  turmaAluno() { return this.demo() ? nomeTurma(this.turmaId()) : [...new Set(this.state.discs.map(d => d.turma).filter(Boolean))].map(nomeTurma).join(', ') || lerLoja().usuario?.nome || 'Aluno'; }
   dadosLoja() {
     const s = lerLoja();
     return { discs: s.disciplinas.map(d => ({ ...d, prof: d.professor_id, carga: d.carga_horaria,
@@ -53,7 +55,7 @@ class GradeAgenda extends DCLogic {
   }
   receberLoja = () => {
     const s = lerLoja();
-    this.setState({ ...this.dadosLoja(), ...(!this.recebeu ? { eventos: s.eventos, pedidos: s.pedidos } : {}) });
+    this.setState({ ...this.dadosLoja(), ...(!this.demo() || !this.recebeu ? { eventos: s.eventos, pedidos: s.pedidos } : {}) });
     this.recebeu = true;
   };
   componentDidMount() {
@@ -92,7 +94,7 @@ class GradeAgenda extends DCLogic {
     return { data: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()), min: d.getHours() * 60 + d.getMinutes(), vivo: !S };
   }
   ferMap(evs) { const m = {}; evs.filter(e => e.tipo === 'feriado').forEach(e => { for (let d = e.data; d <= (e.fim || e.data); d = addD(d, 1)) m[d] = e.titulo; }); return m; }
-  escopo(st, P) { return P === 'prof' ? st.discs.filter(d => d.prof === this.profId()) : P === 'aluno' ? st.discs.filter(d => !this.turmaId() || d.turma === this.turmaId()) : st.discs; }
+  escopo(st, P) { if (!this.demo()) return st.discs; return P === 'prof' ? st.discs.filter(d => d.prof === this.profId()) : P === 'aluno' ? st.discs.filter(d => !this.turmaId() || d.turma === this.turmaId()) : st.discs; }
   profNome(id, profs) { return ((profs || this.state.profs).find(p => p.id === id) || {}).nome || 'Sem professor'; }
   instSemana(W, st, fer, P) {
     const r = [], fim = addD(W, 6);
@@ -171,6 +173,7 @@ class GradeAgenda extends DCLogic {
     return { feito: f / 60, total: t / 60 };
   }
   evVisiveis(st, P) {
+    if (!this.demo()) return st.eventos;
     const minhas = P === 'prof' ? [...new Set(st.discs.filter(d => d.prof === this.profId()).map(d => d.turma))] : P === 'aluno' ? [this.turmaId()] : null;
     return st.eventos.filter(e => !minhas || e.turmas === 'todas' || e.turmas.some(t => minhas.includes(t)));
   }
@@ -359,7 +362,7 @@ class GradeAgenda extends DCLogic {
       raiz: this.raiz, dicaRef: this.dicaRef,
       ...(() => { const emb = !!this.props.embutido, g = st.pGeo || { top: 0, h: 0 }; return { raizMinH: emb ? '0' : '100vh', raizBg: emb ? 'transparent' : 'var(--fundo)', raizMaxW: emb ? 'none' : '1320px', raizPad: emb ? '0' : 'clamp(20px,4cqi,40px) clamp(16px,3cqi,40px) 96px',
         pPos: emb ? 'absolute' : 'fixed', pTop: emb ? g.top + 'px' : '0', pH: emb ? g.h + 'px' : '100vh' }; })(),
-      rotulo: (esc ? 'Escola' : P === 'prof' ? me : nomeTurma(this.turmaId())) + ' · semestre ' + this.semestre().nome,
+      rotulo: (esc ? 'Escola' : P === 'prof' ? me : this.turmaAluno()) + ' · semestre ' + this.semestre().nome,
       subtitulo: esc ? 'O quadro mostra a escala de todos os professores agora e na semana. O ano letivo junta provas, eventos e feriados.' : P === 'prof' ? 'Suas aulas da semana, o calendário da escola e os seus pedidos de aula extra.' : 'As aulas da sua turma e o que vem pela frente no ano letivo.',
       abas: tabs.map(([id, label, n]) => ({ label, on: aba === id, peso: aba === id ? 600 : 500, cor: aba === id ? 'var(--texto)' : 'var(--texto-suave)', barra: aba === id ? 'var(--texto)' : 'transparent', temN: !!n, n: n || '', ir: () => this.setState({ aba: id, painel: null, pend: null }) })),
       abaQuadro: aba === 'quadro', abaAno: aba === 'ano', abaDisc: aba === 'disc', abaPed: aba === 'pedidos'
@@ -375,7 +378,7 @@ class GradeAgenda extends DCLogic {
         const d = this.state.discs.find(d => d.id === p.disciplina_id);
         return p.itens.map((x, idx) => ({ discId: p.disciplina_id, idx, novo: !d?.grade[idx], nome: p.disciplina_nome,
           de: d?.grade[idx] ? DIA_C[d.grade[idx].dia_semana] + ' ' + d.grade[idx].hora_inicio : 'sem horário',
-          dia: x.dia_semana, ini: x.hora_inicio, fim: x.hora_fim, sala: d?.sala }));
+          dia: x.dia_semana, ini: x.hora_inicio, fim: x.hora_fim, sala: String(x.sala_id ?? d?.sala ?? '') }));
       });
       this.setState(s => ({ iaEnv: false, iaMsgs: s.iaMsgs.concat({ papel: 'ia', texto: r.resposta }),
         iaProp: r.proposta.length || r.recusados.length ? { proposta: r.proposta, moves, rec: r.recusados.map(p => ({ nome: p.disciplina_nome, motivo: p.motivo })), idx: s.iaMsgs.length } : null, iaFeito: null }));
@@ -398,7 +401,7 @@ class GradeAgenda extends DCLogic {
   }
   valsIa(st) {
     const p = st.iaProp;
-    return { iaVazio: !st.iaMsgs.length && !st.iaEnv, iaSug: ['Tem algum choque na grade atual?', 'Resolva os choques e monte a grade das disciplinas sem horário.', 'O professor Carlos só pode de manhã. Reorganize as aulas dele.'].map(t => ({ t, usar: () => this.iaEnviar(t) })),
+    return { iaVazio: !st.iaMsgs.length && !st.iaEnv, iaSug: ['Tem algum choque na grade atual?', 'Resolva os choques e monte a grade das disciplinas sem horário.', this.demo() ? lerLoja().iaSugGrade : 'Reorganize as aulas de um professor para o período da manhã.'].map(t => ({ t, usar: () => this.iaEnviar(t) })),
       iaLista: st.iaMsgs.map((m, i) => ({ autor: m.papel === 'usuario' ? 'Escola' : 'Assistente', usuario: m.papel === 'usuario', ia: m.papel === 'ia', texto: m.texto, temProp: !!p && p.idx === i })),
       iaMoves: p ? p.moves.map(m => ({ nome: m.nome, de: m.de, para: DIA_C[m.dia] + ' ' + m.ini + '–' + m.fim + ' · ' + nomeSala(m.sala) })) : [], iaTemMoves: !!(p && p.moves.length), iaRec: p ? p.rec : [], iaTemRec: !!(p && p.rec.length),
       iaAcoes: !!(p && p.moves.length && !st.iaFeito), iaFeitoVis: !!st.iaFeito, iaFeito: st.iaFeito || '', iaAplicar: () => this.iaAplicar(), iaDescartar: () => this.setState({ iaProp: null, iaFeito: null }),
@@ -410,7 +413,7 @@ class GradeAgenda extends DCLogic {
   chipEv(e) { const T = TIPOS[e.tipo]; return { ab: T.ab, bBg: T.bg, bCor: T.cor, bBorda: T.borda, titulo: e.titulo, tipoTxt: T.label, quem: e.turmas === 'todas' ? 'Todas as turmas' : e.turmas.map(nomeTurma).join(', '), hora: e.hi ? e.hi + (e.hf ? '–' + e.hf : '') : '', datas: ddmm(e.data) + (e.fim ? ' a ' + ddmm(e.fim) : ''), abrir: () => this.setState({ painel: { tipo: 'evento', id: e.id } }) }; }
   novoEvento(data) { this.setState({ painel: { tipo: 'eventoForm', id: null }, eErro: '', eF: { tipo: 'prova', titulo: '', data: data || '', fim: '', hi: '', hf: '', todas: true, turmas: [], disc: '', desc: '' } }); }
   editarEvento(e) { this.setState({ painel: { tipo: 'eventoForm', id: e.id }, eErro: '', eF: { tipo: e.tipo, titulo: e.titulo, data: e.data, fim: e.fim || '', hi: e.hi || '', hf: e.hf || '', todas: e.turmas === 'todas', turmas: e.turmas === 'todas' ? [] : e.turmas.slice(), disc: e.disc ? String(e.disc) : '', desc: e.desc || '' } }); }
-  salvarEvento(ev) {
+  async salvarEvento(ev) {
     ev.preventDefault(); const st = this.state, f = st.eF, id = st.painel.id, erro = t => this.setState({ eErro: t });
     if (!f.titulo.trim()) return erro('Dê um título ao evento.');
     if (!f.data) return erro('Escolha a data.');
@@ -420,8 +423,12 @@ class GradeAgenda extends DCLogic {
     if (f.hi && !(hm(f.hi) < hm(f.hf))) return erro('O horário de fim precisa ser depois do início.');
     if (!f.todas && !f.turmas.length) return erro('Escolha pelo menos uma turma.');
     const obj = { id: id || Date.now(), tipo: f.tipo, titulo: f.titulo.trim(), data: f.data, fim: f.fim && f.fim !== f.data ? f.fim : '', hi: f.hi, hf: f.hf, turmas: f.todas ? 'todas' : f.turmas.slice(), disc: f.disc ? +f.disc : null, desc: f.desc.trim() };
-    // F5b: ligar à API
-    this.setState(s => ({ eventos: id ? s.eventos.map(x => x.id === id ? obj : x) : s.eventos.concat(obj), painel: { tipo: 'evento', id: obj.id }, msgAno: id ? 'Evento atualizado.' : 'Evento publicado no calendário.', ref: obj.data }));
+    if (this.demo()) return this.setState(s => ({ eventos: id ? s.eventos.map(x => x.id === id ? obj : x) : s.eventos.concat(obj), painel: { tipo: 'evento', id: obj.id }, msgAno: id ? 'Evento atualizado.' : 'Evento publicado no calendário.', ref: obj.data }));
+    try {
+      const salvo = id ? await atualizarEvento(id, eventoAPI(obj)) : await criarEvento(eventoAPI(obj));
+      await recarregarLoja();
+      this.setState({ painel: { tipo: 'evento', id: salvo.id }, eErro: '', msgAno: id ? 'Evento atualizado.' : 'Evento publicado no calendário.', ref: obj.data });
+    } catch (er) { erro(er.detalhe); }
   }
   valsAno(st, P, now, fer) {
     const hoje = now.data, ref = st.ref || hoje, esc = P === 'escola', vis = st.vis;
@@ -436,7 +443,7 @@ class GradeAgenda extends DCLogic {
       anoTitulo: titulo, anoNavVis: vis !== 'lista', anoAnt: () => nav(-1), anoProx: () => nav(1), anoHoje: () => this.setState({ ref: null }), anoNaoHoje: ref !== hoje,
       aTurmaVis: esc, aTurma: st.aTurma, setATurma: e => this.setState({ aTurma: e.target.value }), optTurmas: lerLoja().turmas.map(t => ({ v: t.id, l: t.nome })), novoEvVis: esc, novoEv: () => this.novoEvento(vis === 'dia' ? ref : ''),
       tiposF: Object.keys(TIPOS).map(k => { const T = TIPOS[k], on = !st.tiposOff[k]; return { label: T.label, ab: T.ab, bBg: T.bg, bCor: T.cor, bBorda: T.borda, on, op: on ? 1 : 0.45, borda: on ? 'var(--texto)' : 'var(--borda)', ir: () => this.setState(s => ({ tiposOff: Object.assign({}, s.tiposOff, { [k]: !s.tiposOff[k] }) })) }; }),
-      escopoAno: esc ? 'A escola vê o calendário de todas as turmas.' : P === 'prof' ? 'Você vê os eventos gerais e os das turmas em que dá aula.' : 'Você vê os eventos gerais e os do ' + nomeTurma(this.turmaId()) + '.',
+      escopoAno: esc ? 'A escola vê o calendário de todas as turmas.' : P === 'prof' ? 'Você vê os eventos gerais e os das turmas em que dá aula.' : 'Você vê os eventos gerais e os ' + (this.demo() ? 'do ' : 'de ') + this.turmaAluno() + '.',
       visAno: vis === 'ano', visMes: vis === 'mes', visSemana: vis === 'semana', visDia: vis === 'dia', visLista: vis === 'lista', msgAnoVis: !!st.msgAno, msgAno: st.msgAno || '', fecharMsgAno: () => this.setState({ msgAno: '' })
     };
     const diaCel = (d, opts) => { const ds = doDia(d), fe = !!fer[d], bim = ds.some(e => e.tipo === 'bimestre'), letivo = d >= this.ano().inicio && d <= this.ano().fim, tp = [...new Set(ds.filter(e => e.tipo !== 'feriado').map(e => e.tipo))].slice(0, 3);
@@ -499,10 +506,10 @@ class GradeAgenda extends DCLogic {
     const errs = this.errosDisc(f, id), k = errs.findIndex(Boolean); if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
     let nid = id;
     try {
-      const corpo = { nome: f.nome.trim(), carga_horaria: c, ...(f.prof ? { professor_id: +f.prof } : id ? { professor_id: null } : {}) };
+      const corpo = disciplinaAPI({ ...f, nome: f.nome.trim(), carga: c });
       nid = (id ? await atualizarDisciplina(id, corpo) : await criarDisciplina(corpo)).id;
       this.setState({ painel: { tipo: 'disc', id: nid } });
-      const grade = f.grade.map(r => ({ dia_semana: +r.dia, hora_inicio: r.ini, hora_fim: r.fim }));
+      const grade = itensAPI(f.grade.map(r => ({ dia_semana: +r.dia, hora_inicio: r.ini, hora_fim: r.fim, sala: r.sala })));
       await salvarGrade(nid, grade); await recarregarLoja();
       this.setState({ dErro: '', dOk: grade.length ? 'Grade salva: ' + grade.length + (grade.length === 1 ? ' aula' : ' aulas') + ' por semana.' : 'Salvo. Sem horários, a disciplina não aparece no quadro.' });
     } catch (er) { if (nid) { try { await recarregarLoja(); } catch {} } erro(er.detalhe); }
@@ -520,13 +527,16 @@ class GradeAgenda extends DCLogic {
     };
   }
   pedCheck(p, q, st) { const d = st.discs.find(x => x.id === p.disc); return d ? this.checarData({ data: q.data, ini: q.ini, fim: q.fim, prof: p.prof, turma: d.turma, sala: q.sala }, st) : 'Disciplina não encontrada.'; }
-  enviarPed(e) {
+  async enviarPed(e) {
     e.preventDefault(); const st = this.state, f = st.pF, erro = t => this.setState({ pMsg: { erro: true, t } });
     if (!f.disc) return erro('Escolha a disciplina.');
     const ck = this.pedCheck({ disc: +f.disc, prof: this.profId() }, f, st); if (ck) return erro('Não dá para enviar: ' + ck);
     if (!f.motivo.trim()) return erro('Explique o motivo da aula extra.');
-    // F5b: ligar à API
-    this.setState(s => ({ pedidos: [{ id: Date.now(), prof: this.profId(), disc: +f.disc, data: f.data, ini: f.ini, fim: f.fim, sala: f.sala, motivo: f.motivo.trim(), status: 'pendente', resposta: '', sug: null }].concat(s.pedidos), pF: { disc: f.disc, data: '', ini: '', fim: '', sala: f.sala, motivo: '' }, pMsg: { erro: false, t: 'Pedido enviado. A escola analisa e você vê a resposta aqui.' } }));
+    if (this.demo()) return this.setState(s => ({ pedidos: [{ id: Date.now(), prof: this.profId(), disc: +f.disc, data: f.data, ini: f.ini, fim: f.fim, sala: f.sala, motivo: f.motivo.trim(), status: 'pendente', resposta: '', sug: null }].concat(s.pedidos), pF: { disc: f.disc, data: '', ini: '', fim: '', sala: f.sala, motivo: '' }, pMsg: { erro: false, t: 'Pedido enviado. A escola analisa e você vê a resposta aqui.' } }));
+    try {
+      await criarPedido(pedidoAPI({ ...f, motivo: f.motivo.trim() })); await recarregarLoja();
+      this.setState({ pF: { disc: f.disc, data: '', ini: '', fim: '', sala: f.sala, motivo: '' }, pMsg: { erro: false, t: 'Pedido enviado. A escola analisa e você vê a resposta aqui.' } });
+    } catch (er) { erro((er.status === 409 ? 'Não dá para enviar: ' : '') + er.detalhe); }
   }
   valsPed(st, P) {
     const esc = P === 'escola', f = st.pF, minhas = st.discs.filter(d => d.prof === this.profId());
@@ -537,20 +547,35 @@ class GradeAgenda extends DCLogic {
     if (esc) {
       const pend = st.pedidos.filter(p => p.status === 'pendente'), hist = st.pedidos.filter(p => p.status !== 'pendente');
       return { pedEsc: true, pedProf: false, pendTitulo: pend.length ? pend.length + (pend.length === 1 ? ' pedido aguardando análise' : ' pedidos aguardando análise') : 'Nenhum pedido aguardando análise',
-        pendLista: pend.map(p => { const ck = this.pedCheck(p, p, st), rec = st.recusando === p.id, sug = st.sugerindo === p.id;
+        pendLista: pend.map(p => { const ck = st.pedErros?.[p.id] || this.pedCheck(p, p, st), rec = st.recusando === p.id, sug = st.sugerindo === p.id;
           return Object.assign(fmtP(p, p), { ok: !ck, ck: ck ? 'Choque: ' + ck : 'Sem choque com professor, turma e sala.', ckCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', aprovarOff: !!ck, aprovarO: ck ? 0.4 : 1,
             normal: !rec && !sug, rec, sug, recMotivo: st.recMotivo, recErro: st.recErro, sugF: st.sug, sugErro: st.sugErro,
-    // F5b: ligar à API
-            aprovar: () => { const c2 = this.pedCheck(p, p, this.state); if (c2) return; this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', resposta: '' }) : x), msgPed: 'Aula extra aprovada. Ela entra no quadro e na semana dos alunos.' })); },
+            aprovar: async () => {
+              if (!this.demo()) {
+                try { await aprovarPedido(p.id); await recarregarLoja(); this.setState({ msgPed: 'Aula extra aprovada. Ela entra no quadro e na semana dos alunos.' }); }
+                catch (er) { this.setState(s => ({ pedErros: { ...s.pedErros, [p.id]: er.detalhe } })); }
+                return;
+              }
+              const c2 = this.pedCheck(p, p, this.state); if (c2) return; this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', resposta: '' }) : x), msgPed: 'Aula extra aprovada. Ela entra no quadro e na semana dos alunos.' })); },
             pedirRec: () => this.setState({ recusando: p.id, recMotivo: '', recErro: '', sugerindo: null }), pedirSug: () => this.setState({ sugerindo: p.id, recusando: null, sugErro: '', sug: { data: p.data, ini: p.ini, fim: p.fim, sala: p.sala } }),
             cancelar: () => this.setState({ recusando: null, sugerindo: null }),
             setRec: e => this.setState({ recMotivo: e.target.value, recErro: '' }),
-    // F5b: ligar à API
-            confRec: () => { if (!this.state.recMotivo.trim()) return this.setState({ recErro: 'Escreva o motivo da recusa. O professor vai ver.' }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: s.recMotivo.trim() }) : x), recusando: null, msgPed: 'Pedido recusado. O professor vê o motivo.' })); },
+            confRec: async () => { if (!this.state.recMotivo.trim()) return this.setState({ recErro: 'Escreva o motivo da recusa. O professor vai ver.' });
+              if (!this.demo()) {
+                try { await recusarPedido(p.id, this.state.recMotivo.trim()); await recarregarLoja(); this.setState({ recusando: null, msgPed: 'Pedido recusado. O professor vê o motivo.' }); }
+                catch (er) { this.setState({ recErro: er.detalhe }); }
+                return;
+              }
+              this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: s.recMotivo.trim() }) : x), recusando: null, msgPed: 'Pedido recusado. O professor vê o motivo.' })); },
             setSugData: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { data: e.target.value }), sugErro: '' })), setSugIni: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { ini: e.target.value }), sugErro: '' })), setSugFim: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { fim: e.target.value }), sugErro: '' })), setSugSala: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { sala: e.target.value }), sugErro: '' })),
             sugCk: (() => { const c3 = this.pedCheck(p, st.sug, st); return c3 ? 'Choque: ' + c3 : 'Horário livre.'; })(), sugCkCor: this.pedCheck(p, st.sug, st) ? 'var(--aviso)' : 'var(--texto-suave)',
-    // F5b: ligar à API
-            confSug: () => { const c4 = this.pedCheck(p, this.state.sug, this.state); if (c4) return this.setState({ sugErro: 'Esse horário também tem choque. ' + c4 }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'sugestao', sug: Object.assign({}, s.sug) }) : x), sugerindo: null, msgPed: 'Sugestão enviada. O professor aceita ou recusa.' })); } }); }),
+            confSug: async () => {
+              if (!this.demo()) {
+                try { await sugerirPedido(p.id, horarioAPI(this.state.sug)); await recarregarLoja(); this.setState({ sugerindo: null, msgPed: 'Sugestão enviada. O professor aceita ou recusa.' }); }
+                catch (er) { this.setState({ sugErro: er.detalhe }); }
+                return;
+              }
+              const c4 = this.pedCheck(p, this.state.sug, this.state); if (c4) return this.setState({ sugErro: 'Esse horário também tem choque. ' + c4 }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'sugestao', sug: Object.assign({}, s.sug) }) : x), sugerindo: null, msgPed: 'Sugestão enviada. O professor aceita ou recusa.' })); } }); }),
         temPend: pend.length > 0, histLista: hist.map(p => { const q = p.status === 'sugestao' ? p.sug : p; return Object.assign(fmtP(p, q), tagSt(p.status), { resposta: p.resposta, temResp: !!p.resposta }); }), temHist: hist.length > 0,
         optSalas: lerLoja().salas.map(s => ({ v: s.id, l: s.nome })), msgPedVis: !!st.msgPed, msgPed: st.msgPed || '', fecharMsgPed: () => this.setState({ msgPed: '' }) };
     }
@@ -562,10 +587,18 @@ class GradeAgenda extends DCLogic {
       pCkVis: !!(f.disc && f.data && f.ini && f.fim), pCk: ck ? 'Choque: ' + ck : 'Horário livre para você, a turma e a sala.', pCkCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', pEnvOff: !!ck, pEnvO: ck ? 0.4 : 1,
       pMsgVis: !!st.pMsg, pMsg: st.pMsg ? st.pMsg.t : '', pMsgCor: st.pMsg && st.pMsg.erro ? 'var(--aviso)' : 'var(--texto)',
       meusLista: meus.map(p => { const q = p.status === 'sugestao' ? p.sug : p; return Object.assign(fmtP(p, q), tagSt(p.status), { resposta: p.resposta, temResp: !!p.resposta, ehSug: p.status === 'sugestao', original: 'Você pediu ' + DIA_L[dsem(p.data)] + ', ' + ddmm(p.data) + ' · ' + p.ini + '–' + p.fim + '.',
-    // F5b: ligar à API
-        aceitar: () => { const c5 = this.pedCheck(p, p.sug, this.state); if (c5) return this.setState({ pMsg: { erro: true, t: 'A sugestão deixou de estar livre: ' + c5 } }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', data: p.sug.data, ini: p.sug.ini, fim: p.sug.fim, sala: p.sug.sala, sug: null }) : x), pMsg: { erro: false, t: 'Sugestão aceita. A aula extra está no quadro.' } })); },
-    // F5b: ligar à API
-        recusar: () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: 'Você recusou a sugestão da escola.', sug: null }) : x) })) }); }),
+        aceitar: async () => {
+          if (!this.demo()) {
+            try { await aceitarSugestao(p.id); await recarregarLoja(); this.setState({ pMsg: { erro: false, t: 'Sugestão aceita. A aula extra está no quadro.' } }); }
+            catch (er) { this.setState({ pMsg: { erro: true, t: er.detalhe } }); }
+            return;
+          }
+          const c5 = this.pedCheck(p, p.sug, this.state); if (c5) return this.setState({ pMsg: { erro: true, t: 'A sugestão deixou de estar livre: ' + c5 } }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', data: p.sug.data, ini: p.sug.ini, fim: p.sug.fim, sala: p.sug.sala, sug: null }) : x), pMsg: { erro: false, t: 'Sugestão aceita. A aula extra está no quadro.' } })); },
+        recusar: async () => {
+          if (this.demo()) return this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: 'Você recusou a sugestão da escola.', sug: null }) : x) }));
+          try { await recusarSugestao(p.id); await recarregarLoja(); }
+          catch (er) { this.setState({ pMsg: { erro: true, t: er.detalhe } }); }
+        } }); }),
       temMeus: meus.length > 0 };
   }
   valsPainel(st, P, now, fer) {
@@ -585,8 +618,11 @@ class GradeAgenda extends DCLogic {
       const e = st.eventos.find(x => x.id === pn.id); if (!e) return base;
       const d = e.disc ? st.discs.find(x => x.id === e.disc) : null, c = this.chipEv(e);
       return Object.assign(base, { painelTitulo: 'Calendário', pEv: true, pe: Object.assign(c, { quando: (e.fim ? ddmm(e.data) + ' a ' + ddmm(e.fim) + ' de ' : DIA_L[dsem(e.data)] + ', ' + e.data.slice(8, 10) + ' de ') + MESES[+e.data.slice(5, 7) - 1] + (e.hi ? ' · ' + e.hi + '–' + e.hf : ''), disc: d ? d.nome + ' · ' + nomeTurma(d.turma) : '', temDisc: !!d, desc: e.desc, temDesc: !!e.desc }),
-    // F5b: ligar à API
-        peAcoes: esc, peEditar: () => this.editarEvento(e), peExcluir: () => this.setState(s => ({ eventos: s.eventos.filter(x => x.id !== e.id), painel: null, msgAno: 'Evento removido do calendário.' })) });
+        peAcoes: esc, peEditar: () => this.editarEvento(e), peExcluir: async () => {
+          if (this.demo()) return this.setState(s => ({ eventos: s.eventos.filter(x => x.id !== e.id), painel: null, msgAno: 'Evento removido do calendário.' }));
+          try { await apagarEvento(e.id); await recarregarLoja(); this.setState({ painel: null, msgAno: 'Evento removido do calendário.' }); }
+          catch (er) { this.editarEvento(e); this.setState({ eErro: er.detalhe }); }
+        } });
     }
     if (pn.tipo === 'eventoForm' && st.eF) {
       const f = st.eF, setE = k => ev => { const v = ev.target.value; this.setState(s => ({ eF: Object.assign({}, s.eF, { [k]: v }), eErro: '' })); };

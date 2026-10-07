@@ -258,5 +258,6 @@ const PED0 = [
 export function estadoGradeDemo() {
   return { semestre: SEM_GRADE, ano: ANO_GRADE, profDemo: PROF_DEMO, turmaDemo: TURMA_DEMO,
     professores: PROFS_GRADE, disciplinas: DISCS_GRADE.map(d => ({ ...d, professor_id: d.prof, carga_horaria: d.carga })),
-    aulas: [], turmas: TURMAS, salas: SALAS, eventos: EV0, pedidos: PED0 };
+    aulas: [], turmas: TURMAS, salas: SALAS, eventos: EV0, pedidos: PED0.map(p => ({ ...p, aula_id: null })),
+    iaSugGrade: 'O professor Carlos só pode de manhã. Reorganize as aulas dele.' };
 }

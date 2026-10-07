@@ -1,4 +1,4 @@
-// Estado publicado pelo Portal; as coleções da F5b começam vazias.
+// Estado da API publicado pelo Portal e atualizado após as gravações.
 let dados: any = { perfil: null, usuario: null, semestre: null, disciplinas: [], professores: [], aulas: [], turmas: [], salas: [], eventos: [], pedidos: [] };
 const ouvintes = new Set<() => void>();
 let recarga: () => Promise<void>;

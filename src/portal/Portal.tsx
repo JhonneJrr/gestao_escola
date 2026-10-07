@@ -131,7 +131,7 @@ class Component extends DCLogic {
   publicarEstado() {
     const s = this.state;
     publicar({ perfil: s.papel, usuario: s.usuario, semestre: s.semestre, disciplinas: s.discs,
-      professores: s.profs, aulas: s.aulas, turmas: [], salas: [], eventos: [], pedidos: [],
+      professores: s.profs, aulas: s.aulas, turmas: s.turmas || [], salas: s.salas || [], eventos: s.eventos || [], pedidos: s.pedidos || [],
       ...(import.meta.env.DEV ? { relogio: this.props.relogio } : {}),
       ...(import.meta.env.DEV && this.props.inicio !== undefined ? this.demoGrade : {}) });
   }

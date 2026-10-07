@@ -4,14 +4,15 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 // Detecta nomes/chaves errados, perda de presença falsa e frequência em escala errada.
-function montarEstado(usuario, estado) {
+function adaptador() {
   const codigo = ts.transpileModule(readFileSync('src/portal/adaptador.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText;
   const modulo = { exports: {} };
   new Function('module', 'exports', codigo)(modulo, modulo.exports);
-  return modulo.exports.montarEstado(usuario, estado);
+  return modulo.exports;
 }
+const montarEstado = (usuario, estado) => adaptador().montarEstado(usuario, estado);
 const escola = { id: 90, email: 'direcao@escola.com', perfil: 'escola', nome: 'Direção', aluno_id: null, senha_provisoria: false };
 const professor = { id: 42, email: 'docente@escola.com', perfil: 'professor', nome: 'Docente', aluno_id: null, senha_provisoria: false };
 const aluno = { id: 91, email: 'bia@escola.com', perfil: 'aluno', nome: 'Bia', aluno_id: 27, senha_provisoria: true };
@@ -32,9 +33,10 @@ const turma = {
   metricas: [{ aluno_id: 27, media_geral: 0, frequencia_geral: 0, aprovado: false, disciplinas: [{ disciplina_id: 13, media: 0, parcial: false, frequencia: 0 }] }],
 };
 const esperadoTurma = {
+  turmas: [], salas: [], eventos: [], pedidos: [],
   semestre: { id: 9, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null },
   alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1' }],
-  discs: [{ id: 13, nome: 'Python', carga_horaria: 40, professor_id: 42, grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }] }],
+  discs: [{ id: 13, nome: 'Python', carga_horaria: 40, professor_id: 42, turma: '', sala: '', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '' }] }],
   mats: { '27-13': true }, avals: [{ id: 88, did: 13, nome: 'P1', peso: 100 }], notas: { '27-88': 0 },
   aulas: [
     { aula_id: 73, disciplina_id: 13, data: '2026-10-06', hora_inicio: '08:00', hora_fim: '09:40', status: 'agendada', origem: 'grade', remarcada_de: '2026-10-05', chamada: { '27': false } },
@@ -85,7 +87,7 @@ test('aluno usa aluno_id e marca provisória somente na própria conta', () => {
 test('professor sem disciplina recebe coleções vazias e semestre nulo', () => {
   assert.deepEqual(montarEstado(professor, { ...vazio, professores: [professor] }), {
     papel: 'prof', profId: 42, usuario: professor, semestre: null, historico: [], profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }],
-    alunos: [], discs: [], mats: {}, avals: [], notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
+    alunos: [], discs: [], turmas: [], salas: [], eventos: [], pedidos: [], mats: {}, avals: [], notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
   });
 });
 
@@ -103,4 +105,47 @@ test('ocupacoes da API viram ocupados sem alterar os dados recebidos', () => {
   assert.deepEqual(resultado.profs[0].ocupados, ocupacoes);
   assert.notEqual(resultado.profs[0].ocupados, ocupacoes);
   assert.deepEqual(entrada.professores[0].ocupacoes, ocupacoes);
+});
+
+test('grade e agenda traduzem ids, sala efetiva, eventos e pedidos sem perder o recorte', () => {
+  const entrada = { ...turma, turmas: [{ id: 5, nome: '1º A' }], salas: [{ id: 7, nome: 'Sala 101' }],
+    disciplinas: [{ ...turma.disciplinas[0], turma_id: 5, sala_id: 7, grade: [
+      { dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala_id: null },
+      { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala_id: 8 },
+    ] }],
+    eventos: [{ id: 6, tipo: 'prova', titulo: 'P2', data: '2026-10-13', fim: null, hora_inicio: null, hora_fim: null, todas_turmas: false, turma_ids: [5], disciplina_id: 13, descricao: 'Revisão' },
+      { id: 9, tipo: 'feriado', titulo: 'Recesso', data: '2026-10-20', fim: '2026-10-21', hora_inicio: '08:00', hora_fim: '09:40', todas_turmas: true, turma_ids: [], disciplina_id: null, descricao: '' }],
+    pedidos: [{ id: 4, professor_id: 42, disciplina_id: 13, data: '2026-10-14', hora_inicio: '13:30', hora_fim: '15:10', sala_id: null, motivo: 'Repor aula', status: 'sugestao', resposta: '', aula_id: null,
+      sugestao: { data: '2026-10-15', hora_inicio: '10:00', hora_fim: '11:40', sala_id: 7 } },
+      { id: 8, professor_id: 42, disciplina_id: 13, data: '2026-10-08', hora_inicio: '13:30', hora_fim: '15:10', sala_id: 7, motivo: '', status: 'aprovada', resposta: '', sugestao: null, aula_id: 74 }],
+  };
+  const copia = structuredClone(entrada), r = montarEstado(aluno, entrada);
+  assert.deepEqual(r.turmas, [{ id: '5', nome: '1º A' }]);
+  assert.deepEqual(r.salas, [{ id: '7', nome: 'Sala 101' }]);
+  assert.equal(r.discs[0].turma, '5'); assert.equal(r.discs[0].sala, '7');
+  assert.deepEqual(r.discs[0].grade, [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '7' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala: '8' }]);
+  assert.deepEqual(r.eventos, [
+    { id: 6, tipo: 'prova', titulo: 'P2', data: '2026-10-13', fim: '', hi: '', hf: '', turmas: ['5'], disc: 13, desc: 'Revisão' },
+    { id: 9, tipo: 'feriado', titulo: 'Recesso', data: '2026-10-20', fim: '2026-10-21', hi: '08:00', hf: '09:40', turmas: 'todas', disc: null, desc: '' },
+  ]);
+  assert.deepEqual(r.pedidos, [
+    { id: 4, prof: 42, disc: 13, data: '2026-10-14', ini: '13:30', fim: '15:10', sala: '', motivo: 'Repor aula', status: 'sugestao', resposta: '', sug: { data: '2026-10-15', ini: '10:00', fim: '11:40', sala: '7' }, aula_id: null },
+    { id: 8, prof: 42, disc: 13, data: '2026-10-08', ini: '13:30', fim: '15:10', sala: '7', motivo: '', status: 'aprovada', resposta: '', sug: null, aula_id: 74 },
+  ]);
+  assert.deepEqual(entrada, copia);
+});
+
+test('canvas devolve campos da API com ids inteiros e vazios nulos', () => {
+  const { eventoAPI, horarioAPI, pedidoAPI, disciplinaAPI, itensGradeAPI } = adaptador();
+  assert.deepEqual(eventoAPI({ tipo: 'prova', titulo: 'P2', data: '2026-10-13', fim: '', hi: '', hf: '', turmas: ['5'], disc: 13, desc: 'Revisão' }),
+    { tipo: 'prova', titulo: 'P2', data: '2026-10-13', fim: null, hora_inicio: null, hora_fim: null, todas_turmas: false, turma_ids: [5], disciplina_id: 13, descricao: 'Revisão' });
+  assert.deepEqual(eventoAPI({ tipo: 'evento', titulo: 'Feira', data: '2026-10-20', fim: '2026-10-21', hi: '08:00', hf: '09:40', turmas: 'todas', disc: '', desc: '' }),
+    { tipo: 'evento', titulo: 'Feira', data: '2026-10-20', fim: '2026-10-21', hora_inicio: '08:00', hora_fim: '09:40', todas_turmas: true, turma_ids: [], disciplina_id: null, descricao: '' });
+  assert.deepEqual(horarioAPI({ data: '2026-10-15', ini: '10:00', fim: '11:40', sala: '7' }), { data: '2026-10-15', hora_inicio: '10:00', hora_fim: '11:40', sala_id: 7 });
+  assert.deepEqual(pedidoAPI({ disc: '13', data: '2026-10-14', ini: '13:30', fim: '15:10', sala: '', motivo: 'Repor aula' }), { disciplina_id: 13, data: '2026-10-14', hora_inicio: '13:30', hora_fim: '15:10', sala_id: null, motivo: 'Repor aula' });
+  assert.deepEqual(horarioAPI({ data: '2026-10-15', ini: '', fim: '', sala: '' }), { data: '2026-10-15', hora_inicio: null, hora_fim: null, sala_id: null });
+  assert.deepEqual(disciplinaAPI({ nome: 'Lógica', carga: 40, prof: '42', turma: '5', sala: '7' }), { nome: 'Lógica', carga_horaria: 40, professor_id: 42, turma_id: 5, sala_id: 7 });
+  assert.deepEqual(disciplinaAPI({ nome: 'Lógica', carga: 40, prof: '', turma: '', sala: '' }), { nome: 'Lógica', carga_horaria: 40, professor_id: null, turma_id: null, sala_id: null });
+  assert.deepEqual(itensGradeAPI([{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '7' }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala: '' }]),
+    [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala_id: 7 }, { dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala_id: null }]);
 });

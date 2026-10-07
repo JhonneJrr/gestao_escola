@@ -2,18 +2,33 @@ export const fmt = (n: number) => n.toFixed(1).replace('.', ',');
 export const pct = (f: number) => Math.round(f * 100) + '%';
 export const AVISO = 'var(--aviso)', TINTA = 'var(--texto)';
 
+export const itensGradeAPI = (grade: any[]) => grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala_id: g.sala ? Number(g.sala) : null }));
+export const disciplinaAPI = (d: any) => ({ nome: d.nome, carga_horaria: Number(d.carga), professor_id: d.prof ? Number(d.prof) : null, turma_id: d.turma ? Number(d.turma) : null, sala_id: d.sala ? Number(d.sala) : null });
+export const horarioAPI = (p: any) => ({ data: p.data, hora_inicio: p.ini || null, hora_fim: p.fim || null, sala_id: p.sala ? Number(p.sala) : null });
+export const pedidoAPI = (p: any) => ({ disciplina_id: Number(p.disc), ...horarioAPI(p), motivo: p.motivo });
+export const eventoAPI = (e: any) => ({ tipo: e.tipo, titulo: e.titulo, data: e.data, fim: e.fim || null, hora_inicio: e.hi || null, hora_fim: e.hf || null,
+  todas_turmas: e.turmas === 'todas', turma_ids: e.turmas === 'todas' ? [] : e.turmas.map(Number), disciplina_id: e.disc ? Number(e.disc) : null, descricao: e.desc });
+
 const semestre = (s: any) => s == null ? null : ({
   id: s.id, nome: s.nome, inicio: s.inicio, fim: s.fim,
   encerrado_em: s.encerrado_em == null ? null : s.encerrado_em.slice(0, 10),
 });
 
 export function montarEstado(usuario: any, estado: any) {
-  const discs = estado.disciplinas.map((d: any) => ({ id: d.id, nome: d.nome, carga_horaria: d.carga_horaria, professor_id: d.professor_id, grade: d.grade }));
+  const discs = estado.disciplinas.map((d: any) => ({ id: d.id, nome: d.nome, carga_horaria: d.carga_horaria, professor_id: d.professor_id,
+    turma: String(d.turma_id ?? ''), sala: String(d.sala_id ?? ''), grade: d.grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: String(g.sala_id ?? d.sala_id ?? '') })) }));
   const avals = estado.avaliacoes.map((a: any) => ({ id: a.id, did: a.disciplina_id, nome: a.nome, peso: a.peso }));
   return {
     papel: usuario.perfil === 'professor' ? 'prof' : usuario.perfil,
     profId: usuario.perfil === 'professor' ? usuario.id : null, usuario,
     semestre: semestre(estado.semestre),
+    turmas: (estado.turmas || []).map((t: any) => ({ id: String(t.id), nome: t.nome })),
+    salas: (estado.salas || []).map((s: any) => ({ id: String(s.id), nome: s.nome })),
+    eventos: (estado.eventos || []).map((e: any) => ({ id: e.id, tipo: e.tipo, titulo: e.titulo, data: e.data, fim: e.fim ?? '', hi: e.hora_inicio ?? '', hf: e.hora_fim ?? '',
+      turmas: e.todas_turmas ? 'todas' : e.turma_ids.map(String), disc: e.disciplina_id, desc: e.descricao })),
+    pedidos: (estado.pedidos || []).map((p: any) => ({ id: p.id, prof: p.professor_id, disc: p.disciplina_id, data: p.data, ini: p.hora_inicio, fim: p.hora_fim,
+      sala: String(p.sala_id ?? ''), motivo: p.motivo, status: p.status, resposta: p.resposta,
+      sug: p.sugestao ? { data: p.sugestao.data, ini: p.sugestao.hora_inicio, fim: p.sugestao.hora_fim, sala: String(p.sugestao.sala_id ?? '') } : null, aula_id: p.aula_id })),
     historico: estado.semestres_encerrados.map((s: any) => ({ ...semestre(s), resumo: s.resumo.map((r: any) => ({
       disc: r.disciplina.nome, alunos: String(r.total_alunos),
       media: r.media_turma == null ? '—' : fmt(r.media_turma), mediaCor: TINTA,
