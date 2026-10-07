@@ -101,7 +101,8 @@ class GradeAgenda extends DCLogic {
   };
   // Modo editor único: abre só o painel de uma disciplina (ou de uma nova) e avisa o Portal quando o painel fecha.
   iniciarEditor() {
-    const id = this.props.discId, d = id == null ? null : this.state.discs.find(x => String(x.id) === String(id));
+    // '' e 'novo' (o Portal usa gaEd: 'novo') abrem o editor de uma disciplina nova.
+    const id = this.props.discId === '' || this.props.discId === 'novo' ? null : this.props.discId, d = id == null ? null : this.state.discs.find(x => String(x.id) === String(id));
     if (id != null && !d) { this.editorPendente = true; return; }
     this.editorPendente = false; this.abrirDisc(d || null);
   }
@@ -684,6 +685,8 @@ class GradeAgenda extends DCLogic {
     const errs = this.errosDisc(f, id), k = errs.findIndex(Boolean); if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
     let nid = id, cadastroOk = false;
     const corpo = disciplinaAPI({ ...f, nome: f.nome.trim(), carga: c });
+    // A API recusa professor_id nulo na criação (422): sem professor, o campo é omitido; no PATCH o null tira o professor.
+    if (!id && corpo.professor_id == null) delete corpo.professor_id;
     const grade = itensAPI(f.grade.map(r => ({ dia_semana: +r.dia, hora_inicio: r.ini, hora_fim: r.fim, sala: r.sala })));
     return this.gravar('disc', async () => {
       try {

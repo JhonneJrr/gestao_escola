@@ -54,18 +54,27 @@ try {
     await visivel(corpo.senha_provisoria_texto).waitFor({ state: 'visible' });
     assert.equal((await api('/auth/login', 'POST', { email, senha: corpo.senha_provisoria_texto })).status, 200);
   }
-  async function abrirAluno(nome) {
-    await page.keyboard.press('Alt+5');
-    await page.getByLabel('Buscar', { exact: true }).fill(nome);
-    await visivel(nome).first().click();
+  // Alunos é o hub de turmas (Alt+4): volta aos cartões, abre a turma (ou "Sem turma") e acha o aluno pela busca da lista.
+  async function hubTurmas() {
+    await page.keyboard.press('Alt+4');
+    const voltar = botao('Turmas');
+    if (await voltar.count()) await voltar.click();
+    await botao('Nova turma').waitFor({ state: 'visible' });
+  }
+  async function abrirAluno(nome, turma = 'Sem turma') {
+    await hubTurmas();
+    await page.getByRole('button', { name: new RegExp('^' + turma + '\\s*\\d+ aluno') }).filter({ visible: true }).click();
+    await page.getByPlaceholder('Nome ou matrícula', { exact: true }).fill(nome);
+    await page.locator('[role=button][data-fi]').filter({ hasText: nome }).click();
     await botao('Editar').waitFor({ state: 'visible' });
   }
-  async function criarAluno(nome, email, matricula) {
-    await page.keyboard.press('Alt+5');
+  async function criarAluno(nome, email, matricula, turma) {
+    await hubTurmas();
     await botao('Novo aluno').click();
     await form().getByLabel('Nome', { exact: true }).fill(nome);
     await form().getByLabel('Idade', { exact: true }).fill('20');
     await form().getByLabel('Matrícula', { exact: true }).fill(matricula);
+    if (turma) await form().locator('select').selectOption({ label: turma });
     if (email) await form().getByLabel(/^E-mail de acesso · opcional/).fill(email);
     const r = await resposta('/alunos', 'POST', () => botao('Cadastrar aluno').click());
     assert.equal(r.status, 201); alunos.add(r.corpo.id);
@@ -79,6 +88,7 @@ try {
   }
   async function editarAluno(nome, novoNome, email) {
     await abrirAluno(nome); await botao('Editar').click();
+    await form().getByLabel('Nome', { exact: true }).waitFor({ state: 'visible' });
     await form().getByLabel('Nome', { exact: true }).fill(novoNome);
     if (email) await form().getByLabel(/^E-mail de acesso · opcional/).fill(email);
   }
@@ -111,7 +121,7 @@ try {
   while (estadoInicial.alunos.some(a => [String(mat), String(mat + 1)].includes(a.matricula))) mat += 2;
 
   await conferir('cria um professor pela UI com senha do servidor válida', async () => {
-    await page.keyboard.press('Alt+4'); await botao('Novo professor').click();
+    await page.keyboard.press('Alt+3'); await botao('Novo professor').click();
     await form().getByLabel('Nome', { exact: true }).fill(nomeProf);
     await form().getByLabel('E-mail', { exact: true }).fill(emailProf);
     const r = await resposta('/professores', 'POST', () => botao('Criar conta do professor').click());
@@ -138,6 +148,8 @@ try {
     await editarAluno(nomeAluno, nomeEditado);
     const r = await resposta(`/alunos/${comEmail.id}`, 'PATCH', () => botao('Salvar').click());
     assert.equal(r.status, 200);
+    // Contrato da att 3: o PATCH do aluno sempre devolve matriculas_mantidas (vazia sem troca de turma).
+    assert.deepEqual(r.corpo.matriculas_mantidas, []);
     assert.equal((await api(`/alunos/${comEmail.id}`)).corpo.nome, nomeEditado);
     await visivel(nomeEditado).last().waitFor({ state: 'visible' });
     const reset = await resposta(`/alunos/${comEmail.id}/redefinir-senha`, 'POST', () => botao('Redefinir senha').click());
@@ -164,24 +176,46 @@ try {
 
   const nomeDisc = 'Disciplina F3a ' + sufixo;
   const grade = [{ dia_semana: 5, hora_inicio: '15:30', hora_fim: '17:10' }];
-  await conferir('cria disciplina com professor e horário na sexta; usa aulas_geradas do PUT', async () => {
-    await page.keyboard.press('Alt+3'); await botao('Nova disciplina').click();
-    await form().getByLabel('Nome', { exact: true }).fill(nomeDisc);
-    await form().getByLabel('Carga horária (h)', { exact: true }).fill('40');
-    await form().getByRole('radio', { name: nomeProf }).click();
+  const gradeAPI = grade.map(g => ({ ...g, sala_id: null }));
+  // O editor de disciplina é o componente GradeAgenda embutido no Acadêmico (página /disciplinas).
+  const editor = () => page.locator('[data-sc-name="GradeAgenda"]').getByRole('dialog');
+  const salvarDisciplina = () => editor().getByRole('button', { name: 'Salvar disciplina', exact: true });
+  const campo = rotulo => editor().locator('label').filter({ hasText: new RegExp('^' + rotulo) });
+  const lista = () => page.getByRole('listbox', { name: 'Disciplinas', exact: true });
+  const itemDisc = nome => lista().getByText(nome, { exact: true }).first();
+  const seletorAluno = () => page.locator('select').filter({ has: page.locator('option', { hasText: 'Escolha o aluno' }) });
+  async function paginaDisciplinas() {
+    await page.goto(FRONT + '/disciplinas');
+    await itemDisc('Python').waitFor({ state: 'visible' });
+  }
+  async function linhaDaGrade() {
+    return {
+      dia: await editor().locator('select').filter({ has: page.locator('option', { hasText: 'Sexta' }) }).first().inputValue(),
+      ini: await editor().getByLabel('Início', { exact: true }).first().inputValue(),
+      fim: await editor().getByLabel('Fim', { exact: true }).first().inputValue(),
+    };
+  }
+  async function lerDisciplina(id) { return (await api('/portal/estado')).corpo.disciplinas.find(d => d.id === id); }
+  await conferir('cria disciplina com professor e horário na sexta pelo editor; usa aulas_geradas do PUT', async () => {
+    await paginaDisciplinas(); await botao('Nova disciplina').click();
+    await salvarDisciplina().waitFor({ state: 'visible' });
+    await campo('Nome').locator('input').fill(nomeDisc);
+    await campo('Carga').locator('input').fill('40');
+    await campo('Professor').locator('select').selectOption({ label: nomeProf });
     for (let i = 0; i < grade.length; i++) {
-      await form().getByLabel('Dia da semana', { exact: true }).nth(i).selectOption(String(grade[i].dia_semana));
-      await form().getByLabel('Início', { exact: true }).nth(i).fill(grade[i].hora_inicio);
-      await form().getByLabel('Fim', { exact: true }).nth(i).fill(grade[i].hora_fim);
+      await editor().locator('select').filter({ has: page.locator('option', { hasText: 'Sexta' }) }).nth(i).selectOption(String(grade[i].dia_semana));
+      await editor().getByLabel('Início', { exact: true }).nth(i).fill(grade[i].hora_inicio);
+      await editor().getByLabel('Fim', { exact: true }).nth(i).fill(grade[i].hora_fim);
     }
     const put = page.waitForResponse(r => /\/disciplinas\/\d+\/grade$/.test(r.url()) && r.request().method() === 'PUT');
-    const r = await resposta('/disciplinas', 'POST', () => botao('Criar disciplina').click());
+    const r = await resposta('/disciplinas', 'POST', () => salvarDisciplina().click());
     assert.equal(r.status, 201); disc = r.corpo; disciplinas.add(disc.id);
+    assert.deepEqual(r.pedido, { nome: nomeDisc, carga_horaria: 40, professor_id: prof.id, turma_id: null, sala_id: null });
     const salvo = await put; assert.equal(salvo.status(), 200);
-    assert.deepEqual(salvo.request().postDataJSON(), { itens: grade });
+    assert.deepEqual(salvo.request().postDataJSON(), { itens: gradeAPI });
     const n = (await salvo.json()).aulas_geradas; assert.ok(n > 0);
-    await page.getByRole('status').filter({ hasText: `${n} aulas geradas` }).waitFor({ state: 'visible' });
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/grade`)).corpo, grade.map(g => ({ ...g, sala_id: null })));
+    await editor().getByText('Grade salva: 1 aula por semana.', { exact: true }).waitFor({ state: 'visible' });
+    assert.deepEqual((await api(`/disciplinas/${disc.id}/grade`)).corpo, gradeAPI);
     const aulas = await api(`/disciplinas/${disc.id}/aulas`);
     assert.equal(aulas.status, 200); assert.equal(aulas.corpo.length, n);
     const st = (await api('/portal/estado')).corpo;
@@ -193,10 +227,12 @@ try {
       assert.ok(a.data >= st.semestre.inicio && a.data <= st.semestre.fim);
       assert.ok(grade.some(g => g.dia_semana === (new Date(a.data + 'T12:00:00Z').getUTCDay() || 7) && g.hora_inicio === a.hora_inicio && g.hora_fim === a.hora_fim));
     }
-    await botao('Fechar').click(); await visivel(nomeDisc).first().waitFor({ state: 'visible' });
+    await editor().getByRole('button', { name: /^Fechar/ }).click();
+    await editor().waitFor({ state: 'hidden' });
+    await itemDisc(nomeDisc).waitFor({ state: 'visible' });
   });
   await conferir('matricula pela disciplina, confere roster e desmatricula (204)', async () => {
-    await page.getByRole('combobox', { name: 'Matricular aluno em ' + nomeDisc, exact: true }).selectOption(String(comEmail.id));
+    await seletorAluno().selectOption(String(comEmail.id));
     const caminho = `/alunos/${comEmail.id}/matricular/${disc.id}`;
     const r = await resposta(caminho, 'POST', () => botao('Matricular').click());
     assert.equal(r.status, 201); assert.equal(r.pedido, null); matriculas.add(caminho);
@@ -208,96 +244,106 @@ try {
     assert.deepEqual((await api(`/disciplinas/${disc.id}/alunos`)).corpo, []);
     assert.equal(await logic('return logic.state.selDisc;'), disc.id);
   });
-  await conferir('matricula pelo aluno e mostra 409 do servidor em desmErro', async () => {
-    await page.keyboard.press('Alt+6');
-    await logic('logic.setState({ selAluno: arg });', comEmail.id);
-    await page.getByRole('combobox', { name: 'Matricular em outra disciplina', exact: true }).selectOption(String(disc.id));
+  // A tela Matrículas deixou de existir para a escola: o equivalente de "desmatricular pelo aluno" é o chip de disciplina no painel do aluno.
+  await conferir('desmatricula pelo painel do aluno e mostra o 409 do servidor em desmErro', async () => {
+    await seletorAluno().selectOption(String(comEmail.id));
     const caminho = `/alunos/${comEmail.id}/matricular/${disc.id}`;
     assert.equal((await resposta(caminho, 'POST', () => botao('Matricular').click())).status, 201);
     await visivel(`${nomeEditado} matriculado em ${nomeDisc}.`).waitFor({ state: 'visible' });
     assert.ok((await api(`/disciplinas/${disc.id}/alunos`)).corpo.some(a => a.id === comEmail.id));
+    await abrirAluno(nomeEditado);
+    // O chip do painel pede confirmação (Não/Sim) antes de desmatricular.
+    const confirmarChip = () => page.getByRole('alertdialog', { name: 'Desmatricular de ' + nomeDisc, exact: true }).getByRole('button', { name: 'Sim', exact: true });
     // O banco permanece sem notas: simula apenas o conflito devolvido por DELETE.
     await page.route(API + caminho, async route => {
       if (route.request().method() === 'DELETE') await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ detail: 'aluno já tem notas ou frequência' }) });
       else await route.continue();
     });
-    await botao(`Desmatricular ${nomeEditado} de ${nomeDisc}`).click();
-    assert.equal((await resposta(caminho, 'DELETE', () => botao('Desmatricular').click())).status, 409);
+    await botao(`Desmatricular de ${nomeDisc}`).click();
+    assert.equal((await resposta(caminho, 'DELETE', () => confirmarChip().click())).status, 409);
     await visivel('aluno já tem notas ou frequência').waitFor({ state: 'visible' });
     assert.ok((await api(`/disciplinas/${disc.id}/alunos`)).corpo.some(a => a.id === comEmail.id));
     await page.unroute(API + caminho);
-    await botao(`Desmatricular ${nomeEditado} de ${nomeDisc}`).click();
-    assert.equal((await resposta(caminho, 'DELETE', () => botao('Desmatricular').click())).status, 204);
-    await visivel(`${nomeEditado} desmatriculado de ${nomeDisc}.`).waitFor({ state: 'visible' });
+    await botao(`Desmatricular de ${nomeDisc}`).click();
+    assert.equal((await resposta(caminho, 'DELETE', () => confirmarChip().click())).status, 204);
+    await botao(`Desmatricular de ${nomeDisc}`).waitFor({ state: 'hidden' });
     assert.deepEqual((await api(`/disciplinas/${disc.id}/alunos`)).corpo, []);
+    await page.keyboard.press('Escape');
   });
   await conferir('edita disciplina e troca professor; falha do PUT recarrega PATCH gravado', async () => {
-    await page.keyboard.press('Alt+3'); await botao('Editar').click();
+    await paginaDisciplinas(); await itemDisc(nomeDisc).click(); await botao('Editar').click();
+    await salvarDisciplina().waitFor({ state: 'visible' });
     const marta = estadoInicial.professores.find(p => p.email === 'marta@escola.com'); assert.ok(marta);
-    await form().getByRole('radio', { name: marta.nome }).click();
+    await campo('Professor').locator('select').selectOption({ label: marta.nome });
     const caminho = `/disciplinas/${disc.id}`;
     const put = page.waitForResponse(r => r.url() === API + caminho + '/grade' && r.request().method() === 'PUT');
-    assert.equal((await resposta(caminho, 'PATCH', () => botao('Salvar').click())).status, 200);
+    assert.equal((await resposta(caminho, 'PATCH', () => salvarDisciplina().click())).status, 200);
     assert.equal((await put).status(), 200);
-    await page.getByRole('status').filter({ hasText: 'aulas geradas' }).waitFor({ state: 'visible' });
-    assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === disc.id).professor_id, marta.id);
-    await form().getByLabel('Nome', { exact: true }).fill(nomeDisc + ' editada');
+    await editor().getByText('Grade salva: 1 aula por semana.', { exact: true }).waitFor({ state: 'visible' });
+    assert.equal((await lerDisciplina(disc.id)).professor_id, marta.id);
+    await campo('Nome').locator('input').fill(nomeDisc + ' editada');
     await page.route(API + caminho + '/grade', route => route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ detail: 'O fim deve ser depois do início' }) }));
     const falhou = page.waitForResponse(r => r.url() === API + caminho + '/grade' && r.request().method() === 'PUT');
-    assert.equal((await resposta(caminho, 'PATCH', () => botao('Salvar').click())).status, 200);
+    assert.equal((await resposta(caminho, 'PATCH', () => salvarDisciplina().click())).status, 200);
     assert.equal((await falhou).status(), 422);
-    await form().getByRole('alert').filter({ hasText: 'O fim deve ser depois do início' }).waitFor({ state: 'visible' });
+    // O cadastro já foi gravado: a tela diz isso e conserva o editor aberto.
+    await editor().getByText('Cadastro salvo; a grade não foi: O fim deve ser depois do início', { exact: true }).waitFor({ state: 'visible' });
     assert.equal(await logic('return logic.state.discs.find(d => d.id === arg).nome;', disc.id), nomeDisc + ' editada');
-    assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === disc.id).nome, nomeDisc + ' editada');
+    assert.equal((await lerDisciplina(disc.id)).nome, nomeDisc + ' editada');
     await page.unroute(API + caminho + '/grade');
     const draft = nomeDisc + ' edição preservada';
-    await form().getByLabel('Nome', { exact: true }).fill(draft);
+    await campo('Nome').locator('input').fill(draft);
     const detalhe = 'Choque de horário retornado pelo servidor.';
     for (const [rota, metodo] of [[caminho, 'PATCH'], [caminho + '/grade', 'PUT']]) {
       await page.route(API + rota, route => route.request().method() === metodo ? route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ detail: detalhe }) }) : route.continue());
       const falha = page.waitForResponse(r => r.url() === API + rota && r.request().method() === metodo);
-      await botao('Salvar').click(); assert.equal((await falha).status(), 409);
-      await form().getByRole('alert').filter({ hasText: detalhe }).waitFor({ state: 'visible' });
-      assert.equal(await form().getByLabel('Nome', { exact: true }).inputValue(), draft);
-      assert.equal(await botao('Salvar').isVisible(), true);
-      assert.deepEqual(await logic('return logic.state.fGrade.map(({ dia_semana, hora_inicio, hora_fim }) => ({ dia_semana: +dia_semana, hora_inicio, hora_fim }));'), grade);
+      await salvarDisciplina().click(); assert.equal((await falha).status(), 409);
+      await editor().getByText(detalhe).waitFor({ state: 'visible' });
+      assert.equal(await campo('Nome').locator('input').inputValue(), draft);
+      // O botão volta de 'Salvando…' para 'Salvar disciplina' depois do erro: o editor segue aberto para nova tentativa.
+      await salvarDisciplina().waitFor({ state: 'visible' });
+      assert.deepEqual(await linhaDaGrade(), { dia: String(grade[0].dia_semana), ini: grade[0].hora_inicio, fim: grade[0].hora_fim });
       await page.unroute(API + rota);
     }
     // O PATCH real que precede o PUT com 409 pode ter gravado o nome do rascunho.
-    await form().getByLabel('Nome', { exact: true }).fill(nomeDisc + ' editada');
+    await campo('Nome').locator('input').fill(nomeDisc + ' editada');
     const restaurouGrade = page.waitForResponse(r => r.url() === API + caminho + '/grade' && r.request().method() === 'PUT');
-    assert.equal((await resposta(caminho, 'PATCH', () => botao('Salvar').click())).status, 200);
+    assert.equal((await resposta(caminho, 'PATCH', () => salvarDisciplina().click())).status, 200);
     assert.equal((await restaurouGrade).status(), 200);
-    await page.getByRole('status').filter({ hasText: 'aulas geradas' }).waitFor({ state: 'visible' });
+    await editor().getByText('Grade salva: 1 aula por semana.', { exact: true }).waitFor({ state: 'visible' });
     assert.equal(await logic('return logic.state.discs.find(d => d.id === arg).nome;', disc.id), nomeDisc + ' editada');
-    assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === disc.id).nome, nomeDisc + ' editada');
-    assert.deepEqual((await api(caminho + '/grade')).corpo, grade.map(g => ({ ...g, sala_id: null })));
+    assert.equal((await lerDisciplina(disc.id)).nome, nomeDisc + ' editada');
+    assert.deepEqual((await api(caminho + '/grade')).corpo, gradeAPI);
     await page.keyboard.press('Escape');
   });
   await conferir('cria sem professor omitindo o campo e remove professor com null no PATCH', async () => {
     await botao('Editar').click();
-    await form().getByRole('radio', { name: /^Sem professor/ }).click();
+    await campo('Professor').locator('select').selectOption({ label: 'Sem professor' });
     const put = page.waitForResponse(r => r.url() === API + `/disciplinas/${disc.id}/grade` && r.request().method() === 'PUT');
-    const r = await resposta(`/disciplinas/${disc.id}`, 'PATCH', () => botao('Salvar').click());
+    const r = await resposta(`/disciplinas/${disc.id}`, 'PATCH', () => salvarDisciplina().click());
     assert.equal(r.status, 200); assert.equal(r.pedido.professor_id, null); await put;
-    await botao('Fechar').click(); await botao('Nova disciplina').click();
-    await form().getByLabel('Nome', { exact: true }).fill(nomeDisc + ' sem professor');
-    await form().getByLabel('Carga horária (h)', { exact: true }).fill('20');
-    await botao('Remover horário 1').click();
-    const criada = await resposta('/disciplinas', 'POST', () => botao('Criar disciplina').click());
-    assert.equal(criada.status, 201); disciplinas.add(criada.corpo.id);
-    assert.deepEqual(criada.pedido, { nome: nomeDisc + ' sem professor', carga_horaria: 20 });
-    await page.getByRole('status').filter({ hasText: 'Salvo. Sem grade, nenhuma aula foi gerada.' }).waitFor({ state: 'visible' });
-    assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === criada.corpo.id).professor_id, null);
-    await botao('Fechar').click();
+    assert.equal((await lerDisciplina(disc.id)).professor_id, null);
+    await editor().getByRole('button', { name: /^Fechar/ }).click(); await editor().waitFor({ state: 'hidden' });
+    await botao('Nova disciplina').click();
+    await campo('Nome').locator('input').fill(nomeDisc + ' sem professor');
+    await campo('Carga').locator('input').fill('20');
+    await editor().getByRole('button', { name: 'Remover horário 1', exact: true }).click();
+    const criada = await resposta('/disciplinas', 'POST', () => salvarDisciplina().click());
+    assert.equal(criada.status, 201, JSON.stringify([criada.corpo, criada.pedido])); disciplinas.add(criada.corpo.id);
+    // Na criação o campo professor_id é omitido (a API recusa null com 422); no PATCH o null remove o professor.
+    assert.deepEqual(criada.pedido, { nome: nomeDisc + ' sem professor', carga_horaria: 20, turma_id: null, sala_id: null });
+    await editor().getByText('Salvo. Sem horários, a disciplina não aparece no quadro.', { exact: true }).waitFor({ state: 'visible' });
+    assert.equal((await lerDisciplina(criada.corpo.id)).professor_id, null);
+    await editor().getByRole('button', { name: /^Fechar/ }).click(); await editor().waitFor({ state: 'hidden' });
+    await itemDisc(nomeDisc + ' sem professor').waitFor({ state: 'visible' });
     assert.equal((await resposta(`/disciplinas/${criada.corpo.id}`, 'DELETE', () => botao('Excluir disciplina').click())).status, 204);
-    await visivel(nomeDisc + ' sem professor').first().waitFor({ state: 'hidden' });
+    await itemDisc(nomeDisc + ' sem professor').waitFor({ state: 'hidden' });
     assert.ok(await logic('return logic.state.discs.some(d => d.id === arg);', disc.id));
     assert.equal(await logic('return logic.state.discs.some(d => d.id === arg);', criada.corpo.id), false);
   });
   await conferir('exclui disciplina e alunos; seleções inválidas caem no primeiro válido', async () => {
     await logic('logic.setState({ selDisc: arg, notaDisc: arg, notaAval: 999999, matDisc: String(arg) });', disc.id);
-    await visivel(nomeDisc + ' editada').first().waitFor({ state: 'visible' });
+    await itemDisc(nomeDisc + ' editada').waitFor({ state: 'visible' });
     assert.equal((await resposta(`/disciplinas/${disc.id}`, 'DELETE', () => botao('Excluir disciplina').click())).status, 204);
     await page.waitForFunction(() => !document.body.textContent.includes('Disciplina F3a'));
     const st = await logic('return { selDisc: logic.state.selDisc, notaDisc: logic.state.notaDisc, matDisc: logic.state.matDisc, primeiro: logic.state.discs[0].id };');
