@@ -44,7 +44,7 @@ const CAMINHOS = { inicio: '/', login: '/login', 'primeiro-acesso': '/primeiro-a
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const EXTRAS = 'Gabriel Costa,Helena Martins,Igor Pereira,Julia Ramos,Kaique Santos,Larissa Melo,Mateus Freitas,Natália Cunha,Otávio Barros,Paula Teixeira,Rafael Moura,Sofia Carvalho,Tiago Nunes,Valéria Pinto,Wagner Azevedo,Yasmin Duarte,Breno Farias,Cecília Rocha,Danilo Prado,Elisa Campos,Felipe Araújo,Giovana Lopes,Heitor Vieira,Isadora Reis,João Batista,Lívia Monteiro,Marcelo Dantas,Nina Albuquerque'.split(',');
 const MOLAS = { fast: { k: 1500, z: 1 }, moderate: { k: 620, z: 0.82 }, slow: { k: 320, z: 0.78 } };
-const ini = n => n.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+const ini = n => { const p = n.split(' ').filter(Boolean); return (p.length > 1 ? p[0][0] + p[1][0] : (p[0] || '').slice(0, 2)).toUpperCase(); };
 const br = d => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : '—'; };
 const FUNCOES = [
   { nome: 'Agenda e chamada', curto: 'As aulas do dia, por horário', titulo: 'A chamada sai da agenda do dia.', desc: 'A grade semanal de cada disciplina gera as aulas do semestre. Toda manhã a agenda mostra as aulas de hoje, de todas as disciplinas, com o status de cada uma: agendada, chamada feita ou cancelada.',
@@ -173,11 +173,28 @@ class Component extends DCLogic {
     if (!st.logado && st.tela === 'login' && !st.mg && !this.mgPend) { this.mgPend = true; requestAnimationFrame(() => { this.mgPend = false; const s2 = this.state; if (!s2.logado && s2.tela === 'login' && !s2.mg) this.abrirMergulho(null, null, true); }); }
     requestAnimationFrame(() => { this.syncSel(); this.revelar(); this.calcFunc(); });
   }
-  aplicarInicio() {
+  async aplicarInicio() {
+    if (!import.meta.env.DEV || this.props.inicio === undefined) return;
     const i = this.props.inicio ?? 'Apresentação';
+    let geoLogin;
+    if (import.meta.env.DEV) {
+      if (i === 'Login') {
+        // O canvas mede antes de aplicar o border-box e a largura do dispositivo.
+        const left = this.ringEl.parentElement.parentElement.previousElementSibling, box = left.style.boxSizing;
+        left.style.boxSizing = 'content-box';
+        geoLogin = this.geoMergulho();
+        left.style.boxSizing = box;
+      }
+      const { estadoDemo } = await import('./demo-canvas');
+      const papel = i === 'Aluno' ? 'aluno' : i.startsWith('Professor') ? 'prof' : 'escola';
+      const dados = estadoDemo(papel);
+      if (['Apresentação', 'Login', 'Primeiro acesso'].includes(i)) Object.assign(dados, { usuario: null, profId: null });
+      if (i === 'Primeiro acesso') dados.primeiroEmail = dados.alunos[0].email;
+      await new Promise(resolve => this.setState(dados, resolve));
+    }
     if (i === 'Primeiro acesso') return this.setState({ logado: false, papel: null, tela: 'primeiro-acesso', painel: null, sNova: '', sConf: '', fErro: '' });
     if (i === 'Apresentação') this.setState({ logado: false, papel: null, tela: 'inicio', painel: null });
-    else if (i === 'Login') this.setState({ logado: false, papel: null, tela: 'login', painel: null });
+    else if (i === 'Login') this.setState({ logado: false, papel: null, tela: 'login', painel: null }, () => this.abrirMergulho(null, null, true, geoLogin));
     else if (i === 'Professor') this.entrarComo('prof');
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
@@ -947,14 +964,14 @@ class Component extends DCLogic {
     if (entrar) setTimeout(this.resync, 600);
     d.animate(entrar ? [fora, dentro] : [dentro, fora], entrar ? { duration: 560, easing } : { duration: 140, easing: 'linear', fill: 'forwards' });
   }
-  abrirMergulho(p, ev, instant) {
+  abrirMergulho(p, ev, instant, geo) {
     this.atualizarURL('login');
     const papel = p || this.state.papelEscolhido;
     const ctl = this.ringCtl, m = this.mainRef.current;
     if (!ctl || !m || !this.ringEl) return this.setState({ tela: 'login', papelEscolhido: papel, loginErro: '' });
     this.limparMg();
     if (instant) m.scrollTop = 0;
-    const g = this.geoMergulho(ev && ev.currentTarget), rapido = instant;
+    const g = geo || this.geoMergulho(ev && ev.currentTarget), rapido = instant;
     if (!instant && this.rm) {
       this.setState({ tela: 'login', papelEscolhido: papel, loginErro: '', mg: { ...g, clip: [0, 0, 0, 0], fase: 'aberto', anim: false } }, () => {
         Object.assign(ctl, { tcx: g.W / 2, tcy: g.H / 2, tz: 1.3, snap: true }); ctl.redraw();
@@ -1190,6 +1207,7 @@ class Component extends DCLogic {
     const S0 = this.state, P = this.props;
     const meuProf = S0.papel === 'prof' ? S0.profs.find(p => p.id === S0.profId) || S0.profs[0] : null;
     const st = meuProf ? this.escopo(S0, meuProf.id) : S0; this.vst = st;
+    const visitanteVazio = !st.logado && !st.alunos.length && !st.discs.length;
     const celular = (P.dispositivo ?? 'Desktop') === 'Celular';
     const compact = celular || st.largura < 720;
     const estadoP = P.estado ?? 'Normal';
@@ -1413,7 +1431,7 @@ class Component extends DCLogic {
         mgTr: 'none',
         mgOp: mg && mg.op === 0 ? 0 : 1, mgOverflow: mg ? 'visible' : 'hidden', navLO: mg ? 0 : 1, navLPE: mg ? 'none' : 'auto', mainOverflow: mg ? 'hidden' : 'auto',
         loginVis: !!mg, cardO: ab ? 1 : 0, cardPE: ab ? 'auto' : 'none', cardT: 'none' }; })(), heroH: celular ? '844px' : '100vh', ringH: compact ? '440px' : 'auto', ringRef: this.setRing,
-      heroStats: [['Turma 2026', 'left'], ['Alunos: ' + reais.length, 'center'], ['Disciplinas: ' + st.discs.length, 'right'], ['Avisos: ' + st.avisos.length, 'left'], ['Média: ' + (mediaT == null ? '—' : fmt(mediaT)), 'center'], ['Em risco: ' + risco.length, 'right']].map(([t, al]) => ({ t, al })),
+      heroStats: [['Turma 2026', 'left'], ['Alunos: ' + (visitanteVazio ? '—' : reais.length), 'center'], ['Disciplinas: ' + (visitanteVazio ? '—' : st.discs.length), 'right'], ['Avisos: ' + (visitanteVazio ? '—' : st.avisos.length), 'left'], ['Média: ' + (mediaT == null ? '—' : fmt(mediaT)), 'center'], ['Em risco: ' + (visitanteVazio ? '—' : risco.length), 'right']].map(([t, al]) => ({ t, al })),
       navL: (compact ? [['Funções', 'recursos'], ['Perguntas', 'perguntas'], ['Entrar', null]] : [['Sem o portal', 'sem-portal'], ['Funções', 'recursos'], ['Em uso', 'demo'], ['Perguntas', 'perguntas'], ['Entrar', null]]).map(([label, id]) => ({ label, ir: () => id ? this.irSecao(id) : this.ir('login') })),
       saibaMais: () => this.irSecao('sem-portal'),
 
