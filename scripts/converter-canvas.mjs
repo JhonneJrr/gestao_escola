@@ -6,13 +6,15 @@ import { parseDocument } from 'htmlparser2';
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const aviso = '// GERADO por scripts/converter-canvas.mjs — não edite\n';
 const avisoCSS = '/* GERADO por scripts/converter-canvas.mjs — não edite */\n';
+export const PROPRIOS = { 'Grade e Agenda': './GradeAgenda' };
+export const identificador = nome => nome.split(/[^\p{L}\p{N}_$]+/u).filter(Boolean).map(p => p[0].toUpperCase() + p.slice(1)).join('');
 const camel = s => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 // Atributos DOM distintos dos quatro templates; data-* e aria-* são literais.
 const atributos = Object.fromEntries(('cx cy d disabled fill height href id max min name placeholder r ref rel role rows rx stroke style title type value width x y').split(' ').map(a => [a, a]));
 Object.assign(atributos, {
   class: 'className', for: 'htmlFor', tabindex: 'tabIndex', tabIndex: 'tabIndex',
   inputmode: 'inputMode', inputMode: 'inputMode', autocomplete: 'autoComplete',
-  viewBox: 'viewBox', 'stroke-width': 'strokeWidth', 'stroke-linejoin': 'strokeLinejoin', checked: 'checked',
+  maxLength: 'maxLength', maxlength: 'maxLength', viewBox: 'viewBox', 'stroke-width': 'strokeWidth', 'stroke-linejoin': 'strokeLinejoin', checked: 'checked',
 });
 for (const evento of ['Click', 'Change', 'Submit', 'KeyDown', 'PointerDown', 'MouseEnter', 'MouseLeave', 'Blur']) {
   atributos['on' + evento] = atributos[('on' + evento).toLowerCase()] = 'on' + evento;
@@ -130,8 +132,9 @@ export function converterTemplate(html, pseudoCache = new Map()) {
       return '{((_list' + n + ': any) => (Array.isArray(_list' + n + ') ? _list' + n + ' : []).map((' + item + ': any, ' + index + ': number) => <Fragment key={' + index + '}>' + filhos(node, inner) + '</Fragment>))(' + atributo(a.list ?? '', scope) + ')}';
     }
     const component = node.name === 'dc-import';
-    const tag = component ? a.name ?? a.component : node.name;
-    if (component) imports.add(tag);
+    const nome = component ? a.name ?? a.component : node.name;
+    const tag = component ? identificador(nome) : nome;
+    if (component) imports.add(nome);
     else if (!tags.has(tag)) throw new Error('Tag não coberta pelo plano: ' + tag);
     const props = [];
     const pseudos = [];
@@ -211,7 +214,7 @@ function importantify(css) {
   return decls.map(d => d.trim()).filter(Boolean).map(d => /!\s*important$/i.test(d) ? d : d + ' !important').join(';');
 }
 
-function converter() {
+export function converter({ gravar = false } = {}) {
   const cache = new Map(), feitos = new Set(), saidas = [];
   function gerar(nome, root = false) {
     if (feitos.has(nome)) return;
@@ -220,21 +223,24 @@ function converter() {
     const html = src.slice(src.indexOf('<x-dc>') + 6, src.lastIndexOf('</x-dc>'));
     const result = converterTemplate(html, cache);
     const script = src.match(/<script\b[^>]*\bdata-dc-script\b[^>]*>([\s\S]*?)<\/script>/)?.[1];
+    const proprio = PROPRIOS[nome], id = identificador(nome);
     const pasta = root ? 'src/portal/' : 'src/portal/componentes/';
     let codigo = aviso + '// @ts-nocheck\nimport { Fragment } from "react";\nimport { I, css } from "' + (root ? './' : '../') + 'runtime";\n';
-    for (const sub of result.imports) codigo += 'import ' + sub + ' from "' + (root ? './componentes/' : './') + sub + '";\n';
-    if (!root) {
+    for (const sub of result.imports) codigo += 'import ' + identificador(sub) + ' from "' + (PROPRIOS[sub] ? (root ? PROPRIOS[sub] : '.' + PROPRIOS[sub]) : (root ? './componentes/' : './') + identificador(sub)) + '";\n';
+    if (!root && !proprio) {
       codigo += 'import React from "react";\nimport { DCLogic, criarDC } from "../dc";\n';
-      if (result.styles.length) codigo += 'import "./' + nome + '.css";\n';
+      if (result.styles.length) codigo += 'import "./' + id + '.css";\n';
     }
-    codigo += (root ? 'export default ' : '') + 'function Template(v: any) {\n  return <>' + result.jsx + '</>;\n}\n';
-    if (!root) codigo += (script ?? '') + '\nexport default criarDC(' + JSON.stringify(nome) + ', Template' + (script ? ', Component' : '') + ');\n';
-    saidas.push([pasta + (root ? 'template' : nome) + '.tsx', codigo]);
-    if (root || result.styles.length) saidas.push([pasta + (root ? 'portal' : nome) + '.css', avisoCSS + result.styles.join('\n') + (root ? '\nhtml,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}\n' : '')]);
+    if (proprio && result.styles.length) codigo += 'import "./' + id + '.css";\n';
+    codigo += (root || proprio ? 'export default ' : '') + 'function Template(v: any) {\n  return <>' + result.jsx + '</>;\n}\n';
+    if (!root && !proprio) codigo += (script ?? '') + '\nexport default criarDC(' + JSON.stringify(nome) + ', Template' + (script ? ', Component' : '') + ');\n';
+    saidas.push([pasta + (root ? 'template' : id + (proprio ? 'Template' : '')) + '.tsx', codigo]);
+    if (root || result.styles.length) saidas.push([pasta + (root ? 'portal' : id) + '.css', avisoCSS + result.styles.join('\n') + (root ? '\nhtml,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}\n' : '')]);
     for (const sub of result.imports) gerar(sub);
   }
   gerar('Portal Escolar', true);
   saidas.push(['src/portal/pseudo.css', avisoCSS + [...cache.values()].map(p => p.rule).join('\n') + '\n']);
+  if (!gravar) return saidas;
   for (const [file, content] of saidas) {
     const path = resolve(raiz, file);
     mkdirSync(dirname(path), { recursive: true });
@@ -242,4 +248,4 @@ function converter() {
     console.log('GERADO ' + file);
   }
 }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) converter();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) converter({ gravar: true });

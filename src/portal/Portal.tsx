@@ -2,6 +2,8 @@
 import React from "react";
 import { DCLogic, criarDC } from "./dc";
 import Template from "./template";
+import { publicar, configurarRecarga } from "./loja";
+import { salvarOcupacoes, pedirGradeIA, erroGradeIA } from "./rede";
 import { montarEstado, fmt, pct, AVISO, TINTA } from "./adaptador";
 import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
 import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
@@ -35,12 +37,15 @@ const gerarAulas = (d, de, ate) => {
   return r;
 };
 const TELAS_POR = {
-  escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Agenda' }, { id: 'avisos', label: 'Avisos' }],
-  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
+  escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'avisos', label: 'Avisos' }],
+  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
   aluno: []
 };
 const TELAS = TELAS_POR.escola;
-const CAMINHOS = { inicio: '/', login: '/login', 'primeiro-acesso': '/primeiro-acesso', painel: '/painel', semestre: '/semestre', disciplinas: '/disciplinas', professores: '/professores', alunos: '/alunos', boletim: '/matriculas', frequencia: '/agenda', avisos: '/avisos', 'meu-painel': '/meu-painel' };
+const CAMINHOS = { inicio: '/', login: '/login', 'primeiro-acesso': '/primeiro-acesso', painel: '/painel', semestre: '/semestre', disciplinas: '/disciplinas', professores: '/professores', alunos: '/alunos', boletim: '/matriculas', frequencia: '/agenda', avisos: '/avisos', grade: '/grade', 'meu-painel': '/meu-painel' };
+const IA_SUG = ['Monte a grade das disciplinas que ainda estão sem horário.', 'O professor Carlos só pode de manhã. Reorganize as disciplinas dele.', 'Tem algum choque na grade atual?'];
+const IA_ERROS = { 'Não configurado': 'O assistente não está configurado neste servidor.', 'Limite de uso': 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.', 'Sem conexão': 'Não consegui falar com o assistente. Tente de novo.' };
+const IA_BASE = { iaMsgs: [], iaTexto: '', iaEnviando: false, iaErro: '', iaProposta: null, iaRecusados: [], iaAplicando: false, iaResultado: null, iaPropIdx: -1, iaDescartada: false, iaUltimo: '' };
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const EXTRAS = 'Gabriel Costa,Helena Martins,Igor Pereira,Julia Ramos,Kaique Santos,Larissa Melo,Mateus Freitas,Natália Cunha,Otávio Barros,Paula Teixeira,Rafael Moura,Sofia Carvalho,Tiago Nunes,Valéria Pinto,Wagner Azevedo,Yasmin Duarte,Breno Farias,Cecília Rocha,Danilo Prado,Elisa Campos,Felipe Araújo,Giovana Lopes,Heitor Vieira,Isadora Reis,João Batista,Lívia Monteiro,Marcelo Dantas,Nina Albuquerque'.split(',');
 const MOLAS = { fast: { k: 1500, z: 1 }, moderate: { k: 620, z: 0.82 }, slow: { k: 320, z: 0.78 } };
@@ -113,7 +118,7 @@ class Component extends DCLogic {
     funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, semPerm: null, rotaAviso: '', alunoErro: '',
     q: '', idadeMin: '', mediaMin: '', ordem: 'nome', pagina: 1,
     painel: null, painelUlt: null, fNome: '', fIdade: '', fMat: '', fErro: '',
-    fEmail: '', fOk: '', fGrade: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
+    fEmail: '', fOk: '', fGrade: [], fOcup: [], ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
     cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuUser: false, menuAula: null, limpar: null, exportando: null, exportOk: null,
     semConfirm: false, semMsg: '', nsNome: '', nsInicio: '', nsFim: '', nsErro: '',
     discQ: '', matAluno: '', matMsg: null,
@@ -123,7 +128,17 @@ class Component extends DCLogic {
     largura: 1280
   });
 
+  publicarEstado() {
+    const s = this.state;
+    publicar({ perfil: s.papel, usuario: s.usuario, semestre: s.semestre, disciplinas: s.discs,
+      professores: s.profs, aulas: s.aulas, turmas: [], salas: [], eventos: [], pedidos: [],
+      ...(import.meta.env.DEV ? { relogio: this.props.relogio } : {}),
+      ...(import.meta.env.DEV && this.props.inicio !== undefined ? this.demoGrade : {}) });
+  }
+  setState(u, cb) { super.setState(u, cb); this.publicarEstado(); }
   componentDidMount() {
+    configurarRecarga(() => this.recarregar());
+    this.publicarEstado();
     this.aplicarMovimento();
     this.aplicarFonte();
     if (this.props.inicio !== undefined) this.aplicarInicio();
@@ -142,13 +157,14 @@ class Component extends DCLogic {
     f.addEventListener('focusin', this.onFocus);
     document.addEventListener('keydown', this.onGlobalKey);
     this.ro = new ResizeObserver(es => { const w = es[0].contentRect.width, h = es[0].contentRect.height; if (Math.abs(w - this.state.largura) > 2 || Math.abs(h - (this.state.altura || 0)) > 2) this.setState({ largura: w, altura: h, funcNaoCabe: false }); this.syncSel(); this.calcFunc(); });
-    if (this.mainRef.current) this.mainRef.current.addEventListener('scroll', this.onScrollFunc, { passive: true });
+    if (this.mainRef.current) { const mm = this.mainRef.current; mm.addEventListener('scroll', this.onScrollFunc, { passive: true }); mm.addEventListener('wheel', this.onWheelTrava, { passive: false }); mm.addEventListener('touchstart', this.onTouchIni, { passive: true }); mm.addEventListener('touchmove', this.onTouchMov, { passive: false }); mm.addEventListener('touchend', this.onTouchFim, { passive: true }); }
+    document.addEventListener('keydown', this.onKeyTrava);
     this.kickF();
     this.revelar();
     this.ro.observe(f);
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => this.syncSel());
   }
-  componentWillUnmount() { aoExpirar(null); window.removeEventListener('popstate', this.aplicarRota); document.removeEventListener('keydown', this.onGlobalKey); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
+  componentWillUnmount() { aoExpirar(null); window.removeEventListener('popstate', this.aplicarRota); document.removeEventListener('keydown', this.onGlobalKey); document.removeEventListener('keydown', this.onKeyTrava); clearTimeout(this.iaT); clearTimeout(this.iaT2); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
   aplicarFonte() {
     const f = this.props.fonte ?? 'Apple · SF + New York', de = document.documentElement.style;
     const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -166,9 +182,11 @@ class Component extends DCLogic {
     de.setProperty('--mola-lenta', this.rm ? 'linear' : molaLinear(320, 0.78, 420));
   }
   componentDidUpdate(pp) {
+    if (this.funcModoTinta) this.tintaKick();
     if (pp.fonte !== this.props.fonte) this.aplicarFonte();
     if (pp.movimento !== this.props.movimento) { this.aplicarMovimento(); this.forceUpdate(); }
     if (pp.inicio !== this.props.inicio) this.aplicarInicio();
+    if (import.meta.env.DEV && pp.iaEstado !== this.props.iaEstado && (this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') { if (!this.state.logado || this.state.papel !== 'escola') this.entrarComo('escola'); setTimeout(() => this.iaEstadoAplicar(this.props.iaEstado), 0); }
     const st = this.state;
     if (!st.logado && st.tela === 'login' && !st.mg && !this.mgPend) { this.mgPend = true; requestAnimationFrame(() => { this.mgPend = false; const s2 = this.state; if (!s2.logado && s2.tela === 'login' && !s2.mg) this.abrirMergulho(null, null, true); }); }
     requestAnimationFrame(() => { this.syncSel(); this.revelar(); this.calcFunc(); });
@@ -185,7 +203,8 @@ class Component extends DCLogic {
         geoLogin = this.geoMergulho();
         left.style.boxSizing = box;
       }
-      const { estadoDemo } = await import('./demo-canvas');
+      const { estadoDemo, estadoGradeDemo } = await import('./demo-canvas');
+      this.demoGrade = estadoGradeDemo();
       const papel = i === 'Aluno' ? 'aluno' : i.startsWith('Professor') ? 'prof' : 'escola';
       const dados = estadoDemo(papel);
       if (['Apresentação', 'Login', 'Primeiro acesso'].includes(i)) Object.assign(dados, { usuario: null, profId: null });
@@ -196,8 +215,10 @@ class Component extends DCLogic {
     if (i === 'Apresentação') this.setState({ logado: false, papel: null, tela: 'inicio', painel: null });
     else if (i === 'Login') this.setState({ logado: false, papel: null, tela: 'login', painel: null }, () => this.abrirMergulho(null, null, true, geoLogin));
     else if (i === 'Professor') this.entrarComo('prof');
+    else if (/^Escola · /.test(i)) { this.entrarComo('escola'); if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); this.abrirFicha(this.state.profs[0]); } else await this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com \"Não coube\"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i]); }
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
+    if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') await this.iaEstadoAplicar(this.props.iaEstado);
   }
   async carregarEstado(usuario) {
     this.setState({ carregando: true });
@@ -441,7 +462,7 @@ class Component extends DCLogic {
   ir(tela, substituir = false) {
     const S = this.state;
     if (!S.logado && !['inicio', 'login', 'primeiro-acesso'].includes(tela)) tela = 'login';
-    if (S.logado && S.papel && !(S.papel === 'aluno' ? tela === 'meu-painel' : this.telas().some(t => t.id === tela))) { this.setState({ rotaAviso: 'Essa tela não faz parte do perfil ' + (S.papel === 'prof' ? 'Professor' : S.papel === 'aluno' ? 'Aluno' : 'Escola') + '. Você voltou ao início.' }); tela = S.papel === 'aluno' ? 'meu-painel' : this.telas()[0].id; }
+    if (S.logado && S.papel && !(tela === 'grade' || (S.papel === 'aluno' ? tela === 'meu-painel' : this.telas().some(t => t.id === tela)))) { this.setState({ rotaAviso: 'Essa tela não faz parte do perfil ' + (S.papel === 'prof' ? 'Professor' : S.papel === 'aluno' ? 'Aluno' : 'Escola') + '. Você voltou ao início.' }); tela = S.papel === 'aluno' ? 'meu-painel' : this.telas()[0].id; }
     else if (S.rotaAviso) this.setState({ rotaAviso: '' });
     this.atualizarURL(tela, substituir);
     if (!S.logado && tela === 'inicio' && S.mg) return this.fecharMergulho(substituir);
@@ -470,7 +491,7 @@ class Component extends DCLogic {
     this.telaAnims = filhos.map((c, i) => c.animate([{ opacity: 0, transform: 'translateX(' + (dir * 14) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: i * 20, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
   }
   fecharPainel = () => this.setState({ painel: null, senhaProv: null, menuAula: null, confDesm: null, desmErro: null });
-  abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
+  abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fOcup: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
   agRef = React.createRef();
   popRef = el => { if (el && el.animate && !this.rm) el.animate([{ opacity: 0, transform: 'translateY(-4px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 160, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
   fecharMenus = e => {
@@ -525,13 +546,15 @@ class Component extends DCLogic {
   }
   moverMes(n) { const p = this.state.agMes.split('-').map(Number); this.setState({ agMes: sD(new Date(Date.UTC(p[0], p[1] - 1 + n, 1))).slice(0, 7) }); }
   gradeNoDia(dia) { const r = []; (this.vst || this.state).discs.forEach(o => (o.grade || []).forEach(h => { if (h.dia_semana === dia) r.push({ id: o.id, nome: o.nome, ini: h.hora_inicio, fim: h.hora_fim }); })); return r.sort((a, b) => hm(a.ini) - hm(b.ini)); }
-  conflitoGrade(rows, ignorar) {
+  conflitoGrade(rows, ignorar, profId, base) {
+    const pr = profId != null ? this.state.profs.find(p => p.id === profId) : null, discs = base || this.state.discs;
     return rows.map((h, i) => {
       if (!h.hora_inicio || !h.hora_fim) return 'Preencha início e fim.';
       const a = hm(h.hora_inicio), b = hm(h.hora_fim);
       if (!(a < b)) return 'O fim precisa ser depois do início.';
       for (let j = 0; j < rows.length; j++) { if (j === i) continue; const o = rows[j]; if (o.dia_semana === h.dia_semana) return o.hora_inicio === h.hora_inicio && o.hora_fim === h.hora_fim ? 'Horário repetido.' : 'Só uma aula por dia: ' + DIA_L[h.dia_semana] + ' já está no horário ' + (j + 1) + '.'; }
-      for (const d of this.state.discs) { if (d.id === ignorar) continue; for (const o of d.grade || []) if (o.dia_semana === h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Choca com ' + d.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'; }
+      if (pr) for (const o of pr.ocupados || []) if (o.dia_semana === h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Choca com um horário ocupado de ' + pr.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + (o.motivo ? ': ' + o.motivo : '') + ').';
+      for (const d of discs) { if (d.id === ignorar) continue; for (const o of d.grade || []) if (o.dia_semana === h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return pr && d.professor_id === pr.id ? pr.nome + ' já dá ' + d.nome + ' neste horário (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').' : 'Choca com ' + d.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'; }
       return '';
     });
   }
@@ -551,7 +574,7 @@ class Component extends DCLogic {
     if (st.discs.some(d => d.id !== did && d.nome.trim().toLowerCase() === nome.toLowerCase())) return erro('Já existe uma disciplina com esse nome.');
     if (isNaN(ch) || ch <= 0) return erro('A carga horária precisa ser maior que zero.');
     const grade = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim }));
-    const errs = this.conflitoGrade(grade, did), k = errs.findIndex(Boolean);
+    const errs = this.conflitoGrade(grade, did, st.fProf ? +st.fProf : null), k = errs.findIndex(Boolean);
     if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
     let id;
     try {
@@ -570,6 +593,71 @@ class Component extends DCLogic {
       const msg = grade.length ? n + (n === 1 ? ' aula gerada' : ' aulas geradas') + ' de ' + ddmm(de) + ' a ' + ddmm(sem.fim) + '.' : 'Salvo. Sem grade, nenhuma aula foi gerada.';
       this.setState({ selDisc: id, fErro: '', fOk: msg });
     } catch (er) { erro((falha || er).detalhe); }
+  }
+  abrirFicha(p) { this.abrirPainel({ tipo: 'prof', id: p.id }, { fOcup: (p.ocupados || []).map((o, i) => ({ k: i + 1, dia_semana: String(o.dia_semana), hora_inicio: o.hora_inicio, hora_fim: o.hora_fim, motivo: o.motivo || '' })) }); }
+  addOcup() { this.setState(s => { const g = s.fOcup, u = g[g.length - 1]; return { fOcup: g.concat({ k: Date.now(), dia_semana: u ? String(Math.min(5, +u.dia_semana + 1)) : '1', hora_inicio: u ? u.hora_inicio : '08:00', hora_fim: u ? u.hora_fim : '12:00', motivo: '' }), fErro: '', fOk: '' }; }); }
+  setOcup(k, campo, v) { this.setState(s => ({ fOcup: s.fOcup.map(r => r.k === k ? Object.assign({}, r, { [campo]: v }) : r), fErro: '', fOk: '' })); }
+  remOcup(k) { this.setState(s => ({ fOcup: s.fOcup.filter(r => r.k !== k), fErro: '', fOk: '' })); }
+  errosOcup(rows) {
+    return rows.map((h, i) => {
+      if (!h.hora_inicio || !h.hora_fim) return 'Preencha início e fim.';
+      const a = hm(h.hora_inicio), b = hm(h.hora_fim); if (!(a < b)) return 'O fim precisa ser depois do início.';
+      for (let j = 0; j < rows.length; j++) { if (j === i) continue; const o = rows[j]; if (+o.dia_semana === +h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Sobrepõe o horário ' + (j + 1) + ' (' + DIA_L[+o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'; }
+      return '';
+    });
+  }
+  async salvarOcup(e) {
+    e.preventDefault();
+    const st = this.state, id = (st.painel || {}).id, errs = this.errosOcup(st.fOcup), k = errs.findIndex(Boolean);
+    if (k >= 0) return this.setState({ fErro: 'Horário ' + (k + 1) + ': ' + errs[k], fOk: '' });
+    const ocupados = st.fOcup.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim, motivo: (r.motivo || '').trim() })).sort((x, y) => x.dia_semana - y.dia_semana || hm(x.hora_inicio) - hm(y.hora_inicio));
+    const n = ocupados.length;
+    try {
+      await salvarOcupacoes(id, ocupados); await this.recarregar();
+    this.setState(s => ({ fErro: '', fOk: n ? 'Horários salvos. A grade passa a respeitar ' + (n === 1 ? 'este horário.' : 'estes ' + n + ' horários.') : 'Salvo. O professor fica livre na janela inteira da escola.' }));
+    } catch (er) { this.setState({ fErro: er.detalhe, fOk: '' }); }
+  }
+  iaCampo = React.createRef(); iaFim = React.createRef();
+  iaMsgRef = el => { if (el && el.animate) el.animate(this.rm ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: this.rm ? 120 : 240, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
+  iaPulso = el => { if (el && el.animate && !this.rm) el.animate([{ opacity: 0.45 }, { opacity: 1 }, { opacity: 0.45 }], { duration: 1400, iterations: Infinity }); };
+  iaRolar() { requestAnimationFrame(() => { const fm = this.iaFim.current; if (!fm) return; let p = fm.parentElement; while (p && !(p.scrollHeight > p.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(p).overflowY))) p = p.parentElement; if (p) p.scrollTo({ top: p.scrollHeight, behavior: this.rm ? 'auto' : 'smooth' }); }); }
+  iaFocar() { setTimeout(() => { const c = this.iaCampo.current; if (c && !c.disabled) c.focus({ preventScroll: true }); }, 60); }
+  abrirIA(extra) { this.abrirPainel({ tipo: 'ia' }, extra); this.iaFocar(); this.iaRolar(); }
+  enviarIA(txt) {
+    const st = this.state, t = (txt != null ? txt : st.iaTexto).trim(); if (!t || st.iaEnviando || st.iaAplicando) return;
+    this.setState(s => ({ iaMsgs: s.iaMsgs.concat({ papel: 'usuario', texto: t }), iaTexto: '', iaEnviando: true, iaErro: '', iaUltimo: t }), () => this.iaRolar());
+    this.iaResp(t);
+  }
+  async iaResp(t) {
+    try {
+      if (import.meta.env.DEV && IA_ERROS[this.props.iaErroSimulado]) throw { detalhe: IA_ERROS[this.props.iaErroSimulado] };
+      const r = await pedirGradeIA(this.state.iaMsgs.map(({ papel, texto }) => ({ papel, texto })));
+      const temP = r.proposta.length || r.recusados.length;
+      this.setState(s => Object.assign({ iaEnviando: false, iaErro: '', iaMsgs: s.iaMsgs.concat({ papel: 'ia', texto: r.resposta }) }, temP ? { iaProposta: r.proposta, iaRecusados: r.recusados, iaPropIdx: s.iaMsgs.length, iaResultado: null, iaDescartada: false } : {}), () => { this.iaRolar(); this.iaFocar(); });
+    } catch (er) { this.setState({ iaEnviando: false, iaErro: erroGradeIA(er) }, () => { this.iaRolar(); this.iaFocar(); }); }
+  }
+  iaTentar() { const t = this.state.iaUltimo; if (!t || this.state.iaEnviando) return; this.setState({ iaErro: '', iaEnviando: true }, () => this.iaRolar()); this.iaResp(t); }
+  async aplicarIA() {
+    const st = this.state;
+    if (!st.iaProposta?.length || st.iaAplicando || st.iaResultado) return;
+    this.setState({ iaAplicando: true });
+    const res = [];
+    for (const p of st.iaProposta) {
+      try {
+        const r = await salvarGrade(p.disciplina_id, p.itens);
+        res.push({ disciplina_id: p.disciplina_id, ok: true, texto: p.disciplina_nome + ': ' + r.aulas_geradas + (r.aulas_geradas === 1 ? ' aula gerada' : ' aulas geradas') });
+      } catch (er) { res.push({ disciplina_id: p.disciplina_id, ok: false, texto: p.disciplina_nome + ': ' + er.detalhe }); }
+      this.setState({ iaResultado: res.slice() });
+    }
+    try { await this.recarregar(); }
+    catch (er) { this.setState({ iaErro: er.detalhe }); }
+    this.setState({ iaAplicando: false }, () => this.iaRolar());
+  }
+  async iaEstadoAplicar(nome) {
+    if (import.meta.env.DEV) {
+      const { aplicarIADemo } = await import('./demo-canvas');
+      aplicarIADemo(this, nome);
+    }
   }
   async excluirDisc(id) {
     try { await apagarDisciplina(id); await this.recarregar(); this.setState({ matMsg: null }); }
@@ -1036,7 +1124,97 @@ class Component extends DCLogic {
     const ini = mk.offsetTop - 72, fim = sec.offsetTop + sec.offsetHeight - 56 - sk.offsetHeight - 72;
     return { m, sec, ini, fim: Math.max(ini + 1, fim) };
   }
-  onScrollFunc = () => { if (this._fsp) return; this._fsp = true; requestAnimationFrame(() => { this._fsp = false; this.calcFunc(); }); };
+  tintaMarca = React.createRef(); tintaStick = React.createRef(); tq = { c: null, last: null, raf: 0 };
+  tintaAlvo() {
+    const m = this.mainRef.current, sec = this.funcSecRef.current; if (!m || !sec || !sec.querySelector('[data-tinta]')) return null;
+    if (!this.funcSticky) return { modo: 'lista', m };
+    const mk = this.tintaMarca.current, sk = this.tintaStick.current; if (!mk || !sk) return null;
+    const ini = mk.offsetTop - 72, fim = Math.max(ini + 1, sec.offsetTop + sec.offsetHeight - 56 - sk.offsetHeight - 72);
+    return { modo: 'stick', m, ini, fim, p: Math.max(0, Math.min(1, (m.scrollTop - ini) / (fim - ini))) * FUNCOES.length };
+  }
+  tintaKick() { if (!this.tq.raf) this.tq.raf = requestAnimationFrame(this.tintaTick); }
+  tintaTick = now => {
+    const o = this.tq; o.raf = 0; const g = this.tintaAlvo(); if (!g) return;
+    const sec = this.funcSecRef.current, pags = sec.querySelectorAll('[data-tp]'), N = FUNCOES.length, PRONTO = 0.86;
+    const dt = o.last == null ? 0.016 : Math.min(0.05, (now - o.last) / 1000); o.tt = o.tt || [];
+    let vivo = false;
+    const andar = (i, alvo) => { let t = o.tt[i] || 0; if (this.rm) t = alvo; else if (t < alvo) t = Math.min(alvo, t + dt * (t < PRONTO ? 0.6 : 0.5)); else if (t > alvo) t = Math.max(alvo, t - dt * 0.5); o.tt[i] = t; if (t !== alvo) vivo = true; return t; };
+    if (g.modo === 'lista') {
+      const mr = g.m.getBoundingClientRect(), vh = g.m.clientHeight;
+      pags.forEach(pg => { const i = +pg.dataset.tp, r = pg.getBoundingClientRect(); if (r.top < mr.top + vh * 0.8) o.vista = Object.assign(o.vista || {}, { [i]: true });
+        this.pintarTinta(pg, andar(i, o.vista && o.vista[i] ? PRONTO : 0), true, true); });
+    } else {
+      const seg = Math.min(N - 1, Math.floor(g.p));
+      pags.forEach(pg => { const i = +pg.dataset.tp;
+        if (i > seg) { o.tt[i] = 0; this.pintarTinta(pg, 0, false, false); return; }
+        if (i < seg && (o.tt[i] || 0) < PRONTO) o.tt[i] = PRONTO;
+        const t = andar(i, i < seg ? 1 : PRONTO); this.pintarTinta(pg, t, i === N - 1, i === seg || t < 1); });
+      sec.querySelectorAll('[data-si]').forEach(btn => { const i = +btn.dataset.si, on = i === seg, r = btn.querySelector('[data-sr]'), t = o.tt[i] || 0;
+        btn.style.color = on ? 'var(--texto)' : ''; btn.setAttribute('aria-current', on ? 'step' : 'false');
+        if (r) r.style.transform = 'scaleX(' + (i < seg ? 1 : on ? Math.max(0, Math.min(1, (t - 0.74) / 0.1)) : 0).toFixed(3) + ')'; });
+    }
+    if (vivo) { o.last = now; this.tintaKick(); } else o.last = null;
+  };
+  pintarTinta(pg, t, ultima, vis) {
+    const R = (a, b) => Math.max(0, Math.min(1, (t - a) / (b - a))), eo = x => 1 - Math.pow(1 - x, 3), back = x => 1 + 2.9 * Math.pow(x - 1, 3) + 1.9 * Math.pow(x - 1, 2), f3 = v => v.toFixed(3);
+    pg.style.visibility = vis ? 'visible' : 'hidden'; if (!vis) return;
+    const sai = ultima ? 0 : eo(R(0.88, 1));
+    pg.style.opacity = f3(1 - sai); pg.style.transform = sai ? 'translateY(' + f3(-56 * sai) + 'px)' : '';
+    const nl = pg.querySelector('[data-nl]'); if (nl) nl.style.opacity = f3(R(0, 0.05));
+    const ls = pg.querySelectorAll('[data-l]'), L = ls.length, tw = R(0.03, 0.4) * (L + 1.5);
+    ls.forEach((el, j) => { const u = Math.max(0, Math.min(1, (tw - j) / 1.5)), e = eo(u);
+      el.style.opacity = f3(u); el.style.transform = u >= 1 ? '' : 'translateY(' + f3((1 - e) * 0.16) + 'em) scale(' + f3(1.14 - 0.14 * e) + ')'; el.style.filter = u > 0 && u < 1 ? 'blur(' + f3((1 - e) * 3) + 'px)' : ''; });
+    const pena = pg.querySelector('[data-pena]');
+    if (pena && L) { const k = Math.max(0, Math.min(L - 1, Math.floor(tw))), el = ls[k], fr = Math.max(0, Math.min(1, tw - k)), on = tw > 0 && tw < L + 1.2;
+      pena.style.opacity = on ? '1' : '0'; pena.style.height = (el.offsetHeight * 0.78) + 'px';
+      pena.style.transform = 'translate(' + (el.offsetLeft + el.offsetWidth * fr + 2).toFixed(1) + 'px,' + (el.offsetTop + el.offsetHeight * 0.1).toFixed(1) + 'px) rotate(16deg)'; }
+    const sub = pg.querySelector('[data-sub]'); if (sub) sub.style.transform = 'scaleX(' + f3(eo(R(0.36, 0.5))) + ')';
+    const ws = pg.querySelectorAll('[data-w]'), K = ws.length, tt = R(0.42, 0.64) * (K + 1);
+    ws.forEach((el, k) => { const u = Math.max(0, Math.min(1, tt - k)), e = eo(u); el.style.opacity = f3(u); el.style.transform = u >= 1 ? '' : 'translateY(' + f3((1 - e) * 10) + 'px)'; el.style.filter = u > 0 && u < 1 ? 'blur(' + f3((1 - e) * 2) + 'px)' : ''; });
+    const pv = pg.querySelector('[data-pvw]');
+    if (pv) { const u = R(0.54, 0.72), e = eo(u), th = Math.sin(Math.PI * R(0.77, 0.83)) * 0.012;
+      pv.style.opacity = f3(u); pv.style.transform = 'translateY(' + f3((1 - e) * 36) + 'px) rotate(' + f3((1 - e) * 3) + 'deg) scale(' + f3(0.96 + 0.04 * e - th) + ')'; }
+    const stp = pg.querySelector('[data-st]');
+    if (stp) { const u = R(0.72, 0.78); stp.style.opacity = f3(u > 0 ? Math.min(1, u * 3) : 0); stp.style.transform = 'rotate(-9deg) scale(' + f3(u > 0 ? 2.4 - 1.4 * back(u) : 2.4) + ')'; }
+    const ring = pg.querySelector('[data-ring]');
+    if (ring) { const u = R(0.76, 0.9); ring.style.opacity = f3(u > 0 && u < 1 ? (1 - u) * 0.45 : 0); ring.style.transform = 'scale(' + f3(0.5 + 1.5 * eo(u)) + ')'; }
+  }
+  tintaIr(i) {
+    const g = this.tintaAlvo(); if (!g) return;
+    if (g.modo === 'stick') g.m.scrollTo({ top: g.ini + (i + 0.3) / FUNCOES.length * (g.fim - g.ini), behavior: this.rm ? 'auto' : 'smooth' });
+  }
+  travaCalc(dir, delta) {
+    if (!this.funcModoTinta || !this.funcSticky || this.state.logado) return null;
+    const g = this.tintaAlvo(); if (!g || g.modo !== 'stick') return null;
+    const st = g.m.scrollTop, N = FUNCOES.length, dentro = st >= g.ini - 4 && st <= g.fim + 4, pos = k => g.ini + (k + 0.3) / N * (g.fim - g.ini);
+    const segA = Math.min(N - 1, Math.max(0, Math.floor(g.p))), tt = (this.tq.tt || [])[segA] || 0;
+    if (dentro && (performance.now() < (this.travaAte || 0) || tt < 0.859)) return { acao: 'segura' };
+    if (!dentro) {
+      if (dir > 0 && st < g.ini && st + delta > g.ini) return { acao: 'ir', top: pos(0) };
+      if (dir < 0 && st > g.fim && st + delta < g.fim) return { acao: 'ir', top: pos(N - 1) };
+      return null;
+    }
+    const k = Math.min(N - 1, Math.max(0, Math.floor(g.p))) + dir;
+    return k < 0 || k > N - 1 ? null : { acao: 'ir', top: pos(k), m: g.m };
+  }
+  travaIr(r) { const m = this.mainRef.current; this.travaAte = performance.now() + (this.rm ? 0 : 450); if (m) m.scrollTo({ top: r.top, behavior: this.rm ? 'auto' : 'smooth' }); }
+  onWheelTrava = e => {
+    if (e.ctrlKey || Math.abs(e.deltaY) < 1 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    const r = this.travaCalc(e.deltaY > 0 ? 1 : -1, e.deltaY * (e.deltaMode === 1 ? 32 : 1)); if (!r) return;
+    e.preventDefault();
+    if (r.acao === 'ir') this.travaIr(r);
+  };
+  onKeyTrava = e => {
+    const tg = e.target, tn = tg && tg.tagName; if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || /INPUT|TEXTAREA|SELECT|BUTTON/.test(tn || '') || (tg && tg.isContentEditable)) return;
+    const d = e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey) ? 1 : e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey) ? -1 : 0; if (!d) return;
+    const r = this.travaCalc(d, d * 120); if (!r) return; e.preventDefault(); if (r.acao === 'ir') this.travaIr(r);
+  };
+  onTouchIni = e => { this.toq = e.touches[0] ? e.touches[0].clientY : null; };
+  onTouchMov = e => { if (this.toq == null || !e.touches[0]) return; const dy = this.toq - e.touches[0].clientY; if (Math.abs(dy) < 4) return; if (this.travaCalc(dy > 0 ? 1 : -1, dy)) e.preventDefault(); };
+  onTouchFim = e => { if (this.toq == null) return; const t = e.changedTouches[0], dy = t ? this.toq - t.clientY : 0; this.toq = null; if (Math.abs(dy) < 30) return; const r = this.travaCalc(dy > 0 ? 1 : -1, dy); if (r && r.acao === 'ir') this.travaIr(r); };
+  onScrollFunc = () => {
+    const mm = this.mainRef.current; if (mm) { const tv = mm.scrollTop > mm.clientHeight * 0.9; if (tv !== !!this.state.topoVis) this.setState({ topoVis: tv }); }
+    if (this.funcModoTinta) return this.tintaKick(); if (this._fsp) return; this._fsp = true; requestAnimationFrame(() => { this._fsp = false; this.calcFunc(); }); };
   calcFunc() {
     const g = this.funcGeo(); if (!g) return;
     this.fp.ap = null; this.kickF();
@@ -1138,6 +1316,7 @@ class Component extends DCLogic {
   escolherFuncao(i) { this.fp.pt = i; this.fp.wt = 0; this.kickF(); }
   landingVals(peso, reais) {
     const st = this.state, pr = st.papelEscolhido !== 'aluno', esc = st.papelEscolhido === 'escola';
+    const tinta = this.funcModoTinta = (this.props.funcoesEstilo ?? 'Tinta') !== 'Espiral';
     this.funcSticky = !this.rm && (this.props.dispositivo ?? 'Desktop') !== 'Celular' && st.largura >= 1060 && (st.altura || 800) >= 600 && !st.funcNaoCabe;
     const escolher = p => this.setState({ papelEscolhido: p, loginErro: '' });
     const irLogin = (p, e) => this.abrirMergulho(p, e);
@@ -1190,9 +1369,12 @@ class Component extends DCLogic {
       ledgerFim: pr ? 'Responder "professor, qual foi minha nota?"' : 'Descobrir a reprovação por falta', ledgerFimV: pr ? '∞' : 'tarde demais',
       recursosRotulo: pr ? 'Para o professor' : 'Para o aluno',
       verDemo: () => this.irSecao('demo'), funcRef: this.funcRef, funcSecRef: this.funcSecRef, funcMarca: this.funcMarca, funcStick: this.funcStick, funcN: String(FUNCOES.length).padStart(2, '0'),
-      funcPos: this.funcSticky ? 'sticky' : 'relative', funcSecH: this.funcSticky ? 'calc(100vh + ' + (FUNCOES.length - 1) * 62 + 'vh)' : 'auto',
-      funcDica: this.funcSticky ? 'Continue descendo: o mostrador gira e cada tela se abre em espiral sobre a anterior. Também dá para arrastar o mostrador ou clicar numa função.' : 'Arraste o mostrador ou toque numa função: a tela dela se abre em espiral sobre a anterior.', funcTotal: FUNCOES.length + ' no portal',
-      funcoes: FUNCOES.map((f, i) => { const on = i === (st.funcSel || 0); return { n: String(i + 1).padStart(2, '0'), nome: f.nome, curto: f.curto, on, peso: peso(on), cor: on ? 'var(--fundo)' : TI, i, ir: () => this.irFuncao(i) }; }),
+      funcPos: this.funcSticky ? 'sticky' : 'relative', funcSecH: this.funcSticky ? 'calc(100vh + ' + (tinta ? (FUNCOES.length - 1) * 45 : (FUNCOES.length - 1) * 62) + 'vh)' : 'auto',
+      tintaModo: tinta, espiralModo: !tinta, tintaMarca: this.tintaMarca, tintaStick: this.tintaStick, tintaH: this.funcSticky ? 'min(780px,calc(100vh - 104px))' : 'auto',
+      tintaSumVis: this.funcSticky, tintaPilha: this.funcSticky ? 'grid' : 'flex', tintaPagBorda: this.funcSticky ? '0' : '1px solid var(--borda-fraca)', tintaVis0: this.funcSticky ? 'hidden' : 'visible', tintaOp0: this.rm ? 1 : 0,
+      tintaPags: FUNCOES.map((f, i) => ({ i, n: String(i + 1).padStart(2, '0'), nome: f.nome, nomeW: f.nome.split(' ').map(w => ({ ls: Array.from(w).map(c => ({ c })) })), tituloW: f.titulo.split(' ').map(t => ({ t })) })),
+      funcDica: tinta ? (this.funcSticky ? 'Continue descendo: cada função se escreve inteira na página e ganha o carimbo. O sumário risca o que já foi. Clique nele para pular.' : 'Desça a página: cada função se escreve quando aparece na tela.') : this.funcSticky ? 'Continue descendo: o mostrador gira e cada tela se abre em espiral sobre a anterior. Também dá para arrastar o mostrador ou clicar numa função.' : 'Arraste o mostrador ou toque numa função: a tela dela se abre em espiral sobre a anterior.', funcTotal: FUNCOES.length + ' no portal',
+      funcoes: FUNCOES.map((f, i) => { const on = i === (st.funcSel || 0); return { n: String(i + 1).padStart(2, '0'), nome: f.nome, curto: f.curto, on, peso: peso(on), cor: on ? 'var(--fundo)' : TI, i, ir: () => this.irFuncao(i), tinta: () => this.tintaIr(i) }; }),
       funcRoda: this.funcRoda, funcDown: this.funcDown, funcKey: this.funcKey, rodaMinH: st.largura < 900 ? '150px' : '520px',
       fs: (() => { const i = Math.max(0, Math.min(FUNCOES.length - 1, st.funcSel | 0)), f = FUNCOES[i], r = { n: String(i + 1).padStart(2, '0'), nome: f.nome, titulo: f.titulo, desc: f.desc, prof: f.prof, aluno: f.aluno, passos: f.passos.map((t, j) => ({ n: String(j + 1), j: String(j), t })) }; for (let k = 0; k < FUNCOES.length; k++) r['m' + k] = k === i; return r; })(),
       recursos: (pr ? recP : recA).map(([tag, titulo, desc], i) => ({ n: String(i + 1).padStart(3, '0'), tag, titulo, desc })),
@@ -1221,7 +1403,7 @@ class Component extends DCLogic {
     const v = {
       sistema, landing: !sistema && !st.logado && tela !== 'primeiro-acesso', primeiro: !sistema && !st.logado && tela === 'primeiro-acesso', semestre: !sistema && st.logado && tela === 'semestre', login: false, painel: !sistema && st.logado && tela === 'painel', alunos: !sistema && st.logado && tela === 'alunos',
       disciplinas: !sistema && st.logado && tela === 'disciplinas', seletor: !sistema && st.logado && tela === 'boletim',
-      boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia',
+      boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia', grade: !sistema && st.logado && tela === 'grade',
       avisos: !sistema && st.logado && tela === 'avisos', professores: !sistema && st.logado && ehEscola && tela === 'professores', meu: !sistema && st.logado && tela === 'meu-painel'
     };
     const peso = on => on ? 600 : 500;
@@ -1429,7 +1611,8 @@ class Component extends DCLogic {
         mgT: mg ? mg.T + 'px' : '0px', mgL: mg ? mg.L + 'px' : '0px', mgW: mg ? mg.W + 'px' : '100%', mgH: mg ? mg.H + 'px' : '100%', mgZ: mg ? 5 : 0,
         mgClip: mg ? 'inset(' + mg.clip.map(n => Math.round(n) + 'px').join(' ') + ')' : 'none',
         mgTr: 'none',
-        mgOp: mg && mg.op === 0 ? 0 : 1, mgOverflow: mg ? 'visible' : 'hidden', navLO: mg ? 0 : 1, navLPE: mg ? 'none' : 'auto', mainOverflow: mg ? 'hidden' : 'auto',
+        mgOp: mg && mg.op === 0 ? 0 : 1, mgOverflow: mg ? 'visible' : 'hidden', navLO: mg ? 0 : 1, navLPE: mg ? 'none' : 'auto', topoO: this.state.topoVis && !this.state.logado ? 1 : 0, topoT: this.state.topoVis && !this.state.logado ? 'none' : 'translateY(12px)', topoPE: this.state.topoVis && !this.state.logado ? 'auto' : 'none', irTopo: () => { const m = this.mainRef.current; this.travaAte = 0; if (m) m.scrollTo({ top: 0, behavior: this.rm ? 'auto' : 'smooth' }); },
+      mainOverflow: mg ? 'hidden' : 'auto',
         loginVis: !!mg, cardO: ab ? 1 : 0, cardPE: ab ? 'auto' : 'none', cardT: 'none' }; })(), heroH: celular ? '844px' : '100vh', ringH: compact ? '440px' : 'auto', ringRef: this.setRing,
       heroStats: [['Turma 2026', 'left'], ['Alunos: ' + (visitanteVazio ? '—' : reais.length), 'center'], ['Disciplinas: ' + (visitanteVazio ? '—' : st.discs.length), 'right'], ['Avisos: ' + (visitanteVazio ? '—' : st.avisos.length), 'left'], ['Média: ' + (mediaT == null ? '—' : fmt(mediaT)), 'center'], ['Em risco: ' + (visitanteVazio ? '—' : risco.length), 'right']].map(([t, al]) => ({ t, al })),
       navL: (compact ? [['Funções', 'recursos'], ['Perguntas', 'perguntas'], ['Entrar', null]] : [['Sem o portal', 'sem-portal'], ['Funções', 'recursos'], ['Em uso', 'demo'], ['Perguntas', 'perguntas'], ['Entrar', null]]).map(([label, id]) => ({ label, ir: () => id ? this.irSecao(id) : this.ir('login') })),
@@ -1575,6 +1758,7 @@ class Component extends DCLogic {
 
       // agenda
       agRef: this.agRef, agenda, agOk: !agendaEstado, agendaEstado,
+      gradePerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno', agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
       agFiltroVis: ehEscola, agProfF: st.agProfF, agDiscF: st.agDiscF, setAgProfF: e => this.setState({ agProfF: e.target.value }), setAgDiscF: e => this.setState({ agDiscF: e.target.value }),
       agFiltrado: !!(st.agProfF || st.agDiscF), limparAgFiltro: () => this.setState({ agProfF: '', agDiscF: '' }), temAgErro: !!st.agErro, agErro: st.agErro, fecharAgErro: () => this.setState({ agErro: '' }),
       temRotaAviso: !!st.rotaAviso, rotaAviso: st.rotaAviso, fecharRotaAviso: () => this.setState({ rotaAviso: '' }),
@@ -1618,21 +1802,53 @@ class Component extends DCLogic {
       meAvisos: st.avisos.filter(a => !a.disciplina_id || (me && st.mats[me.id + '-' + a.disciplina_id])).sort((x, y) => y.data.localeCompare(x.data)).map(a => Object.assign({}, a, { dataBR: br(a.data), escopo: a.disciplina_id ? discNome(a.disciplina_id) : 'Geral', autor: a.autor_nome || 'Secretaria' })),
 
       // painel lateral
-      pp: { aluno: pu.tipo === 'aluno' && !!paAl, novoAluno: pu.tipo === 'novoAluno', disc: pu.tipo === 'disc', chamada: pu.tipo === 'chamada' && !!chAu, remarcar: pu.tipo === 'remarcar' && !!rmAu, extra: pu.tipo === 'extra', aviso: pu.tipo === 'aviso', senha: pu.tipo === 'senha', mais: pu.tipo === 'mais', prof: pu.tipo === 'prof' },
-      painelTitulo: { aluno: 'Aluno', novoAluno: 'Cadastro', disc: 'Disciplina', chamada: 'Chamada', remarcar: 'Remarcar aula', extra: 'Aula extra', aviso: 'Aviso', senha: 'Conta', mais: 'Mais telas', prof: 'Professor' }[pu.tipo] || 'Painel',
-      profForm: !st.senhaProv, profSenha: !!st.senhaProv,
+      pp: { aluno: pu.tipo === 'aluno' && !!paAl, novoAluno: pu.tipo === 'novoAluno', disc: pu.tipo === 'disc', chamada: pu.tipo === 'chamada' && !!chAu, remarcar: pu.tipo === 'remarcar' && !!rmAu, extra: pu.tipo === 'extra', aviso: pu.tipo === 'aviso', senha: pu.tipo === 'senha', mais: pu.tipo === 'mais', prof: pu.tipo === 'prof', ia: pu.tipo === 'ia' },
+      painelTitulo: { aluno: 'Aluno', novoAluno: 'Cadastro', disc: 'Disciplina', chamada: 'Chamada', remarcar: 'Remarcar aula', extra: 'Aula extra', aviso: 'Aviso', senha: 'Conta', mais: 'Mais telas', prof: 'Professor', ia: 'Assistente' }[pu.tipo] || 'Painel',
+      profForm: !st.senhaProv && !pu.id, profSenha: !!st.senhaProv, profFicha: !st.senhaProv && pu.tipo === 'prof' && !!pu.id,
+      ...(() => {
+        const pfP = pu.tipo === 'prof' && pu.id ? st.profs.find(p => p.id === pu.id) : null;
+        if (!pfP) return { pf: {}, ocupLinhas: [], ocupVazio: false };
+        const ds = st.discs.filter(d => d.professor_id === pfP.id), errs = this.errosOcup(st.fOcup), n = st.fOcup.length;
+        return { pf: { nome: pfP.nome, email: pfP.email, discsTxt: ds.length ? 'Dá ' + ds.map(d => d.nome).join(', ') + '.' : 'Sem disciplina neste semestre.', nLinhas: n ? n + (n === 1 ? ' horário' : ' horários') : '' },
+          ocupVazio: !n, salvarOcup: e => this.salvarOcup(e), addOcup: () => this.addOcup(),
+          ocupLinhas: st.fOcup.map((r, i) => { const er = errs[i], a = hm(r.hora_inicio), b = hm(r.hora_fim);
+            const aula = !er && ds.map(d => ({ d, o: (d.grade || []).find(o => o.dia_semana === +r.dia_semana && hm(o.hora_inicio) < b && a < hm(o.hora_fim)) })).find(x => x.o);
+            return { n: String(i + 1), dia: String(r.dia_semana), ini: r.hora_inicio, fim: r.hora_fim, motivo: r.motivo, borda: er ? AVISO : 'var(--borda)', notaCor: er || aula ? AVISO : 'var(--texto-suave)',
+              nota: er || (aula ? aula.d.nome + ' já tem aula neste horário (' + DIA_L[aula.o.dia_semana] + ', ' + aula.o.hora_inicio + '–' + aula.o.hora_fim + '). Ajuste a grade da disciplina.' : ''),
+              setDia: e => this.setOcup(r.k, 'dia_semana', e.target.value), setIni: e => this.setOcup(r.k, 'hora_inicio', e.target.value), setFim: e => this.setOcup(r.k, 'hora_fim', e.target.value), setMotivo: e => this.setOcup(r.k, 'motivo', e.target.value),
+              remover: () => this.remOcup(r.k), remLabel: 'Remover horário ocupado ' + (i + 1) }; }) };
+      })(),
+      ...(() => {
+        const busy = st.iaEnviando || st.iaAplicando, prop = st.iaProposta || [], res = st.iaResultado;
+        return { abrirIA: () => this.abrirIA(), iaCampo: this.iaCampo, iaFim: this.iaFim, iaMsgRef: this.iaMsgRef, iaPulso: this.iaPulso,
+          iaVazio: !st.iaMsgs.length && !st.iaEnviando, iaSugestoes: IA_SUG.map(t => ({ t, usar: () => this.enviarIA(t) })),
+          iaLista: st.iaMsgs.map((m, i) => ({ autor: m.papel === 'usuario' ? 'Escola' : 'Assistente', usuario: m.papel === 'usuario', ia: m.papel === 'ia', texto: m.texto, temProposta: i === st.iaPropIdx && !!st.iaProposta })),
+          iaTemProp: prop.length > 0, iaPropN: prop.length + (prop.length === 1 ? ' disciplina' : ' disciplinas'),
+          iaProp: prop.map(p => { const r = res && res.find(x => x.disciplina_id === p.disciplina_id); return { nome: p.disciplina_nome, prof: p.professor_nome, horarios: p.itens.map(x => DIA_C[x.dia_semana] + ' ' + x.hora_inicio + '–' + x.hora_fim).join(' · '), temRes: !!r, res: r ? r.texto : '', resCor: r && !r.ok ? AVISO : TINTA }; }),
+          iaTemRec: (st.iaRecusados || []).length > 0, iaRec: (st.iaRecusados || []).map(r => ({ nome: r.disciplina_nome, motivo: r.motivo })),
+          iaAcoesVis: prop.length > 0 && !res && !st.iaDescartada, iaAplicando: st.iaAplicando, iaAplicarTxt: st.iaAplicando ? 'Aplicando…' : 'Aplicar proposta', iaAplicarO: st.iaAplicando ? 0.6 : 1,
+          iaStatusVis: !!res || (st.iaDescartada && prop.length > 0), iaStatus: res ? (() => { const ok = res.filter(x => x.ok).length; return ok === res.length ? 'Proposta aplicada. As aulas já estão na agenda.' : 'Aplicada em ' + ok + ' de ' + res.length + ' disciplinas. Veja o erro acima.'; })() : 'Proposta descartada. A grade não mudou.',
+          aplicarIA: () => this.aplicarIA(), descartarIA: () => this.setState({ iaDescartada: true }),
+          iaEnviando: st.iaEnviando, iaTemErro: !!st.iaErro, iaErro: st.iaErro, iaTentar: () => this.iaTentar(),
+          iaTexto: st.iaTexto, setIaTexto: e => this.setState({ iaTexto: e.target.value }), iaOcupado: busy, iaCampoO: busy ? 0.6 : 1,
+          iaTecla: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent && e.nativeEvent.isComposing)) { e.preventDefault(); this.enviarIA(); } },
+          enviarIA: e => { e.preventDefault(); this.enviarIA(); }, iaNaoEnvia: busy || !st.iaTexto.trim(), iaEnviarO: busy || !st.iaTexto.trim() ? 0.4 : 1 };
+      })(),
       psp: st.senhaProv ? { titulo: st.senhaProv.redef ? 'Nova senha de ' + st.senhaProv.redef : st.senhaProv.criado + ' cadastrado.', sub: st.senhaProv.redef ? 'A senha anterior deixou de valer. No próximo acesso o professor cria a própria senha.' : 'Entregue a senha ao professor. No primeiro acesso ele cria a própria senha.' } : {},
       cadastrarProf: e => this.cadastrarProf(e), abrirNovoProf: () => this.abrirPainel({ tipo: 'prof' }),
       profsTotalTxt: st.profs.length + (st.profs.length === 1 ? ' professor' : ' professores') + ' · semestre ' + semNome,
-      profsLista: st.profs.map(p => { const ds = st.discs.filter(d => d.professor_id === p.id); return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, redefinir: () => this.redefinirProf(p),
-        discs: ds.map(d => ({ nome: d.nome, ir: () => { this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
+      profsLista: st.profs.map(p => { const ds = st.discs.filter(d => d.professor_id === p.id); const oc = (p.ocupados || []).slice().sort((x, y) => x.dia_semana - y.dia_semana || hm(x.hora_inicio) - hm(y.hora_inicio));
+        return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, abrir: () => this.abrirFicha(p), abrirLabel: 'Abrir ficha de ' + p.nome, tecla: e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); this.abrirFicha(p); } },
+          ocupTxt: oc.length ? 'Ocupado: ' + oc.map(o => DIA_C[o.dia_semana] + ' ' + o.hora_inicio + '–' + o.hora_fim).join(' · ') : 'Sem horários ocupados', ocupCor: oc.length ? TINTA : 'var(--texto-suave)',
+          redefinir: e => { e?.stopPropagation(); this.redefinirProf(p); },
+        discs: ds.map(d => ({ nome: d.nome, ir: e => { if (e) e.stopPropagation(); this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
       df: (() => {
         const dsc = st.discs.find(d => d.id === pu.did), de = ativo ? (HOJE > ativo.inicio ? HOJE : ativo.inicio) : null;
         return { semSem: !ativo, ok: !!ativo, titulo: dsc ? 'Editar ' + dsc.nome : 'Nova disciplina', botao: dsc ? 'Salvar' : 'Criar disciplina', fechar: st.fOk ? 'Fechar' : 'Cancelar',
           sub: ativo ? 'Semestre ' + ativo.nome + '. Ao salvar, a grade gera as aulas de ' + ddmm(de) + ' até ' + ddmm(ativo.fim) + '. Só as aulas futuras sem chamada são refeitas; o que já aconteceu não muda.' : '', nLinhas: st.fGrade.length + (st.fGrade.length === 1 ? ' horário' : ' horários') };
       })(),
       dfLinhas: (() => {
-        const rows = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim })), errs = this.conflitoGrade(rows, pu.did || null);
+        const rows = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim })), errs = this.conflitoGrade(rows, pu.did || null, st.fProf ? +st.fProf : null);
         return st.fGrade.map((r, i) => {
           const outros = this.gradeNoDia(+r.dia_semana).filter(o => o.id !== pu.did), er = errs[i];
           return { n: String(i + 1), dia: String(r.dia_semana), ini: r.hora_inicio, fim: r.hora_fim, borda: er ? AVISO : 'var(--borda)', notaCor: er ? AVISO : 'var(--texto-suave)',

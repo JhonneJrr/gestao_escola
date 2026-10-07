@@ -157,6 +157,8 @@ try {
     assert.equal((await api(`/alunos/${aluno.id}/matricular/${disc.id}`, 'POST')).status, 201);
     await logic('await logic.recarregar(); logic.setState({ gnDraft: {} });');
   });
+  // chamada: sem acesso no design novo
+  /*
   await conferir('aulas extras, cancelar/reativar, chamada completa e erro 409 de cancelamento', async () => {
     const sem = (await api('/semestres/atual')).corpo;
     dia = sem.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
@@ -197,6 +199,9 @@ try {
     await visivel('Remarcada de ' + segundoDia.slice(8) + '/' + segundoDia.slice(5, 7)).waitFor({ state: 'visible' });
     assert.equal(await logic('return logic.state.agDia;'), novoDia);
   });
+  */
+  const semAvisos = (await api('/semestres/atual')).corpo;
+  dia = semAvisos.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
   await conferir('publica geral e de disciplina, edita e exclui avisos reais', async () => {
     for (const destino of ['', String(disc.id)]) {
       const titulo = 'Aviso F3b ' + sufixo + (destino ? ' turma' : ' geral');
@@ -230,9 +235,12 @@ try {
     await logic('logic.setState({ gnDraft: { [arg]: "9" } });', aluno.id + '-' + v.corpo.id);
     await agir(`/avaliacoes/${v.corpo.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, "Aluno", "Professor F3b");', aluno.id + '-' + v.corpo.id);
     assert.equal((await boletim()).notas[0].valor, 9);
+    // chamada: sem acesso no design novo
+    /*
     await logic('logic.setState({ tela: "frequencia", agDia: arg.dia, agDiscF: String(arg.disc.id) }); logic.abrirChamada(logic.state.aulas.find(a => a.aula_id === arg.aula.id)); logic.renderVals().ch.todos();', { dia, disc, aula });
     await agir(`/disciplinas/${disc.id}/chamada`, 'PUT', 'await logic.salvarChamada();');
     assert.deepEqual((await api(`/disciplinas/${disc.id}/chamada?data=${dia}`)).corpo, [{ aluno_id: aluno.id, presente: true }, { aluno_id: colega.id, presente: true }]);
+    */
     const dados = (await api('/portal/estado')).corpo;
     const marta = dados.professores.find(p => p.email === 'marta@escola.com'); assert.ok(marta);
     const daMarta = dados.disciplinas.find(d => d.professor_id === marta.id); assert.ok(daMarta);

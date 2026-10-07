@@ -1,0 +1,9 @@
+/* GERADO por scripts/converter-canvas.mjs — não edite */
+
+html,body{margin:0;background:var(--fundo)}
+*{box-sizing:border-box}
+a{color:var(--texto);text-underline-offset:3px}
+a:hover{color:var(--texto-suave)}
+:focus{outline:none}
+:focus-visible{outline:3px solid var(--texto);outline-offset:2px}
+input,select,textarea,button{font:inherit;color:inherit}

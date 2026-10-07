@@ -69,3 +69,20 @@ test('host atualiza a lógica antes do render e repassa props e ciclos de vida',
   host.componentWillUnmount();
   assert.deepEqual(chamadas, [2, 'montou', ['primeiro', 'segundo'], 'desmontou']);
 });
+
+
+test('nome com espaços gera identificador válido e lógica própria só gera template e CSS', async () => {
+  const { converterTemplate, converter } = await import('../scripts/converter-canvas.mjs');
+  const r = converterTemplate('<dc-import name="Grade e Agenda" perfil="Escola"/><input maxLength="40"/>');
+  assert.match(r.jsx, /maxLength=\{"40"\}/);
+  assert.deepEqual(r.imports, ['Grade e Agenda']);
+  assert.match(r.jsx, /<GradeEAgenda perfil=/);
+  const arquivos = new Map(converter());
+  assert.match(arquivos.get('src/portal/template.tsx'), /import GradeEAgenda from "\.\/GradeAgenda"/);
+  const template = arquivos.get('src/portal/componentes/GradeEAgendaTemplate.tsx');
+  assert.match(template, /export default function Template/);
+  assert.match(template, /import "\.\/GradeEAgenda.css"/);
+  assert.doesNotMatch(template, /class Component|criarDC|Carlos Mendes/);
+  assert.ok(arquivos.has('src/portal/componentes/GradeEAgenda.css'));
+  assert.match(arquivos.get('src/portal/componentes/DemoPortal.tsx'), /class Component/);
+});

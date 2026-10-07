@@ -65,8 +65,8 @@ try {
     assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), null);
   }
 
-  await conferir('visitante em /disciplinas vê login e não vê a tela protegida', async () => {
-    await page.goto(FRONT + '/disciplinas');
+  await conferir('visitante em /grade vê login e não vê a tela protegida', async () => {
+    await page.goto(FRONT + '/grade');
     await formularioLogin(); await url('/login');
     assert.equal(await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).count(), 0);
   });
@@ -85,10 +85,14 @@ try {
   });
   for (const [rotulo, caminho] of [
     ['Semestre', '/semestre'], ['Disciplinas', '/disciplinas'], ['Professores', '/professores'],
-    ['Alunos', '/alunos'], ['Matrículas', '/matriculas'], ['Agenda', '/agenda'], ['Avisos', '/avisos'], ['Painel', '/painel'],
+    ['Alunos', '/alunos'], ['Matrículas', '/matriculas'], ['Grade e agenda', '/agenda'], ['Avisos', '/avisos'], ['Painel', '/painel'],
   ]) {
     await conferir('menu da escola: ' + rotulo + ' usa ' + caminho, () => menu(rotulo, caminho));
   }
+  await conferir('escola abre /grade e conserva a rota após recarga', async () => {
+    await page.goto(FRONT + '/grade'); await page.locator('[data-sc-name="Grade e Agenda"]').waitFor({ state: 'visible' });
+    await url('/grade'); await page.reload(); await page.locator('[data-sc-name="Grade e Agenda"]').waitFor({ state: 'visible' }); await url('/grade');
+  });
   await conferir('recarregar /disciplinas mantém a tela, a sessão e os dados', async () => {
     await menu('Disciplinas', '/disciplinas');
     const token = await page.evaluate(() => localStorage.getItem('portal.token'));
@@ -126,7 +130,7 @@ try {
     assert.equal(await nav().getByRole('button', { name: /^Professores(?:\s|$)/ }).count(), 0);
   });
   await conferir('Carlos recarrega /agenda e mantém a tela permitida', async () => {
-    await menu('Agenda', '/agenda'); await page.reload(); await telaMenu('Agenda', '/agenda');
+    await menu('Grade e agenda', '/agenda'); await page.reload(); await telaMenu('Grade e agenda', '/agenda');
   });
   await conferir('Ana em /alunos vê o aviso e volta ao próprio painel', async () => {
     await sair(); await page.goto(FRONT + '/login'); await entrar('ana@escola.com', '/meu-painel');

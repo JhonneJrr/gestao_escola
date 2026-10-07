@@ -55,7 +55,7 @@ test('escola traduz todas as coleções e formata o histórico, inclusive nulos'
   };
   const copia = structuredClone(entrada);
   assert.deepEqual(montarEstado(escola, entrada), {
-    ...esperadoTurma, papel: 'escola', profId: null, usuario: escola, profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com' }],
+    ...esperadoTurma, papel: 'escola', profId: null, usuario: escola, profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }],
     historico: [{ id: 8, nome: '2026.1', inicio: '2026-02-09', fim: '2026-06-26', encerrado_em: '2026-07-01', resumo: [
       { disc: 'Lógica', alunos: '3', media: '7,2', mediaCor: 'var(--texto)', freq: '88%', freqCor: 'var(--texto)', aprov: '2', reprov: '1', reprovCor: 'var(--aviso)' },
       { disc: 'Redes', alunos: '0', media: '—', mediaCor: 'var(--texto)', freq: '—', freqCor: 'var(--texto)', aprov: '0', reprov: '0', reprovCor: 'var(--texto)' },
@@ -66,7 +66,7 @@ test('escola traduz todas as coleções e formata o histórico, inclusive nulos'
 
 test('professor usa o id autenticado e conserva o recorte recebido', () => {
   assert.deepEqual(montarEstado(professor, { ...turma, professores: [professor] }), {
-    ...esperadoTurma, papel: 'prof', profId: 42, usuario: professor, profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com' }], historico: [],
+    ...esperadoTurma, papel: 'prof', profId: 42, usuario: professor, profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }], historico: [],
   });
 });
 
@@ -84,7 +84,7 @@ test('aluno usa aluno_id e marca provisória somente na própria conta', () => {
 
 test('professor sem disciplina recebe coleções vazias e semestre nulo', () => {
   assert.deepEqual(montarEstado(professor, { ...vazio, professores: [professor] }), {
-    papel: 'prof', profId: 42, usuario: professor, semestre: null, historico: [], profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com' }],
+    papel: 'prof', profId: 42, usuario: professor, semestre: null, historico: [], profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }],
     alunos: [], discs: [], mats: {}, avals: [], notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
   });
 });
@@ -92,4 +92,15 @@ test('professor sem disciplina recebe coleções vazias e semestre nulo', () => 
 test('semestre encerrado aceita timestamp com espaço e devolve só a data', () => {
   assert.deepEqual(montarEstado(escola, { ...vazio, semestre: { id: 8, nome: '2026.1', inicio: '2026-02-09', fim: '2026-06-26', encerrado_em: '2026-07-01 12:30:00' } }).semestre,
     { id: 8, nome: '2026.1', inicio: '2026-02-09', fim: '2026-06-26', encerrado_em: '2026-07-01' });
+});
+
+
+test('ocupacoes da API viram ocupados sem alterar os dados recebidos', () => {
+  const ocupacoes = [{ dia_semana: 1, hora_inicio: '08:00', hora_fim: '12:00', motivo: 'Outra escola' }];
+  const entrada = { ...turma, professores: [{ ...professor, ocupacoes }] };
+  const resultado = montarEstado(escola, entrada);
+  assert.equal(resultado.profs[0].id, professor.id);
+  assert.deepEqual(resultado.profs[0].ocupados, ocupacoes);
+  assert.notEqual(resultado.profs[0].ocupados, ocupacoes);
+  assert.deepEqual(entrada.professores[0].ocupacoes, ocupacoes);
 });

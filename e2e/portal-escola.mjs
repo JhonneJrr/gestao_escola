@@ -250,7 +250,21 @@ try {
     await form().getByRole('alert').filter({ hasText: 'O fim deve ser depois do início' }).waitFor({ state: 'visible' });
     assert.equal(await logic('return logic.state.discs.find(d => d.id === arg).nome;', disc.id), nomeDisc + ' editada');
     assert.equal((await api('/portal/estado')).corpo.disciplinas.find(d => d.id === disc.id).nome, nomeDisc + ' editada');
-    await page.unroute(API + caminho + '/grade'); await page.keyboard.press('Escape');
+    await page.unroute(API + caminho + '/grade');
+    const draft = nomeDisc + ' edição preservada';
+    await form().getByLabel('Nome', { exact: true }).fill(draft);
+    const detalhe = 'Choque de horário retornado pelo servidor.';
+    for (const [rota, metodo] of [[caminho, 'PATCH'], [caminho + '/grade', 'PUT']]) {
+      await page.route(API + rota, route => route.request().method() === metodo ? route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ detail: detalhe }) }) : route.continue());
+      const falha = page.waitForResponse(r => r.url() === API + rota && r.request().method() === metodo);
+      await botao('Salvar').click(); assert.equal((await falha).status(), 409);
+      await form().getByRole('alert').filter({ hasText: detalhe }).waitFor({ state: 'visible' });
+      assert.equal(await form().getByLabel('Nome', { exact: true }).inputValue(), draft);
+      assert.equal(await botao('Salvar').isVisible(), true);
+      assert.deepEqual(await logic('return logic.state.fGrade.map(({ dia_semana, hora_inicio, hora_fim }) => ({ dia_semana: +dia_semana, hora_inicio, hora_fim }));'), grade);
+      await page.unroute(API + rota);
+    }
+    await page.keyboard.press('Escape');
   });
   await conferir('cria sem professor omitindo o campo e remove professor com null no PATCH', async () => {
     await botao('Editar').click();

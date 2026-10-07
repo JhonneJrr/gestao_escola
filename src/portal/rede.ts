@@ -79,3 +79,13 @@ export const criarAula = (disciplina: number, corpo: AulaEntrada) => pedir<AulaS
 export const criarAviso = (corpo: AvisoEntrada) => pedir<AvisoSaida>('/avisos', corpo);
 export const atualizarAviso = (id: number, corpo: Partial<Omit<AvisoEntrada, 'disciplina_id'>>) => pedir<AvisoSaida>(`/avisos/${id}`, corpo, 'PATCH');
 export const apagarAviso = (id: number) => pedir<void>(`/avisos/${id}`, undefined, 'DELETE');
+
+
+type Ocupacao = GradeItem & { motivo?: string };
+export const ocupacoes = (id: number) => pedir<Ocupacao[]>(`/professores/${id}/ocupacoes`);
+export const salvarOcupacoes = (id: number, itens: Ocupacao[]) => pedir<Ocupacao[]>(`/professores/${id}/ocupacoes`, { itens }, 'PUT');
+type MensagemIA = { papel: 'usuario' | 'ia'; texto: string };
+type PropostaIA = { disciplina_id: number; disciplina_nome: string; professor_nome: string; itens: GradeItem[] };
+type RecusadaIA = { disciplina_id: number; disciplina_nome: string; motivo: string };
+export const pedirGradeIA = (mensagens: MensagemIA[]) => pedir<{ resposta: string; proposta: PropostaIA[]; recusados: RecusadaIA[] }>('/ia/grade', { mensagens });
+export const erroGradeIA = (erro: { status?: number; detalhe?: string }) => erro.status === 0 ? 'Não consegui falar com o assistente. Tente de novo.' : erro.detalhe || (erro.status === 503 ? 'O assistente não está configurado neste servidor.' : erro.status === 429 ? 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.' : 'Não consegui falar com o assistente. Tente de novo.');

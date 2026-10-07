@@ -13,8 +13,12 @@ const opcao = (nome: string, padrao: string, options: string[]) => {
 
 createRoot(document.getElementById('dc-root')!).render(
   <Portal
-    inicio={query.has('inicio') ? opcao('inicio', 'Apresentação', ['Apresentação', 'Login', 'Primeiro acesso', 'Escola', 'Professor', 'Professor · sem permissão', 'Aluno']) : undefined}
+    inicio={query.has('inicio') || query.has('iaEstado') ? opcao('inicio', query.has('iaEstado') ? 'Escola' : 'Apresentação', ["Apresentação", "Login", "Primeiro acesso", "Escola", "Professor", "Professor · sem permissão", "Aluno", "Escola · horários do professor", "Escola · assistente vazio", "Escola · assistente com proposta", "Escola · assistente com erro"]) : undefined}
     dispositivo={opcao('dispositivo', 'Desktop', ['Desktop', 'Celular'])}
+    funcoesEstilo={opcao('funcoesEstilo', 'Tinta', ['Tinta', 'Espiral'])}
+    relogio={opcao('relogio', 'Ao vivo', ['Ao vivo', 'Terça 08:40', 'Quarta 10:20', 'Quinta 14:00'])}
+    iaEstado={opcao('iaEstado', 'Conversa livre', ["Conversa livre", "Vazio", "Enviando", "Só texto", "Com proposta", "Com \"Não coube\"", "Aplicando", "Aplicada", "Erro: não configurado", "Erro: limite de uso", "Erro: sem conexão"])}
+    iaErroSimulado={opcao('iaErroSimulado', 'Nenhum', ['Nenhum', 'Não configurado', 'Limite de uso', 'Sem conexão'])}
     estado="Normal"
     vista="Protótipo"
     fonte="Apple · SF + New York"

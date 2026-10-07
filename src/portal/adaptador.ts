@@ -20,7 +20,7 @@ export function montarEstado(usuario: any, estado: any) {
       freq: r.frequencia_media == null ? '—' : pct(r.frequencia_media / 100), freqCor: TINTA,
       aprov: String(r.aprovados), reprov: String(r.reprovados), reprovCor: r.reprovados > 0 ? AVISO : TINTA,
     })) })),
-    profs: estado.professores.map((p: any) => ({ id: p.id, nome: p.nome, email: p.email })),
+    profs: estado.professores.map((p: any) => ({ id: p.id, nome: p.nome, email: p.email, ocupados: (p.ocupacoes || []).map((o: any) => ({ dia_semana: o.dia_semana, hora_inicio: o.hora_inicio, hora_fim: o.hora_fim, motivo: o.motivo || '' })) })),
     alunos: estado.alunos.map((a: any) => ({
       id: a.id, nome: a.nome, mat: a.matricula, idade: a.idade, media: a.media, email: a.email, hist: a.semestre_historico,
       ...(a.id === usuario.aluno_id && usuario.senha_provisoria ? { provisoria: true } : {}),

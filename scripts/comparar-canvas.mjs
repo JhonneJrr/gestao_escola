@@ -11,10 +11,19 @@ import { setTimeout as esperar } from 'node:timers/promises';
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const canvas = resolve(raiz, 'design/canvas');
 const saida = resolve(raiz, 'e2e/saida');
-const estados = ['Apresentação', 'Login', 'Primeiro acesso', 'Escola', 'Professor', 'Professor · sem permissão', 'Aluno'];
+const estados = ["Apresentação", "Login", "Primeiro acesso", "Escola", "Professor", "Professor · sem permissão", "Aluno", "Escola · horários do professor", "Escola · assistente vazio", "Escola · assistente com proposta", "Escola · assistente com erro"];
+const casos = [
+  ...estados.map(inicio => ({ inicio })),
+  ...["Vazio", "Enviando", "Só texto", "Com proposta", "Com \"Não coube\"", "Aplicando", "Aplicada", "Erro: não configurado", "Erro: limite de uso", "Erro: sem conexão"].map(iaEstado => ({ inicio: 'Escola', iaEstado })),
+  ...['Não configurado', 'Limite de uso', 'Sem conexão'].map(iaErroSimulado => ({ inicio: 'Escola · assistente vazio', iaErroSimulado })),
+  { inicio: 'Apresentação', funcoesEstilo: 'Espiral' },
+  ...['Quarta 10:20', 'Quinta 14:00'].flatMap(relogio => ['Escola', 'Professor', 'Aluno'].map(inicio => ({ inicio, relogio }))),
+];
+let opcoes = {};
+
 const abas = {
-  Escola: ['Painel', 'Semestre', 'Disciplinas', 'Professores', 'Alunos', 'Matrículas', 'Agenda', 'Avisos'],
-  Professor: ['Painel', 'Agenda', 'Minhas disciplinas', 'Meus alunos', 'Avisos'],
+  Escola: ['Painel', 'Semestre', 'Disciplinas', 'Professores', 'Alunos', 'Matrículas', 'Grade e agenda', 'Avisos'],
+  Professor: ['Painel', 'Grade e agenda', 'Minhas disciplinas', 'Meus alunos', 'Avisos'],
 };
 const filtro = process.argv.includes('--estado') ? process.argv[process.argv.indexOf('--estado') + 1] : '';
 const reactLocal = new Map([
@@ -28,13 +37,19 @@ const servidor = createServer((req, res) => {
   try {
     let body = readFileSync(path);
     if (path === resolve(canvas, 'Portal Escolar.dc.html')) {
-      body = body.toString('utf8').replace(/data-props="([^"]*)"/, (_, raw) => {
+      body = body.toString('utf8').replace(/<dc-import name="Grade e Agenda"/g, '<dc-import name="Grade e Agenda" relogio="' + (opcoes.relogio || 'Terça 08:40') + '"').replace(/data-props="([^"]*)"/, (_, raw) => {
         const props = JSON.parse(raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
         props.inicio.default = inicio;
         props.movimento.default = 'Reduzido';
+        for (const [k, v] of Object.entries(opcoes)) if (props[k]) props[k].default = v;
         return 'data-props="' + JSON.stringify(props).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"';
       });
     }
+    if (path === resolve(canvas, 'Grade e Agenda.dc.html')) body = body.toString('utf8').replace(/data-props="([^"]*)"/, (_, raw) => {
+      const props = JSON.parse(raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+      props.relogio.default = 'Terça 08:40';
+      return 'data-props="' + JSON.stringify(props).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"';
+    });
     const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
     res.writeHead(200, { 'Content-Type': (tipos[extname(path)] ?? 'application/octet-stream') + '; charset=utf-8' }).end(body);
   } catch (erro) {
@@ -124,8 +139,10 @@ try {
   }
   browser = await chromium.launch({ channel: 'msedge' });
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
-    for (inicio of estados) {
-      const nomes = [inicio, ...(abas[inicio] ?? []).map((aba, i) => inicio + ' / ' + aba + ' [Alt+' + (i + 1) + ']')];
+    for (const caso of casos) {
+      inicio = caso.inicio; opcoes = caso;
+      const nomeInicio = inicio + (caso.iaEstado ? ' / IA ' + caso.iaEstado : caso.iaErroSimulado ? ' / Simulação ' + caso.iaErroSimulado : caso.funcoesEstilo ? ' / ' + caso.funcoesEstilo : caso.relogio ? ' / ' + caso.relogio : '');
+      const nomes = [nomeInicio, ...(inicio === 'Aluno' ? ['Aluno / Grade e agenda'] : []), ...(abas[inicio] ?? []).map((aba, i) => inicio + ' / ' + aba + ' [Alt+' + (i + 1) + ']')];
       const sufixo = ' · ' + viewport.width + '×' + viewport.height;
       if (!nomes.some(nome => (nome + sufixo).includes(filtro))) continue;
       const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
@@ -147,7 +164,7 @@ try {
       const urlReferencia = 'http://127.0.0.1:' + servidor.address().port + '/Portal%20Escolar.dc.html';
       await Promise.all([
         referencia.goto(urlReferencia, { waitUntil: 'load' }),
-        porte.goto('http://localhost:5173/?' + new URLSearchParams({ inicio, movimento: 'Reduzido' }), { waitUntil: 'load' }),
+        porte.goto('http://localhost:5173/?' + new URLSearchParams({ relogio: 'Terça 08:40', ...caso, movimento: 'Reduzido' }), { waitUntil: 'load' }),
       ]);
       if (externas.size) throw new Error('URL externa não prevista pelo plano; comparação interrompida:\n' + [...externas].join('\n'));
       if (erros.length) throw new Error('Erro de execução do canvas/porte:\n' + erros.join('\n'));
@@ -179,6 +196,7 @@ try {
             await preparar(page);
             await page.goto(urlReferencia, { waitUntil: 'load' });
             let resultado = await estabilizar(page);
+            if (abaIndex === -2) { await page.getByRole('button', { name: 'Grade e agenda', exact: true }).click(); resultado = await estabilizar(page); }
             for (let i = 0; i <= abaIndex && resultado.estavel; i++) {
               await page.keyboard.press('Alt+' + (i + 1));
               resultado = await estabilizar(page);
@@ -211,12 +229,16 @@ try {
           porte.screenshot({ path: resolve(saida, file + '-porte.png') }),
         ]);
       }
-      await comparar(inicio, ['Login', 'Escola', 'Aluno'].includes(inicio));
+      await comparar(nomeInicio, ['Login', 'Escola', 'Aluno'].includes(inicio));
       for (const [i, aba] of (abas[inicio] ?? []).entries()) {
         if (!nomes.slice(i + 1).some(nome => (nome + sufixo).includes(filtro))) break;
         await Promise.all([referencia.keyboard.press('Alt+' + (i + 1)), porte.keyboard.press('Alt+' + (i + 1))]);
         if (erros.length) throw new Error('Erro ao percorrer abas:\n' + erros.join('\n'));
         await comparar(inicio + ' / ' + aba + ' [Alt+' + (i + 1) + ']', false, i);
+      }
+      if (inicio === 'Aluno') {
+        await Promise.all([referencia.getByRole('button', { name: 'Grade e agenda', exact: true }).click(), porte.getByRole('button', { name: 'Grade e agenda', exact: true }).click()]);
+        await comparar('Aluno / Grade e agenda' + (caso.relogio ? ' / ' + caso.relogio : ''), false, -2);
       }
       await context.close();
     }
