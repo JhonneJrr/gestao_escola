@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/portal-de-gest-o-escolar-9964de34-4c01-4886-b63b-a07a9e9516b0/styles.css">
+<style>
+html,body{margin:0;background:var(--fundo)}
+*{box-sizing:border-box}
+a{color:var(--texto);text-underline-offset:3px}
+a:hover{color:var(--texto-suave)}
+:focus{outline:none}
+:focus-visible{outline:3px solid var(--texto);outline-offset:2px}
+input,select,textarea,button{font:inherit;color:inherit}
+</style>
+</helmet>
+<div ref="{{ raiz }}" style="position:relative;min-height:{{ raizMinH }};background:{{ raizBg }};color:var(--texto);font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-size:15px;line-height:1.45;overflow-x:hidden">
+<div style="container-type:inline-size;max-width:{{ raizMaxW }};margin:0 auto;padding:{{ raizPad }}">
+  <header style="display:flex;flex-direction:column;gap:8px;padding-bottom:20px">
+    <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ rotulo }}</span>
+    <h1 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(32px,6cqi,48px);line-height:1.05">Grade e agenda</h1>
+    <p style="margin:0;color:var(--texto-suave);max-width:64ch;text-wrap:pretty">{{ subtitulo }}</p>
+  </header>
+  <div role="tablist" aria-label="Seções" style="display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;margin-bottom:24px;border-bottom:1px solid var(--borda-fraca)">
+    <sc-for list="{{ abas }}" as="t" hint-placeholder-count="4">
+      <button role="tab" aria-selected="{{ t.on }}" onClick="{{ t.ir }}" style="flex:none;display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;border:0;border-bottom:2px solid {{ t.barra }};background:transparent;font-size:15px;font-weight:{{ t.peso }};color:{{ t.cor }};cursor:pointer;white-space:nowrap">{{ t.label }}<sc-if value="{{ t.temN }}" hint-placeholder-val="{{ false }}"><span style="min-width:20px;height:20px;display:inline-grid;place-items:center;padding:0 5px;border-radius:2px;background:var(--texto);color:var(--fundo);font-size:12px;font-weight:600">{{ t.n }}</span></sc-if></button>
+    </sc-for>
+  </div>
+<sc-if value="{{ abaQuadro }}" hint-placeholder-val="{{ true }}">
+  <section aria-label="Agora" style="display:flex;flex-wrap:wrap;gap:16px 32px;align-items:stretch;padding:20px;margin-bottom:20px;background:var(--superficie);border:1px solid var(--borda-fraca)">
+    <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:4px;min-width:190px">
+      <span style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)"><span ref="{{ pulsoRef }}" style="width:8px;height:8px;border-radius:50%;background:var(--texto)"></span>{{ relogioRot }}</span>
+      <span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:52px;line-height:1;font-weight:500;font-variant-numeric:tabular-nums">{{ horaTxt }}</span>
+      <span style="font-size:14px">{{ dataTxt }}</span>
+      <span style="font-size:13px;color:var(--texto-suave)">{{ periodoTxt }}</span>
+    </div>
+    <div style="flex:1 1 480px;min-width:0;display:flex;flex-direction:column;gap:8px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:8px">
+        <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ c.ir }}" aria-pressed="{{ c.on }}" style="display:flex;flex-direction:column;gap:6px;min-width:0;padding:12px;border:1px solid {{ c.borda }};border-radius:2px;background:{{ c.bg }};font-family:inherit;text-align:left;color:var(--texto);cursor:pointer" style-hover="border-color:var(--texto)">
+            <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0"><span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.nome }}</span><span style="flex:none;display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid {{ c.tagBorda }};border-radius:2px;background:{{ c.tagBg }};color:{{ c.tagCor }};font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">{{ c.tag }}</span></span>
+            <span style="min-height:38px;font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ c.det }}</span>
+            <span aria-hidden="true" style="height:3px;background:var(--borda-fraca);overflow:hidden"><span style="display:block;height:100%;background:var(--texto);transform:{{ c.prog }};transform-origin:0 50%;transition:transform 800ms linear"></span></span>
+          </button>
+        </sc-for>
+      </div>
+      <span style="font-size:12px;color:var(--texto-suave)">{{ cartaoAjuda }}</span>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-bottom:12px">
+    <sc-if value="{{ eixoVis }}" hint-placeholder-val="{{ true }}">
+      <div role="group" aria-label="Organizar por" style="display:inline-flex;padding:3px;gap:2px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie)">
+        <sc-for list="{{ eixos }}" as="o" hint-placeholder-count="2"><button type="button" aria-pressed="{{ o.on }}" onClick="{{ o.ir }}" style="min-height:36px;padding:0 12px;border:0;border-radius:2px;background:{{ o.bg }};color:{{ o.cor }};font-size:14px;font-weight:{{ o.peso }};cursor:pointer;white-space:nowrap">{{ o.label }}</button></sc-for>
+      </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button type="button" aria-label="Semana anterior" onClick="{{ semAnt }}" style="width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg></button>
+      <span style="min-width:178px;text-align:center;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums">{{ semanaTxt }}</span>
+      <button type="button" aria-label="Próxima semana" onClick="{{ semProx }}" style="width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"></path></svg></button>
+      <sc-if value="{{ naoAtual }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ irHoje }}" style="min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Esta semana</button></sc-if>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto">
+      <sc-if value="{{ choquesVis }}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="{{ soChoques }}" onClick="{{ alternarChoques }}" title="Mostrar só as aulas em choque" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid {{ choquesBorda }};border-radius:2px;background:{{ choquesBg }};color:{{ choquesCor }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap">{{ choquesTxt }}</button></sc-if>
+      <sc-if value="{{ ocupVis }}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="{{ verOcup }}" onClick="{{ alternarOcup }}" style="display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:{{ ocupBg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap"><span aria-hidden="true" style="width:14px;height:14px;border:1px solid var(--borda);background:repeating-linear-gradient(135deg,transparent 0 3px,var(--borda) 3px 4px)"></span>Horários ocupados</button></sc-if>
+      <sc-if value="{{ iaBotaoVis }}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="{{ iaAberto }}" onClick="{{ alternarIa }}" style="display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border:1px solid var(--texto);border-radius:2px;background:{{ iaBotaoBg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H9l-5 4z"></path><path d="M8 9h8M8 12h5"></path></svg>Assistente de grade</button></sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ filtrosVis }}" hint-placeholder-val="{{ true }}">
+    <div role="group" aria-label="Filtros" style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;margin-bottom:16px">
+      <sc-if value="{{ fTurmaVis }}" hint-placeholder-val="{{ true }}"><label style="flex:1 1 140px;max-width:200px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Turma</span><select value="{{ fTurma }}" onChange="{{ setFTurma }}" style="width:100%;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><option value="">Todas</option><sc-for list="{{ optTurmas }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label></sc-if>
+      <sc-if value="{{ fProfVis }}" hint-placeholder-val="{{ true }}"><label style="flex:1 1 160px;max-width:220px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Professor</span><select value="{{ fProf }}" onChange="{{ setFProf }}" style="width:100%;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><option value="">Todos</option><sc-for list="{{ optProfs }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label></sc-if>
+      <label style="flex:1 1 200px;max-width:280px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Disciplina</span><select value="{{ fDisc }}" onChange="{{ setFDisc }}" style="width:100%;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><option value="">Todas</option><sc-for list="{{ optDiscs }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+      <sc-if value="{{ fSalaVis }}" hint-placeholder-val="{{ true }}"><label style="flex:1 1 160px;max-width:220px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Sala</span><select value="{{ fSala }}" onChange="{{ setFSala }}" style="width:100%;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><option value="">Todas</option><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label></sc-if>
+      <sc-if value="{{ filtrado }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ limparFiltros }}" style="min-height:40px;padding:0 10px;border:0;background:transparent;font-size:14px;font-weight:500;text-decoration:underline;text-underline-offset:3px;cursor:pointer">Limpar filtros</button></sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ pendVis }}" hint-placeholder-val="{{ false }}">
+    <div role="alertdialog" aria-label="Confirmar remarcação" style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie)">
+      <sc-if value="{{ pendOk }}" hint-placeholder-val="{{ true }}">
+        <span style="font-weight:500;text-wrap:pretty">{{ pendTxt }}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ confSemana }}" disabled="{{ pendSemOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ pendSemO }}">Só nesta semana</button><button type="button" onClick="{{ confGrade }}" disabled="{{ pendGrOff }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ pendGrO }}">Na grade do semestre</button><button type="button" onClick="{{ cancelarPend }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Cancelar</button></div>
+        <sc-for list="{{ pendNotas }}" as="n" hint-placeholder-count="0"><span style="font-size:13px;color:var(--aviso);text-wrap:pretty">{{ n.t }}</span></sc-for>
+      </sc-if>
+      <sc-if value="{{ pendErroTotal }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;color:var(--aviso)"><span style="text-wrap:pretty">Não dá para mover: {{ pendErro }}</span><button type="button" onClick="{{ cancelarPend }}" style="min-height:36px;padding:0 12px;border:1px solid var(--aviso);border-radius:2px;background:transparent;color:var(--aviso);font-size:14px;cursor:pointer">Ok</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ msgVis }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span style="text-wrap:pretty">{{ msgTxt }}</span><span style="display:flex;gap:6px"><sc-if value="{{ temDesfazer }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ desfazer }}" style="min-height:32px;padding:0 10px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:13px;font-weight:500;cursor:pointer">Desfazer</button></sc-if><button type="button" onClick="{{ fecharMsg }}" style="min-height:32px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer">Ok</button></span></div>
+  </sc-if>
+
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+    <div style="flex:1 1 640px;min-width:0;display:flex;flex-direction:column;gap:8px">
+      <sc-if value="{{ diasMVis }}" hint-placeholder-val="{{ false }}">
+        <div role="group" aria-label="Dia" style="display:flex;gap:4px;overflow-x:auto"><sc-for list="{{ diasM }}" as="d" hint-placeholder-count="5"><button type="button" aria-pressed="{{ d.on }}" onClick="{{ d.ir }}" style="flex:1 0 auto;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:{{ d.bg }};color:{{ d.cor }};font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">{{ d.l }}</button></sc-for></div>
+      </sc-if>
+      <sc-if value="{{ eixoDias }}" hint-placeholder-val="{{ true }}">
+        <div style="overflow-x:auto;border:1px solid var(--borda-fraca);background:var(--superficie)">
+          <div data-quadro-dias="" style="min-width:{{ gridMinW }};display:grid;grid-template-columns:{{ gridCols }}">
+            <div style="border-bottom:1px solid var(--borda-fraca)"></div>
+            <sc-for list="{{ cols }}" as="c" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px 8px;border-left:1px solid var(--borda-fraca);border-bottom:1px solid var(--borda-fraca);background:{{ c.hdBg }}">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:6px"><span style="font-weight:{{ c.hdPeso }}">{{ c.dia }}</span><span style="font-size:13px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ c.data }}</span></span>
+                <sc-for list="{{ c.evs }}" as="e" hint-placeholder-count="0"><button type="button" onClick="{{ e.abrir }}" title="{{ e.titulo }}" style="display:flex;align-items:center;gap:6px;min-width:0;padding:2px 6px 2px 2px;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--fundo);font-size:12px;text-align:left;cursor:pointer" style-hover="border-color:var(--texto)"><span style="flex:none;display:inline-grid;place-items:center;min-width:24px;height:18px;padding:0 3px;border:1px solid {{ e.bBorda }};background:{{ e.bBg }};color:{{ e.bCor }};font-size:10px;font-weight:700;letter-spacing:.04em">{{ e.ab }}</span><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.titulo }}</span></button></sc-for>
+                <sc-if value="{{ c.temMais }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--texto-suave)">{{ c.mais }}</span></sc-if>
+              </div>
+            </sc-for>
+            <div style="position:relative;height:{{ gridH }}">
+              <sc-for list="{{ horas }}" as="h" hint-placeholder-count="10"><span style="position:absolute;top:{{ h.top }};right:8px;transform:translateY(-50%);font-size:12px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ h.t }}</span></sc-for>
+            </div>
+            <sc-for list="{{ cols }}" as="c" hint-placeholder-count="5">
+              <div style="position:relative;height:{{ gridH }};min-width:0;border-left:1px solid var(--borda-fraca)">
+                <sc-for list="{{ horas }}" as="h" hint-placeholder-count="10"><span aria-hidden="true" style="position:absolute;left:0;right:0;top:{{ h.top }};border-top:1px solid var(--borda-fraca)"></span></sc-for>
+                <span aria-hidden="true" style="position:absolute;left:0;right:0;top:{{ intTop }};height:{{ intH }};background:var(--fundo)"></span>
+                <sc-for list="{{ c.ocup }}" as="o" hint-placeholder-count="0"><div aria-label="{{ o.txt }}" style="position:absolute;left:2px;right:2px;top:{{ o.top }};height:{{ o.h }};padding:4px 6px;border:1px dashed var(--borda);background:repeating-linear-gradient(135deg,transparent 0 6px,var(--borda-fraca) 6px 7px);font-size:11px;font-weight:500;color:var(--texto-suave);overflow:hidden">{{ o.txt }}</div></sc-for>
+                <sc-for list="{{ c.blocos }}" as="b" hint-placeholder-count="2">
+                  <div data-bloco="{{ b.key }}" role="button" tabIndex="0" aria-label="{{ b.titulo }}" title="{{ b.titulo }}" onPointerDown="{{ b.down }}" onKeyDown="{{ b.tecla }}" style="position:absolute;top:{{ b.top }};height:{{ b.h }};left:{{ b.left }};width:{{ b.w }};z-index:2;display:flex;flex-direction:column;gap:1px;padding:4px 6px;overflow:hidden;border:{{ b.borda }};border-radius:2px;background:{{ b.bg }};opacity:{{ b.op }};cursor:{{ b.cursor }};touch-action:{{ b.touch }};user-select:none;font-size:12px;line-height:1.25;transition:opacity 160ms linear">
+                    <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.nome }}</span>
+                    <span style="color:var(--texto-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.l2 }}</span>
+                    <span style="color:var(--texto-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums">{{ b.l3 }}</span>
+                    <sc-if value="{{ b.temTag }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;margin-top:auto;padding:0 4px;border:1px solid {{ b.tagCor }};color:{{ b.tagCor }};font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">{{ b.tag }}</span></sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ c.feriado }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;z-index:3;display:grid;place-items:center;padding:8px;background:repeating-linear-gradient(135deg,transparent 0 8px,var(--borda-fraca) 8px 9px)"><span style="padding:4px 8px;border:1px solid var(--borda);background:var(--superficie);font-size:13px;font-weight:500;text-align:center">{{ c.feriadoTxt }} · sem aula</span></div></sc-if>
+                <sc-if value="{{ c.agora }}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="position:absolute;left:0;right:0;top:{{ agoraTop }};z-index:4;border-top:2px solid var(--texto);pointer-events:none"><span style="position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--texto)"></span></div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ eixoProf }}" hint-placeholder-val="{{ false }}">
+        <div style="overflow-x:auto;border:1px solid var(--borda-fraca);background:var(--superficie)">
+          <div data-quadro-professores="" style="min-width:1080px">
+            <div style="display:grid;grid-template-columns:190px repeat(5,minmax(0,1fr));border-bottom:1px solid var(--borda-fraca)">
+              <span style="padding:10px 12px;font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Professor</span>
+              <sc-for list="{{ cols }}" as="c" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:2px;padding:8px;border-left:1px solid var(--borda-fraca);background:{{ c.hdBg }}"><span style="display:flex;align-items:baseline;gap:6px"><span style="font-weight:{{ c.hdPeso }}">{{ c.dia }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ c.data }}</span></span><span style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-suave);font-variant-numeric:tabular-nums"><span>08h</span><span>12h</span><span>17h</span></span></div></sc-for>
+            </div>
+            <sc-for list="{{ linhasP }}" as="r" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:190px repeat(5,minmax(0,1fr));min-height:76px;border-top:1px solid var(--borda-fraca)">
+                <div style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;padding:8px 12px"><span style="font-weight:600">{{ r.nome }}</span><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid {{ r.tagBorda }};border-radius:2px;background:{{ r.tagBg }};color:{{ r.tagCor }};font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">{{ r.tag }}</span></div>
+                <sc-for list="{{ r.dias }}" as="d" hint-placeholder-count="5">
+                  <div style="position:relative;min-width:0;border-left:1px solid var(--borda-fraca);background:{{ d.bg }}">
+                    <sc-for list="{{ d.ocup }}" as="o" hint-placeholder-count="0"><span title="{{ o.titulo }}" style="position:absolute;top:6px;bottom:6px;left:{{ o.left }};width:{{ o.w }};border:1px dashed var(--borda);background:repeating-linear-gradient(135deg,transparent 0 5px,var(--borda-fraca) 5px 6px)"></span></sc-for>
+                    <sc-for list="{{ d.blocos }}" as="b" hint-placeholder-count="1">
+                      <div role="button" tabIndex="0" aria-label="{{ b.titulo }}" title="{{ b.titulo }}" onPointerDown="{{ b.down }}" onKeyDown="{{ b.tecla }}" style="position:absolute;top:10px;bottom:10px;left:{{ b.left }};width:{{ b.w }};z-index:2;display:flex;flex-direction:column;justify-content:center;padding:0 4px;overflow:hidden;border:{{ b.borda }};border-radius:2px;background:{{ b.bg }};opacity:{{ b.op }};cursor:pointer;font-size:11px;font-weight:600;line-height:1.2;white-space:nowrap">{{ b.curto }}</div>
+                    </sc-for>
+                    <sc-if value="{{ d.feriado }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:absolute;inset:0;z-index:3;background:repeating-linear-gradient(135deg,transparent 0 8px,var(--borda-fraca) 8px 9px)"></span></sc-if>
+                    <sc-if value="{{ d.agora }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:absolute;top:0;bottom:0;left:{{ d.agoraL }};z-index:4;border-left:2px solid var(--texto);pointer-events:none"></span></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <span style="font-size:13px;color:var(--texto-suave)">{{ dragDica }}</span>
+    </div>
+<sc-if value="{{ iaAberto }}" hint-placeholder-val="{{ false }}">
+      <aside aria-label="Assistente de grade" data-assistente-quadro="" style="flex:1 1 320px;max-width:420px;min-width:0;max-height:760px;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--borda-fraca)">
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:24px;line-height:1.1">Assistente de grade</span><span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">Sugere horários sem choque. A proposta aparece tracejada no quadro.</span></div>
+          <button type="button" aria-label="Fechar assistente" onClick="{{ fecharIa }}" style="flex:none;width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--superficie);cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </div>
+        <div role="log" aria-live="polite" style="flex:1;min-height:160px;overflow:auto;display:flex;flex-direction:column;padding:0 16px">
+          <sc-if value="{{ iaVazio }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:8px;padding:16px 0">
+              <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Para começar</span>
+              <sc-for list="{{ iaSug }}" as="g" hint-placeholder-count="3"><button type="button" onClick="{{ g.usar }}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:8px 12px;border:1px solid var(--borda);border-radius:2px;background:var(--fundo);font-size:14px;line-height:1.35;text-align:left;cursor:pointer" style-hover="border-color:var(--texto)"><span style="text-wrap:pretty">{{ g.t }}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></sc-for>
+            </div>
+          </sc-if>
+          <sc-for list="{{ iaLista }}" as="m" hint-placeholder-count="0">
+            <article ref="{{ iaMsgRef }}" style="display:flex;flex-direction:column;gap:6px;padding:14px 0;border-bottom:1px solid var(--borda-fraca)">
+              <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ m.autor }}</span>
+              <sc-if value="{{ m.usuario }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-size:18px;line-height:1.35;white-space:pre-wrap;text-wrap:pretty">{{ m.texto }}</p></sc-if>
+              <sc-if value="{{ m.ia }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:14px;line-height:1.55;white-space:pre-wrap;text-wrap:pretty">{{ m.texto }}</p></sc-if>
+              <sc-if value="{{ m.temProp }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;margin-top:4px;border:1px solid var(--borda);border-radius:2px;background:var(--fundo)">
+                  <sc-if value="{{ iaTemMoves }}" hint-placeholder-val="{{ true }}">
+                    <span style="padding:10px 12px;font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Proposta</span>
+                    <sc-for list="{{ iaMoves }}" as="v" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-top:1px solid var(--borda-fraca);font-size:14px"><span style="font-weight:600">{{ v.nome }}</span><span style="font-variant-numeric:tabular-nums;color:var(--texto-suave)">{{ v.de }} → <span style="color:var(--texto);font-weight:500">{{ v.para }}</span></span></div></sc-for>
+                  </sc-if>
+                  <sc-if value="{{ iaTemRec }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid var(--borda-fraca);background:var(--aviso-suave)"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--aviso)">Não coube</span><sc-for list="{{ iaRec }}" as="r" hint-placeholder-count="1"><div style="display:flex;flex-direction:column;gap:2px;font-size:14px"><span style="font-weight:600">{{ r.nome }}</span><span style="color:var(--aviso);text-wrap:pretty">{{ r.motivo }}</span></div></sc-for></div></sc-if>
+                  <sc-if value="{{ iaAcoes }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid var(--borda-fraca)"><button type="button" onClick="{{ iaAplicar }}" style="flex:1 1 140px;min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">Aplicar proposta</button><button type="button" onClick="{{ iaDescartar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Descartar</button></div></sc-if>
+                  <sc-if value="{{ iaFeitoVis }}" hint-placeholder-val="{{ false }}"><span role="status" style="padding:10px 12px;border-top:1px solid var(--borda-fraca);font-size:14px;font-weight:500">{{ iaFeito }}</span></sc-if>
+                </div>
+              </sc-if>
+            </article>
+          </sc-for>
+          <sc-if value="{{ iaEnv }}" hint-placeholder-val="{{ false }}"><article ref="{{ iaMsgRef }}" aria-busy="true" style="display:flex;flex-direction:column;gap:6px;padding:14px 0"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Assistente</span><span style="font-size:14px;color:var(--texto-suave)">Conferindo professores, turmas e salas…</span></article></sc-if>
+          <div ref="{{ iaFimRef }}" aria-hidden="true" style="flex:none;height:1px"></div>
+        </div>
+        <form onSubmit="{{ iaSubmit }}" style="display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--borda-fraca)">
+          <textarea aria-label="Mensagem para o assistente" rows="2" value="{{ iaTexto }}" onChange="{{ setIaTexto }}" onKeyDown="{{ iaTecla }}" disabled="{{ iaEnv }}" placeholder="Descreva o que precisa na grade" style="width:100%;min-height:60px;max-height:140px;resize:vertical;padding:8px 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;line-height:1.45" style-focus="border-color:var(--texto)"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;color:var(--texto-suave)">Enter envia · Shift+Enter quebra linha</span><button type="submit" disabled="{{ iaOff }}" style="min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ iaEnvO }}">Enviar</button></div>
+        </form>
+      </aside>
+    </sc-if>
+  </div>
+</sc-if>
+<sc-if value="{{ abaAno }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-bottom:12px">
+    <div role="group" aria-label="Visão" style="display:inline-flex;padding:3px;gap:2px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie)">
+      <sc-for list="{{ visOps }}" as="o" hint-placeholder-count="5"><button type="button" aria-pressed="{{ o.on }}" onClick="{{ o.ir }}" style="min-height:36px;padding:0 12px;border:0;border-radius:2px;background:{{ o.bg }};color:{{ o.cor }};font-size:14px;font-weight:{{ o.peso }};cursor:pointer">{{ o.label }}</button></sc-for>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <sc-if value="{{ anoNavVis }}" hint-placeholder-val="{{ true }}"><button type="button" aria-label="Anterior" onClick="{{ anoAnt }}" style="width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg></button></sc-if>
+      <span style="min-width:170px;text-align:center;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-size:20px">{{ anoTitulo }}</span>
+      <sc-if value="{{ anoNavVis }}" hint-placeholder-val="{{ true }}"><button type="button" aria-label="Próximo" onClick="{{ anoProx }}" style="width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"></path></svg></button></sc-if>
+      <sc-if value="{{ anoNaoHoje }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ anoHoje }}" style="min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer">Hoje</button></sc-if>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto">
+      <sc-if value="{{ aTurmaVis }}" hint-placeholder-val="{{ true }}"><select aria-label="Turma" value="{{ aTurma }}" onChange="{{ setATurma }}" style="min-height:36px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><option value="">Todas as turmas</option><sc-for list="{{ optTurmas }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
+      <sc-if value="{{ novoEvVis }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ novoEv }}" style="display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Novo evento</button></sc-if>
+    </div>
+  </div>
+  <div role="group" aria-label="Tipos de evento" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+    <sc-for list="{{ tiposF }}" as="t" hint-placeholder-count="8"><button type="button" aria-pressed="{{ t.on }}" onClick="{{ t.ir }}" style="display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px 0 4px;border:1px solid {{ t.borda }};border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer;opacity:{{ t.op }}"><span style="flex:none;display:inline-grid;place-items:center;min-width:24px;height:18px;padding:0 3px;border:1px solid {{ t.bBorda }};background:{{ t.bBg }};color:{{ t.bCor }};font-size:10px;font-weight:700;letter-spacing:.04em">{{ t.ab }}</span>{{ t.label }}</button></sc-for>
+  </div>
+  <p style="margin:0 0 16px;font-size:13px;color:var(--texto-suave)">{{ escopoAno }}</p>
+  <sc-if value="{{ msgAnoVis }}" hint-placeholder-val="{{ false }}"><div role="status" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span>{{ msgAno }}</span><button type="button" onClick="{{ fecharMsgAno }}" style="min-height:32px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer">Ok</button></div></sc-if>
+
+  <sc-if value="{{ visAno }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px">
+      <sc-for list="{{ meses }}" as="m" hint-placeholder-count="12">
+        <section style="display:flex;flex-direction:column;gap:8px;padding:14px;background:var(--superficie);border:1px solid var(--borda-fraca);opacity:{{ m.op }}">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><button type="button" onClick="{{ m.ir }}" style="padding:0;border:0;background:transparent;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-size:20px;font-weight:500;cursor:pointer" style-hover="text-decoration:underline">{{ m.nome }}</button><span style="font-size:12px;color:var(--texto-suave)">{{ m.nEv }}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;font-size:11px;color:var(--texto-suave);text-align:center"><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span><span>D</span></div>
+          <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px">
+            <sc-for list="{{ m.dias }}" as="d" hint-placeholder-count="30"><button type="button" onClick="{{ d.ir }}" aria-label="{{ d.aria }}" title="{{ d.title }}" style="height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;border:1px solid {{ d.borda }};border-radius:2px;background:{{ d.bg }};color:{{ d.cor }};font-size:12px;font-weight:{{ d.peso }};font-variant-numeric:tabular-nums;visibility:{{ d.vis }};cursor:pointer" style-hover="border-color:var(--texto-suave)">{{ d.n }}<span style="display:flex;gap:2px;height:5px"><sc-for list="{{ d.marcas }}" as="k" hint-placeholder-count="0"><span style="width:5px;height:5px;border:1px solid {{ k.borda }};background:{{ k.bg }}"></span></sc-for></span></button></sc-for>
+          </div>
+        </section>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:16px;font-size:12px;color:var(--texto-suave)">
+      <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border:1px solid var(--texto)"></span>Início ou fim de bimestre</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:repeating-linear-gradient(135deg,transparent 0 6px,var(--borda-fraca) 6px 7px);border:1px solid var(--borda)"></span>Feriado ou recesso</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:var(--texto)"></span>Hoje</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ visMes }}" hint-placeholder-val="{{ false }}">
+    <div style="overflow-x:auto;border:1px solid var(--borda-fraca);background:var(--superficie)">
+      <div style="min-width:760px">
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--borda-fraca)"><sc-for list="{{ semDias }}" as="s" hint-placeholder-count="7"><span style="padding:8px;font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ s.t }}</span></sc-for></div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr))">
+          <sc-for list="{{ celMes }}" as="c" hint-placeholder-count="35">
+            <div style="min-height:116px;display:flex;flex-direction:column;gap:4px;padding:6px;border-top:1px solid var(--borda-fraca);border-left:1px solid var(--borda-fraca);background:{{ c.bg }};opacity:{{ c.op }};min-width:0">
+              <button type="button" onClick="{{ c.ir }}" style="align-self:flex-start;min-width:26px;height:26px;padding:0 4px;border:0;border-radius:2px;background:{{ c.numBg }};color:{{ c.numCor }};font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer">{{ c.n }}</button>
+              <sc-if value="{{ c.temFer }}" hint-placeholder-val="{{ false }}"><span style="padding:1px 4px;background:var(--superficie);font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.fer }}</span></sc-if>
+              <sc-for list="{{ c.evs }}" as="e" hint-placeholder-count="0"><button type="button" onClick="{{ e.abrir }}" title="{{ e.titulo }}" style="display:flex;align-items:center;gap:4px;min-width:0;padding:2px 4px 2px 2px;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--fundo);font-size:12px;text-align:left;cursor:pointer" style-hover="border-color:var(--texto)"><span style="flex:none;display:inline-grid;place-items:center;min-width:22px;height:16px;padding:0 2px;border:1px solid {{ e.bBorda }};background:{{ e.bBg }};color:{{ e.bCor }};font-size:9px;font-weight:700">{{ e.ab }}</span><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.titulo }}</span></button></sc-for>
+              <sc-if value="{{ c.temMais }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ c.ir }}" style="align-self:flex-start;padding:0;border:0;background:transparent;font-size:12px;color:var(--texto-suave);text-decoration:underline;cursor:pointer">{{ c.mais }}</button></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ visSemana }}" hint-placeholder-val="{{ false }}">
+    <div style="overflow-x:auto;border:1px solid var(--borda-fraca);background:var(--superficie)">
+      <div style="min-width:880px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr))">
+        <sc-for list="{{ semCols }}" as="c" hint-placeholder-count="7">
+          <div style="display:flex;flex-direction:column;gap:6px;min-height:280px;min-width:0;padding:10px 8px;border-left:1px solid var(--borda-fraca);background:{{ c.bg }}">
+            <button type="button" onClick="{{ c.irDia }}" style="align-self:flex-start;padding:0;border:0;background:transparent;font-weight:600;cursor:pointer" style-hover="text-decoration:underline">{{ c.dia }}</button>
+            <sc-if value="{{ c.temFer }}" hint-placeholder-val="{{ false }}"><span style="padding:4px 6px;border:1px solid var(--borda);background:repeating-linear-gradient(135deg,transparent 0 6px,var(--borda-fraca) 6px 7px);font-size:12px;font-weight:500">{{ c.fer }}</span></sc-if>
+            <sc-for list="{{ c.evs }}" as="e" hint-placeholder-count="0"><button type="button" onClick="{{ e.abrir }}" style="display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--fundo);text-align:left;cursor:pointer" style-hover="border-color:var(--texto)"><span style="display:flex;align-items:center;gap:4px"><span style="flex:none;display:inline-grid;place-items:center;min-width:22px;height:16px;padding:0 2px;border:1px solid {{ e.bBorda }};background:{{ e.bBg }};color:{{ e.bCor }};font-size:9px;font-weight:700">{{ e.ab }}</span><span style="font-size:12px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ e.hora }}</span></span><span style="font-size:13px;font-weight:500;text-wrap:pretty">{{ e.titulo }}</span><span style="font-size:12px;color:var(--texto-suave)">{{ e.quem }}</span></button></sc-for>
+            <sc-if value="{{ c.temAulas }}" hint-placeholder-val="{{ false }}"><span style="margin-top:auto;font-size:12px;color:var(--texto-suave)">{{ c.aulas }}</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ visDia }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <section style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <h2 style="margin:0;padding:14px 16px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Aulas</h2>
+        <sc-for list="{{ diaAulas }}" as="a" hint-placeholder-count="3"><button type="button" onClick="{{ a.abrir }}" style="display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)"><span style="flex:none;width:96px;font-weight:600;font-variant-numeric:tabular-nums">{{ a.hora }}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-weight:500">{{ a.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ a.sub }}</span></span><span style="flex:none;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-suave)">{{ a.st }}</span></button></sc-for>
+        <sc-if value="{{ diaSemAulas }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:16px;border-top:1px solid var(--borda-fraca);color:var(--texto-suave)">{{ diaSemAulasTxt }}</p></sc-if>
+      </section>
+      <section style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <h2 style="margin:0;padding:14px 16px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">No calendário</h2>
+        <sc-for list="{{ diaEvs }}" as="e" hint-placeholder-count="1"><button type="button" onClick="{{ e.abrir }}" style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)"><span style="flex:none;display:inline-grid;place-items:center;min-width:26px;height:20px;padding:0 3px;border:1px solid {{ e.bBorda }};background:{{ e.bBg }};color:{{ e.bCor }};font-size:10px;font-weight:700">{{ e.ab }}</span><span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:500">{{ e.titulo }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ e.tipoTxt }} · {{ e.quem }} {{ e.hora }}</span><span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ e.desc }}</span></span></button></sc-for>
+        <sc-if value="{{ diaSemEvs }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:16px;border-top:1px solid var(--borda-fraca);color:var(--texto-suave)">Nada marcado no calendário neste dia.</p></sc-if>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ visLista }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <button type="button" onClick="{{ alternarPassados }}" style="align-self:flex-start;min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer">{{ passadosTxt }}</button>
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="2">
+        <section style="display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+          <h2 style="margin:0;padding:12px 16px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:22px">{{ g.mes }}</h2>
+          <sc-for list="{{ g.itens }}" as="e" hint-placeholder-count="3"><button type="button" onClick="{{ e.abrir }}" style="display:grid;grid-template-columns:96px 30px minmax(0,1fr);align-items:center;gap:4px 12px;min-height:56px;padding:8px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)"><span style="display:flex;flex-direction:column;font-variant-numeric:tabular-nums"><span style="font-weight:600">{{ e.datas }}</span><span style="font-size:12px;color:var(--texto-suave)">{{ e.dia }} {{ e.hora }}</span></span><span style="display:inline-grid;place-items:center;min-width:26px;height:20px;padding:0 3px;border:1px solid {{ e.bBorda }};background:{{ e.bBg }};color:{{ e.bCor }};font-size:10px;font-weight:700">{{ e.ab }}</span><span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:500">{{ e.titulo }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ e.tipoTxt }} · {{ e.quem }}</span></span></button></sc-for>
+        </section>
+      </sc-for>
+      <sc-if value="{{ listaVazia }}" hint-placeholder-val="{{ false }}"><p style="margin:0;color:var(--texto-suave)">Nada pela frente com esses filtros.</p></sc-if>
+    </div>
+  </sc-if>
+</sc-if>
+<sc-if value="{{ abaDisc }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+    <span style="font-size:14px;color:var(--texto-suave)">{{ discResumo }}</span>
+    <button type="button" onClick="{{ novaDisc }}" style="display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Nova disciplina</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <sc-for list="{{ turmasD }}" as="t" hint-placeholder-count="3">
+      <section style="display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;padding:14px 16px"><h2 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:24px">{{ t.nome }}</h2><span style="font-size:13px;color:var(--texto-suave)">{{ t.sub }}</span></div>
+        <sc-for list="{{ t.linhas }}" as="d" hint-placeholder-count="3">
+          <button type="button" onClick="{{ d.abrir }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));align-items:center;gap:8px 20px;padding:12px 16px;border:0;border-top:1px solid var(--borda-fraca);background:transparent;text-align:left;cursor:pointer" style-hover="background:var(--sunken)">
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><span style="font-weight:600">{{ d.nome }}</span><sc-if value="{{ d.temCh }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid var(--aviso);border-radius:2px;color:var(--aviso);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Choque</span></sc-if><sc-if value="{{ d.semH }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px dashed var(--texto);border-radius:2px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Sem horário</span></sc-if></span><span style="font-size:13px;color:var(--texto-suave)">{{ d.prof }} · {{ d.sala }}</span></span>
+            <span style="font-size:14px;font-variant-numeric:tabular-nums">{{ d.horarios }}</span>
+            <span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><span style="color:var(--texto-suave)">Carga cumprida</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ d.cargaTxt }}</span></span><span style="height:4px;background:var(--borda-fraca);overflow:hidden"><span style="display:block;height:100%;background:var(--texto);transform:{{ d.bar }};transform-origin:0 50%"></span></span><span style="font-size:12px;color:{{ d.projCor }};text-wrap:pretty">{{ d.proj }}</span></span>
+          </button>
+        </sc-for>
+      </section>
+    </sc-for>
+  </div>
+</sc-if>
+
+<sc-if value="{{ abaPed }}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{ pedEsc }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ msgPedVis }}" hint-placeholder-val="{{ false }}"><div role="status" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span>{{ msgPed }}</span><button type="button" onClick="{{ fecharMsgPed }}" style="min-height:32px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:13px;cursor:pointer">Ok</button></div></sc-if>
+    <h2 style="margin:0 0 12px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:24px">{{ pendTitulo }}</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px">
+      <sc-for list="{{ pendLista }}" as="p" hint-placeholder-count="2">
+        <article style="display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--superficie);border:1px dashed var(--texto)">
+          <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px"><span style="font-weight:600;font-size:16px">{{ p.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ p.prof }}</span></div>
+          <span style="font-variant-numeric:tabular-nums">{{ p.quando }} · {{ p.sala }}</span>
+          <p style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-size:17px;text-wrap:pretty">“{{ p.motivo }}”</p>
+          <span style="font-size:14px;color:{{ p.ckCor }};text-wrap:pretty">{{ p.ck }}</span>
+          <sc-if value="{{ p.normal }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" onClick="{{ p.aprovar }}" disabled="{{ p.aprovarOff }}" style="min-height:40px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;opacity:{{ p.aprovarO }}">Aprovar</button><button type="button" onClick="{{ p.pedirSug }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer">Sugerir outro horário</button><button type="button" onClick="{{ p.pedirRec }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer" style-hover="border-color:var(--aviso);color:var(--aviso)">Recusar</button></div></sc-if>
+          <sc-if value="{{ p.rec }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Motivo da recusa</span><textarea rows="2" value="{{ p.recMotivo }}" onChange="{{ p.setRec }}" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"></textarea></label><span role="alert" style="min-height:18px;font-size:13px;color:var(--aviso)">{{ p.recErro }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.confRec }}" style="min-height:40px;padding:0 14px;border:1px solid var(--aviso);border-radius:2px;background:var(--superficie);color:var(--aviso);font-size:14px;font-weight:500;cursor:pointer">Recusar pedido</button><button type="button" onClick="{{ p.cancelar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Voltar</button></div></div></sc-if>
+          <sc-if value="{{ p.sug }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;flex-wrap:wrap;gap:8px"><input type="date" aria-label="Data sugerida" value="{{ p.sugF.data }}" onChange="{{ p.setSugData }}" style="flex:1 1 150px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><input type="time" aria-label="Início" value="{{ p.sugF.ini }}" onChange="{{ p.setSugIni }}" style="flex:1 1 110px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><input type="time" aria-label="Fim" value="{{ p.sugF.fim }}" onChange="{{ p.setSugFim }}" style="flex:1 1 110px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><select aria-label="Sala" value="{{ p.sugF.sala }}" onChange="{{ p.setSugSala }}" style="flex:1 1 160px;min-height:40px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px"><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div><span style="font-size:13px;color:{{ p.sugCkCor }}">{{ p.sugCk }}</span><span role="alert" style="min-height:18px;font-size:13px;color:var(--aviso)">{{ p.sugErro }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.confSug }}" style="min-height:40px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">Enviar sugestão</button><button type="button" onClick="{{ p.cancelar }}" style="min-height:40px;padding:0 14px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Voltar</button></div></div></sc-if>
+        </article>
+      </sc-for>
+    </div>
+    <sc-if value="{{ temHist }}" hint-placeholder-val="{{ true }}">
+      <h2 style="margin:0 0 12px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Histórico</h2>
+      <div style="display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <sc-for list="{{ histLista }}" as="p" hint-placeholder-count="2"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:12px 16px;border-top:1px solid var(--borda-fraca)"><span style="flex:1 1 240px;display:flex;flex-direction:column;min-width:0"><span style="font-weight:500">{{ p.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ p.prof }} · {{ p.quando }} · {{ p.sala }}</span><sc-if value="{{ p.temResp }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ p.resposta }}</span></sc-if></span><span style="flex:none;display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid {{ p.tagBorda }};border-radius:2px;background:{{ p.tagBg }};color:{{ p.tagCor }};font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">{{ p.tag }}</span></div></sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+  <sc-if value="{{ pedProf }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+      <form onSubmit="{{ enviarPed }}" style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:26px">Pedir aula extra</h2><span style="font-size:14px;color:var(--texto-suave);text-wrap:pretty">A escola analisa o pedido. A aula só aparece para os alunos depois de aprovada.</span></div>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Disciplina</span><select value="{{ pF.disc }}" onChange="{{ setPDisc }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="">Escolha</option><sc-for list="{{ optMinhas }}" as="o" hint-placeholder-count="2"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label style="flex:1 1 150px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Data</span><input type="date" value="{{ pF.data }}" onChange="{{ setPData }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label>
+          <label style="flex:1 1 100px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Início</span><input type="time" value="{{ pF.ini }}" onChange="{{ setPIni }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label>
+          <label style="flex:1 1 100px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Fim</span><input type="time" value="{{ pF.fim }}" onChange="{{ setPFim }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Sala</span><select value="{{ pF.sala }}" onChange="{{ setPSala }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="">Escolha</option><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Motivo</span><textarea rows="2" value="{{ pF.motivo }}" onChange="{{ setPMotivo }}" placeholder="Revisão, reposição, atividade prática…" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></textarea></label>
+        <sc-if value="{{ pCkVis }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:{{ pCkCor }};text-wrap:pretty">{{ pCk }}</span></sc-if>
+        <sc-if value="{{ pMsgVis }}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size:14px;font-weight:500;color:{{ pMsgCor }};text-wrap:pretty">{{ pMsg }}</span></sc-if>
+        <button type="submit" disabled="{{ pEnvOff }}" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;opacity:{{ pEnvO }}">Enviar para análise</button>
+      </form>
+      <section style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+        <h2 style="margin:0;padding:14px 16px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:22px">Seus pedidos</h2>
+        <sc-for list="{{ meusLista }}" as="p" hint-placeholder-count="1">
+          <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;border-top:1px solid var(--borda-fraca)">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px"><span style="font-weight:500">{{ p.nome }}</span><span style="display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid {{ p.tagBorda }};border-radius:2px;background:{{ p.tagBg }};color:{{ p.tagCor }};font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">{{ p.tag }}</span></div>
+            <span style="font-size:14px;font-variant-numeric:tabular-nums">{{ p.quando }} · {{ p.sala }}</span>
+            <sc-if value="{{ p.temResp }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--texto-suave);text-wrap:pretty">{{ p.resposta }}</span></sc-if>
+            <sc-if value="{{ p.ehSug }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--texto-suave)">{{ p.original }}</span><div style="display:flex;gap:8px"><button type="button" onClick="{{ p.aceitar }}" style="min-height:36px;padding:0 12px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer">Aceitar sugestão</button><button type="button" onClick="{{ p.recusar }}" style="min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;cursor:pointer">Recusar</button></div></sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+  </sc-if>
+</sc-if>
+</div>
+<sc-if value="{{ painelVis }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ fecharPainel }}" style="position:{{ pPos }};left:0;right:0;top:{{ pTop }};height:{{ pH }};z-index:40;background:var(--texto);opacity:.18"></div>
+  <aside role="dialog" aria-modal="true" aria-label="{{ painelTitulo }}" style="position:{{ pPos }};z-index:41;top:{{ pTop }};right:0;height:{{ pH }};width:min(460px,100%);display:flex;flex-direction:column;background:var(--superficie);border-left:1px solid var(--borda-fraca)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid var(--borda-fraca)">
+      <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ painelTitulo }}</span>
+      <button type="button" aria-label="Fechar (Esc)" onClick="{{ fecharPainel }}" style="width:40px;height:40px;display:grid;place-items:center;padding:0;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--superficie);cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div style="flex:1;overflow:auto;padding:24px 20px 32px;display:flex;flex-direction:column;gap:20px">
+      <sc-if value="{{ pAula }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ pa.nome }}</span><span style="font-size:14px;color:var(--texto-suave)">{{ pa.sub }}</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--borda);border-radius:2px;background:var(--fundo)"><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ pa.quando }}</span><span style="font-size:14px;color:var(--texto-suave)">{{ pa.status }}</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;justify-content:space-between;font-size:14px"><span style="color:var(--texto-suave)">Carga horária</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ pa.cargaTxt }}</span></span><span style="height:4px;background:var(--borda-fraca);overflow:hidden"><span style="display:block;height:100%;background:var(--texto);transform:{{ pa.bar }};transform-origin:0 50%"></span></span></div>
+        <sc-if value="{{ paTemCh }}" hint-placeholder-val="{{ false }}"><div role="alert" style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--aviso);border-radius:2px;background:var(--aviso-suave);color:var(--aviso);font-size:14px"><span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Choque</span><sc-for list="{{ paChoques }}" as="c" hint-placeholder-count="1"><span style="text-wrap:pretty">{{ c.t }}</span></sc-for></div></sc-if>
+        <sc-if value="{{ paTemProx }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Próximos no calendário</span><sc-for list="{{ paProx }}" as="e" hint-placeholder-count="1"><button type="button" onClick="{{ e.abrir }}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--borda-fraca);border-radius:2px;background:var(--fundo);text-align:left;cursor:pointer" style-hover="border-color:var(--texto)"><span style="flex:none;display:inline-grid;place-items:center;min-width:26px;height:20px;padding:0 3px;border:1px solid {{ e.bBorda }};background:{{ e.bBg }};color:{{ e.bCor }};font-size:10px;font-weight:700">{{ e.ab }}</span><span style="flex:1;min-width:0;font-weight:500">{{ e.titulo }}</span><span style="font-size:13px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ e.datas }}</span></button></sc-for></div></sc-if>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-if value="{{ paEditarVis }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ paEditar }}" style="min-height:44px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:15px;font-weight:500;cursor:pointer">Editar disciplina</button></sc-if>
+          <sc-if value="{{ paPedVis }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ paIrPed }}" style="min-height:44px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Analisar pedido</button></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ pEv }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px"><span style="flex:none;display:inline-grid;place-items:center;min-width:28px;height:22px;padding:0 4px;border:1px solid {{ pe.bBorda }};background:{{ pe.bBg }};color:{{ pe.bCor }};font-size:11px;font-weight:700">{{ pe.ab }}</span><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ pe.tipoTxt }}</span></div>
+        <span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:30px;line-height:1.1;text-wrap:balance">{{ pe.titulo }}</span>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:15px"><span style="font-weight:500">{{ pe.quando }}</span><span style="color:var(--texto-suave)">Para: {{ pe.quem }}</span><sc-if value="{{ pe.temDisc }}" hint-placeholder-val="{{ false }}"><span style="color:var(--texto-suave)">Disciplina: {{ pe.disc }}</span></sc-if></div>
+        <sc-if value="{{ pe.temDesc }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding-top:12px;border-top:1px solid var(--borda-fraca);text-wrap:pretty">{{ pe.desc }}</p></sc-if>
+        <sc-if value="{{ peAcoes }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px"><button type="button" onClick="{{ peEditar }}" style="flex:1;min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Editar</button><button type="button" onClick="{{ peExcluir }}" style="min-height:44px;padding:0 16px;border:1px solid var(--aviso);border-radius:2px;background:var(--superficie);color:var(--aviso);font-size:15px;cursor:pointer">Excluir</button></div></sc-if>
+      </sc-if>
+      <sc-if value="{{ pEvForm }}" hint-placeholder-val="{{ false }}">
+        <form onSubmit="{{ salvarEvento }}" style="display:flex;flex-direction:column;gap:14px">
+          <span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px">{{ efTitulo }}</span>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Tipo</span><select value="{{ ef.tipo }}" onChange="{{ setETipo }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><sc-for list="{{ optTipos }}" as="o" hint-placeholder-count="8"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Título</span><input value="{{ ef.titulo }}" onChange="{{ setETitulo }}" placeholder="P2 de Python" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px"><label style="flex:1 1 150px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Data</span><input type="date" value="{{ ef.data }}" onChange="{{ setEData }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label><label style="flex:1 1 150px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Até (opcional)</span><input type="date" value="{{ ef.fim }}" onChange="{{ setEFim }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px"><label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Início (opcional)</span><input type="time" value="{{ ef.hi }}" onChange="{{ setEHi }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label><label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Fim</span><input type="time" value="{{ ef.hf }}" onChange="{{ setEHf }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Para quem</span><div role="radiogroup" style="display:inline-flex;align-self:flex-start;padding:3px;gap:2px;border:1px solid var(--borda);border-radius:2px"><sc-for list="{{ quemOps }}" as="o" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.ir }}" style="min-height:36px;padding:0 12px;border:0;border-radius:2px;background:{{ o.bg }};color:{{ o.cor }};font-size:14px;font-weight:500;cursor:pointer">{{ o.label }}</button></sc-for></div><sc-if value="{{ turmasVis }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ turmasOps }}" as="o" hint-placeholder-count="3"><button type="button" aria-pressed="{{ o.on }}" onClick="{{ o.ir }}" style="min-height:36px;padding:0 12px;border:1px solid var(--texto);border-radius:2px;background:{{ o.bg }};color:{{ o.cor }};font-size:14px;font-weight:500;cursor:pointer">{{ o.label }}</button></sc-for></div></sc-if><span style="font-size:13px;color:var(--texto-suave)">O aluno só vê o evento se for para todas as turmas ou para a turma dele.</span></div>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Disciplina (opcional)</span><select value="{{ ef.disc }}" onChange="{{ setEDisc }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="">Nenhuma</option><sc-for list="{{ optDiscE }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Descrição</span><textarea rows="3" value="{{ ef.desc }}" onChange="{{ setEDesc }}" style="width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></textarea></label>
+          <span role="alert" style="min-height:20px;font-size:14px;color:var(--aviso)">{{ eErro }}</span>
+          <button type="submit" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Publicar no calendário</button>
+        </form>
+      </sc-if>
+      <sc-if value="{{ pDisc }}" hint-placeholder-val="{{ false }}">
+        <form onSubmit="{{ salvarDisc }}" style="display:flex;flex-direction:column;gap:14px">
+          <span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ dfTitulo }}</span>
+          <sc-if value="{{ dfTemCarga }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--texto-suave)">{{ dfCarga }}</span></sc-if>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Nome</span><input value="{{ df.nome }}" onChange="{{ setDNome }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Turma</span><select value="{{ df.turma }}" onChange="{{ setDTurma }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><sc-for list="{{ optTurmas }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+            <label style="flex:1 1 100px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Carga (h)</span><input inputMode="numeric" value="{{ df.carga }}" onChange="{{ setDCarga }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"></label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Professor</span><select value="{{ df.prof }}" onChange="{{ setDProf }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="">Sem professor</option><sc-for list="{{ optProfs }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+          <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Sala padrão</span><select value="{{ df.sala }}" onChange="{{ setDSala }}" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></label>
+          <div role="group" aria-label="Grade semanal" style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Grade semanal</span>
+            <div style="display:flex;flex-direction:column;margin:0 -8px">
+              <sc-for list="{{ dfLinhas }}" as="l" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:6px;padding:10px 8px;border-top:1px solid var(--borda-fraca)">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:none;width:20px;font-size:13px;color:var(--texto-suave)">{{ l.n }}</span><select aria-label="Dia" value="{{ l.dia }}" onChange="{{ l.setDia }}" style="flex:1;min-width:0;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option></select><button type="button" aria-label="{{ l.remLabel }}" onClick="{{ l.remover }}" style="flex:none;width:44px;height:44px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--texto-suave);cursor:pointer" style-hover="border-color:var(--aviso);color:var(--aviso)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-left:28px"><input type="time" aria-label="Início" value="{{ l.ini }}" onChange="{{ l.setIni }}" style="flex:1 1 110px;min-height:44px;padding:0 10px;border:1px solid {{ l.borda }};border-radius:2px;background:var(--superficie);font-size:15px"><span aria-hidden="true" style="color:var(--texto-suave)">–</span><input type="time" aria-label="Fim" value="{{ l.fim }}" onChange="{{ l.setFim }}" style="flex:1 1 110px;min-height:44px;padding:0 10px;border:1px solid {{ l.borda }};border-radius:2px;background:var(--superficie);font-size:15px"><select aria-label="Sala" value="{{ l.sala }}" onChange="{{ l.setSala }}" style="flex:1 1 150px;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><sc-for list="{{ optSalas }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+                  <span style="padding-left:28px;font-size:13px;color:{{ l.notaCor }};text-wrap:pretty">{{ l.nota }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ dfSemLinhas }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--texto-suave)">Sem horários, a disciplina não aparece no quadro.</span></sc-if>
+            <button type="button" onClick="{{ addLinhaD }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px dashed var(--borda);border-radius:2px;background:transparent;font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Adicionar horário</button>
+          </div>
+          <span role="alert" style="min-height:20px;font-size:14px;color:var(--aviso);text-wrap:pretty">{{ dErro }}</span>
+          <sc-if value="{{ temDOk }}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size:14px;font-weight:500">{{ dOk }}</span></sc-if>
+          <button type="submit" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer">Salvar disciplina</button>
+        </form>
+      </sc-if>
+    </div>
+  </aside>
+</sc-if>
+<div ref="{{ dicaRef }}" aria-hidden="true" style="position:absolute;left:0;top:0;z-index:60;padding:4px 8px;border-radius:2px;background:var(--texto);color:var(--fundo);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;pointer-events:none;opacity:0;white-space:nowrap"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;perfil&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Escola&quot;,&quot;Professor&quot;,&quot;Aluno&quot;],&quot;default&quot;:&quot;Escola&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;relogio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Ao vivo&quot;,&quot;Terça 08:40&quot;,&quot;Quarta 10:20&quot;,&quot;Quinta 14:00&quot;],&quot;default&quot;:&quot;Ao vivo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;embutido&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Protótipo&quot;}}">
+const pD = s => { const p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); };
+const sD = d => d.toISOString().slice(0, 10);
+const addD = (s, n) => sD(new Date(pD(s).getTime() + n * 864e5));
+const dsem = s => pD(s).getUTCDay() || 7;
+const segDe = s => addD(s, 1 - dsem(s));
+const ddmm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+const pad = n => String(n).padStart(2, '0');
+const hm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+const mh = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+const fmtH = h => (Math.round(h * 10) / 10).toString().replace('.', ',') + ' h';
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const DIA_C = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const DIA_L = ['', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'];
+const SEM = { nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11' };
+const ANO = { inicio: '2026-02-02', fim: '2026-12-11' };
+const SLOTS = [['08:00', '09:40'], ['10:00', '11:40'], ['13:30', '15:10'], ['15:30', '17:10']];
+const JAN = [480, 1030], G0 = 470, G1 = 1040, PX = 1.05;
+const PROF_DEMO = 1, TURMA_DEMO = '1A';
+const TURMAS = [{ id: '1A', nome: '1º A' }, { id: '2A', nome: '2º A' }, { id: '3A', nome: '3º A' }];
+const SALAS = [{ id: '101', nome: 'Sala 101' }, { id: '102', nome: 'Sala 102' }, { id: 'lab', nome: 'Lab. de Informática' }, { id: 'aud', nome: 'Auditório' }];
+const nomeTurma = id => (TURMAS.find(t => t.id === id) || {}).nome || id;
+const nomeSala = id => (SALAS.find(t => t.id === id) || {}).nome || id || '—';
+const PROFS0 = [
+  { id: 1, nome: 'Carlos Mendes', ocupados: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '12:00', motivo: 'Outra escola' }] },
+  { id: 2, nome: 'Marta Ribeiro', ocupados: [] },
+  { id: 3, nome: 'Paulo Antunes', ocupados: [{ dia_semana: 5, hora_inicio: '13:30', hora_fim: '17:10', motivo: 'Mestrado' }] },
+  { id: 4, nome: 'Juliana Prado', ocupados: [] }
+];
+const gr = (dia, i, sala) => ({ dia_semana: dia, hora_inicio: SLOTS[i][0], hora_fim: SLOTS[i][1], sala });
+const DISC0 = [
+  { id: 1, nome: 'Python', sigla: 'PY', turma: '1A', prof: 1, sala: 'lab', carga: 60, grade: [gr(2, 0, 'lab'), gr(4, 0, 'lab')] },
+  { id: 2, nome: 'Banco de Dados', sigla: 'BD', turma: '2A', prof: 1, sala: 'lab', carga: 60, grade: [gr(3, 0, 'lab'), gr(4, 1, 'lab')] },
+  { id: 3, nome: 'Algoritmos', sigla: 'ALG', turma: '1A', prof: 2, sala: '101', carga: 60, grade: [gr(1, 0, '101'), gr(3, 1, '101')] },
+  { id: 4, nome: 'Matemática Discreta', sigla: 'MD', turma: '2A', prof: 2, sala: '102', carga: 60, grade: [gr(1, 1, '102'), gr(5, 0, '102')] },
+  { id: 5, nome: 'Redes', sigla: 'RED', turma: '3A', prof: 3, sala: 'lab', carga: 60, grade: [gr(2, 2, 'lab'), gr(4, 2, 'lab')] },
+  { id: 6, nome: 'Engenharia de Software', sigla: 'ES', turma: '3A', prof: 4, sala: '101', carga: 60, grade: [gr(1, 2, '101'), gr(3, 2, '101')] },
+  { id: 7, nome: 'Estatística', sigla: 'EST', turma: '1A', prof: 4, sala: '102', carga: 40, grade: [gr(2, 1, '102'), gr(5, 0, '102')] },
+  { id: 8, nome: 'Sistemas Operacionais', sigla: 'SO', turma: '3A', prof: 3, sala: 'lab', carga: 60, grade: [gr(3, 3, 'lab'), gr(5, 1, 'lab')] },
+  { id: 9, nome: 'Inglês Técnico', sigla: 'ING', turma: '2A', prof: 4, sala: '101', carga: 40, grade: [] }
+];
+const TIPOS = {
+  prova: { label: 'Prova', ab: 'PR', bg: 'var(--texto)', cor: 'var(--fundo)', borda: 'var(--texto)' },
+  entrega: { label: 'Entrega de trabalho', ab: 'ET', bg: 'var(--superficie)', cor: 'var(--texto)', borda: 'var(--texto)' },
+  evento: { label: 'Evento', ab: 'EV', bg: 'var(--sunken)', cor: 'var(--texto)', borda: 'var(--borda)' },
+  gincana: { label: 'Gincana', ab: 'GI', bg: 'var(--sunken)', cor: 'var(--texto)', borda: 'var(--borda)' },
+  reuniao: { label: 'Reunião de pais', ab: 'RP', bg: 'var(--superficie)', cor: 'var(--texto)', borda: 'var(--borda)' },
+  conselho: { label: 'Conselho de classe', ab: 'CC', bg: 'var(--superficie)', cor: 'var(--texto)', borda: 'var(--borda)' },
+  feriado: { label: 'Feriado / recesso', ab: 'FE', bg: 'repeating-linear-gradient(135deg,var(--superficie) 0 3px,var(--borda) 3px 4px)', cor: 'var(--texto)', borda: 'var(--borda)' },
+  bimestre: { label: 'Bimestre', ab: 'BI', bg: 'var(--fundo)', cor: 'var(--texto)', borda: 'var(--texto)' }
+};
+const HACH = 'repeating-linear-gradient(135deg,transparent 0 6px,var(--borda-fraca) 6px 7px)';
+let EID = 100;
+const ev = (tipo, titulo, data, o) => Object.assign({ id: EID++, tipo, titulo, data, fim: '', hi: '', hf: '', turmas: 'todas', disc: null, desc: '' }, o || {});
+const EV0 = [
+  ev('bimestre', 'Início do 1º bimestre', '2026-02-02'), ev('bimestre', 'Fim do 1º bimestre', '2026-04-17'), ev('bimestre', 'Início do 2º bimestre', '2026-04-20'), ev('bimestre', 'Fim do 2º bimestre', '2026-07-03'),
+  ev('bimestre', 'Início do 3º bimestre', '2026-08-03'), ev('bimestre', 'Fim do 3º bimestre', '2026-10-02'), ev('bimestre', 'Início do 4º bimestre', '2026-10-05'), ev('bimestre', 'Fim do ano letivo', '2026-12-11'),
+  ev('feriado', 'Carnaval', '2026-02-16', { fim: '2026-02-18' }), ev('feriado', 'Sexta-feira Santa', '2026-04-03'), ev('feriado', 'Tiradentes', '2026-04-21'), ev('feriado', 'Dia do Trabalho', '2026-05-01'),
+  ev('feriado', 'Corpus Christi', '2026-06-04'), ev('feriado', 'Recesso escolar', '2026-07-06', { fim: '2026-07-31' }), ev('feriado', 'Independência', '2026-09-07'), ev('feriado', 'Nossa Senhora Aparecida', '2026-10-12'),
+  ev('feriado', 'Finados', '2026-11-02'), ev('feriado', 'Consciência Negra', '2026-11-20'),
+  ev('prova', 'P2 de Python', '2026-10-13', { hi: '08:00', hf: '09:40', turmas: ['1A'], disc: 1, desc: 'Conteúdo: funções, listas e dicionários.' }),
+  ev('prova', 'P2 de Algoritmos', '2026-10-14', { hi: '10:00', hf: '11:40', turmas: ['1A'], disc: 3 }),
+  ev('prova', 'P2 de Banco de Dados', '2026-10-21', { hi: '08:00', hf: '09:40', turmas: ['2A'], disc: 2 }),
+  ev('prova', 'P2 de Redes', '2026-10-20', { hi: '13:30', hf: '15:10', turmas: ['3A'], disc: 5 }),
+  ev('prova', 'Semana de provas finais', '2026-11-30', { fim: '2026-12-04', desc: 'Calendário por turma publicado até 20/11.' }),
+  ev('entrega', 'Projeto de Engenharia de Software', '2026-10-09', { turmas: ['3A'], disc: 6, desc: 'Entrega do protótipo e do relatório.' }),
+  ev('entrega', 'Lista 3 de Matemática Discreta', '2026-10-27', { turmas: ['2A'], disc: 4 }),
+  ev('gincana', 'Gincana de primavera', '2026-10-24', { hi: '08:00', hf: '12:00', desc: 'Equipes por turma. Arrecadação de alimentos.' }),
+  ev('evento', 'Feira de ciências', '2026-10-16', { hi: '13:30', hf: '17:10' }), ev('evento', 'Mostra de projetos', '2026-09-19'),
+  ev('evento', 'Formatura', '2026-12-12', { hi: '19:00', hf: '22:00', turmas: ['3A'] }),
+  ev('reuniao', 'Reunião de pais do 3º bimestre', '2026-10-17', { hi: '09:00', hf: '11:00' }),
+  ev('conselho', 'Conselho de classe do 3º bimestre', '2026-10-06', { hi: '17:30', hf: '19:00' })
+];
+const PED0 = [
+  { id: 1, prof: 1, disc: 1, data: '2026-10-09', ini: '10:00', fim: '11:40', sala: 'lab', motivo: 'Revisão para a P2 de Python.', status: 'pendente', resposta: '', sug: null },
+  { id: 2, prof: 2, disc: 3, data: '2026-10-08', ini: '13:30', fim: '15:10', sala: '101', motivo: 'Reposição da aula do feriado de 12/10.', status: 'pendente', resposta: '', sug: null },
+  { id: 3, prof: 4, disc: 6, data: '2026-09-30', ini: '15:30', fim: '17:10', sala: '101', motivo: 'Apresentação dos projetos.', status: 'aprovada', resposta: '', sug: null },
+  { id: 4, prof: 3, disc: 5, data: '2026-09-25', ini: '08:00', fim: '09:40', sala: 'aud', motivo: 'Palestra convidada.', status: 'recusada', resposta: 'O auditório está reservado para a Mostra nesse dia.', sug: null }
+];
+
+class Component extends DCLogic {
+  state = { aba: 'quadro', eixo: null, semana: null, fTurma: '', fProf: '', fDisc: '', fSala: '', verOcup: true, soChoques: false, diaM: null,
+    discs: DISC0, profs: PROFS0, eventos: EV0, pedidos: PED0, remarc: [], pend: null, msg: null, tick: 0, largura: 1200,
+    iaAberto: false, iaMsgs: [], iaTexto: '', iaEnv: false, iaProp: null, iaFeito: null,
+    vis: 'mes', ref: null, tiposOff: {}, aTurma: '', passados: false,
+    painel: null, eF: null, eErro: '', dF: null, dErro: '', dOk: '',
+    pF: { disc: '', data: '', ini: '', fim: '', sala: '', motivo: '' }, pMsg: null,
+    recusando: null, recMotivo: '', recErro: '', sugerindo: null, sug: { data: '', ini: '', fim: '', sala: '' }, sugErro: '' };
+  raiz = React.createRef(); dicaRef = React.createRef();
+  componentDidMount() {
+    this.rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.iv = setInterval(() => this.setState(s => ({ tick: s.tick + 1 })), 20000);
+    this.ro = new ResizeObserver(es => { const w = es[0].contentRect.width; if (Math.abs(w - this.state.largura) > 4) this.setState({ largura: w }); });
+    if (this.raiz.current) this.ro.observe(this.raiz.current);
+    this.onKey = e => { if (e.key !== 'Escape') return; if (this.state.painel) this.setState({ painel: null }); else if (this.state.pend) this.setState({ pend: null }); };
+    document.addEventListener('keydown', this.onKey);
+  }
+  componentWillUnmount() { if (this._sp) this._sp.style.overflow = this._spOv || ''; clearInterval(this.iv); clearTimeout(this.iaT); this.ro && this.ro.disconnect(); document.removeEventListener('keydown', this.onKey); }
+  scrollPai() { let p = this.raiz.current && this.raiz.current.parentElement; while (p && !(/auto|scroll/.test(getComputedStyle(p).overflowY) && p.scrollHeight > p.clientHeight)) p = p.parentElement; return p; }
+  geoPainel() {
+    if (!this.props.embutido) return null;
+    const sp = this.scrollPai(), r = this.raiz.current; if (!sp || !r) return null;
+    if (!this._sp) { this._spOv = sp.style.overflow; sp.style.overflow = 'hidden'; this._sp = sp; }
+    return { top: Math.max(0, sp.getBoundingClientRect().top - r.getBoundingClientRect().top), h: sp.clientHeight };
+  }
+  setState(u, cb) {
+    const tem = this.state && this.state.painel;
+    return super.setState(prev => {
+      const o = typeof u === 'function' ? u(prev) : u;
+      if (!o || !('painel' in o)) return o;
+      if (o.painel && !prev.painel) { const g = this.geoPainel(); return g ? Object.assign({}, o, { pGeo: g }) : o; }
+      if (!o.painel && this._sp) { this._sp.style.overflow = this._spOv || ''; this._sp = null; }
+      return o;
+    }, cb);
+  }
+  componentDidUpdate(pp) { if (pp.perfil !== this.props.perfil) this.setState({ aba: 'quadro', eixo: null, fTurma: '', fProf: '', fDisc: '', fSala: '', painel: null, pend: null, diaM: null }); }
+  perfil() { return { Escola: 'escola', Professor: 'prof', Aluno: 'aluno' }[this.props.perfil ?? 'Escola'] || 'escola'; }
+  agora() {
+    const S = { 'Terça 08:40': '2026-10-06T08:40', 'Quarta 10:20': '2026-10-07T10:20', 'Quinta 14:00': '2026-10-08T14:00' }[this.props.relogio ?? 'Ao vivo'];
+    const d = S ? new Date(S) : new Date();
+    return { data: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()), min: d.getHours() * 60 + d.getMinutes(), vivo: !S };
+  }
+  ferMap(evs) { const m = {}; evs.filter(e => e.tipo === 'feriado').forEach(e => { for (let d = e.data; d <= (e.fim || e.data); d = addD(d, 1)) m[d] = e.titulo; }); return m; }
+  escopo(st, P) { return P === 'prof' ? st.discs.filter(d => d.prof === PROF_DEMO) : P === 'aluno' ? st.discs.filter(d => d.turma === TURMA_DEMO) : st.discs; }
+  profNome(id, profs) { return ((profs || this.state.profs).find(p => p.id === id) || {}).nome || 'Sem professor'; }
+  instSemana(W, st, fer, P) {
+    const r = [], fim = addD(W, 6);
+    st.discs.forEach(d => (d.grade || []).forEach((x, idx) => {
+      const data = addD(W, x.dia_semana - 1); if (data < SEM.inicio || data > SEM.fim) return;
+      const rm = st.remarc.find(q => q.disc === d.id && q.idx === idx && q.de === data);
+      const b = { key: d.id + '-' + idx + '-' + data, tkey: d.id + '-' + idx, disc: d, idx, dataOrig: data, tipo: 'grade', sala: x.sala || d.sala };
+      r.push(Object.assign(b, rm ? { data: rm.data, ini: rm.ini, fim: rm.fim, remarcada: true } : { data, ini: x.hora_inicio, fim: x.hora_fim }));
+    }));
+    st.pedidos.forEach(p => {
+      if (!['aprovada', 'pendente', 'sugestao'].includes(p.status) || (P === 'aluno' && p.status !== 'aprovada')) return;
+      const q = p.status === 'sugestao' ? p.sug : p; if (q.data < W || q.data > fim) return;
+      const d = st.discs.find(x => x.id === p.disc); if (!d) return;
+      r.push({ key: 'x' + p.id, tkey: 'x' + p.id, disc: d, idx: null, tipo: 'extra', pedido: p, pendente: p.status !== 'aprovada', data: q.data, dataOrig: q.data, ini: q.ini, fim: q.fim, sala: q.sala || d.sala });
+    });
+    r.forEach(i => { i.feriado = fer[i.data] || ''; });
+    return r;
+  }
+  choques(discs, profs) {
+    const it = [], M = {}, alvo = new Set(); let n = 0;
+    discs.forEach(d => (d.grade || []).forEach((x, idx) => it.push({ d, idx, k: d.id + '-' + idx, dia: x.dia_semana, a: hm(x.hora_inicio), b: hm(x.hora_fim), ini: x.hora_inicio, fim: x.hora_fim, sala: x.sala || d.sala })));
+    const add = (i, t) => (M[i.k] = M[i.k] || []).push(t), fx = i => DIA_L[i.dia] + ', ' + i.ini + '–' + i.fim;
+    it.forEach(i => { const p = profs.find(q => q.id === i.d.prof); ((p && p.ocupados) || []).forEach(o => { if (o.dia_semana === i.dia && i.a < hm(o.hora_fim) && hm(o.hora_inicio) < i.b) { n++; alvo.add(i.k); add(i, 'Horário ocupado de ' + p.nome + (o.motivo ? ': ' + o.motivo : '') + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'); } }); });
+    for (let x = 0; x < it.length; x++) for (let y = x + 1; y < it.length; y++) {
+      const A = it[x], B = it[y]; if (A.d.id === B.d.id || A.dia !== B.dia || !(A.a < B.b && B.a < A.b)) continue;
+      const rs = [];
+      if (A.d.prof && A.d.prof === B.d.prof) rs.push(['prof', this.profNome(A.d.prof, profs)]);
+      if (A.d.turma === B.d.turma) rs.push(['turma', nomeTurma(A.d.turma)]);
+      if (A.sala === B.sala) rs.push(['sala', nomeSala(A.sala)]);
+      rs.forEach(([t, nm]) => { n++; const m = o => t === 'prof' ? nm + ' também dá ' + o.d.nome + ' neste horário (' + fx(o) + ').' : t === 'turma' ? nm + ' também tem ' + o.d.nome + ' neste horário (' + fx(o) + ').' : nm + ' também recebe ' + o.d.nome + ' · ' + nomeTurma(o.d.turma) + ' neste horário (' + fx(o) + ').'; add(A, m(B)); add(B, m(A)); });
+      if (rs.length && !alvo.has(A.k) && !alvo.has(B.k)) alvo.add(B.k);
+    }
+    return { M, alvos: [...alvo], n };
+  }
+  basico(c, profs) {
+    if (!c.ini || !c.fim) return 'Preencha início e fim.';
+    const a = hm(c.ini), b = hm(c.fim);
+    if (!(a < b)) return 'O fim precisa ser depois do início.';
+    if (a < JAN[0] || b > JAN[1]) return 'Fora da janela da escola (08:00 às 17:10).';
+    if (c.dia > 5) return 'Escolha um dia de segunda a sexta.';
+    const p = profs.find(q => q.id === c.prof);
+    for (const o of (p && p.ocupados) || []) if (o.dia_semana === c.dia && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Choca com um horário ocupado de ' + p.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + (o.motivo ? ': ' + o.motivo : '') + ').';
+    return '';
+  }
+  motivo(c, d, sala, fx, profs) {
+    if (c.prof && d.prof === c.prof) return this.profNome(c.prof, profs) + ' já dá ' + d.nome + ' neste horário (' + fx + ').';
+    if (d.turma === c.turma) return nomeTurma(c.turma) + ' já tem ' + d.nome + ' neste horário (' + fx + ').';
+    if (sala === c.sala) return nomeSala(c.sala) + ' já está com ' + d.nome + ' · ' + nomeTurma(d.turma) + ' neste horário (' + fx + ').';
+    return '';
+  }
+  checarSlot(c, discs, profs) {
+    const e = this.basico(c, profs); if (e) return e;
+    const a = hm(c.ini), b = hm(c.fim), ig = c.ignorar || [];
+    for (const d of discs) { const g = d.grade || []; for (let i = 0; i < g.length; i++) { const x = g[i]; if (ig.includes(d.id + '-' + i) || x.dia_semana !== c.dia || !(a < hm(x.hora_fim) && hm(x.hora_inicio) < b)) continue; const r = this.motivo(c, d, x.sala || d.sala, DIA_L[x.dia_semana] + ', ' + x.hora_inicio + '–' + x.hora_fim, profs); if (r) return r; } }
+    return '';
+  }
+  checarData(c, st) {
+    if (!c.data) return 'Escolha a data.';
+    if (c.data < SEM.inicio || c.data > SEM.fim) return 'Fora do semestre (03/08 a 11/12).';
+    const fer = this.ferMap(st.eventos); if (fer[c.data]) return 'Dia sem aula: ' + fer[c.data] + '.';
+    const e = this.basico(Object.assign({}, c, { dia: dsem(c.data) }), st.profs); if (e) return e;
+    const a = hm(c.ini), b = hm(c.fim), ig = c.ignorar || [];
+    const ins = this.instSemana(segDe(c.data), st, fer, 'escola').filter(i => i.data === c.data && !i.pendente && !ig.includes(i.key));
+    for (const i of ins) if (hm(i.ini) < b && a < hm(i.fim)) { const r = this.motivo(c, i.disc, i.sala, DIA_L[dsem(i.data)] + ' ' + ddmm(i.data) + ', ' + i.ini + '–' + i.fim, st.profs); if (r) return r; }
+    return '';
+  }
+  carga(d, st, fer, hoje, nm) {
+    let f = 0, t = 0;
+    for (let w = segDe(SEM.inicio); w <= SEM.fim; w = addD(w, 7)) (d.grade || []).forEach(x => { const dt = addD(w, x.dia_semana - 1); if (dt < SEM.inicio || dt > SEM.fim || fer[dt]) return; const du = hm(x.hora_fim) - hm(x.hora_inicio); t += du; if (dt < hoje || (dt === hoje && hm(x.hora_fim) <= nm)) f += du; });
+    st.pedidos.forEach(p => { if (p.disc !== d.id || p.status !== 'aprovada') return; const du = hm(p.fim) - hm(p.ini); t += du; if (p.data < hoje || (p.data === hoje && hm(p.fim) <= nm)) f += du; });
+    return { feito: f / 60, total: t / 60 };
+  }
+  evVisiveis(st, P) {
+    const minhas = P === 'prof' ? [...new Set(st.discs.filter(d => d.prof === PROF_DEMO).map(d => d.turma))] : P === 'aluno' ? [TURMA_DEMO] : null;
+    return st.eventos.filter(e => !minhas || e.turmas === 'todas' || e.turmas.some(t => minhas.includes(t)));
+  }
+  podeArrastar(i) { return this.perfil() === 'escola' && i.tipo === 'grade' && !i.feriado && !this.state.pend; }
+  abrirAula(i) { this.setState({ painel: { tipo: 'aula', key: i.key, tkey: i.tkey, disc: i.disc.id, data: i.data, ini: i.ini, fim: i.fim, sala: i.sala, itipo: i.tipo, pendente: !!i.pendente, remarcada: !!i.remarcada, feriado: i.feriado, pedido: i.pedido ? i.pedido.id : null } }); }
+  blocoDown(e, i) {
+    if (e.button !== 0) return;
+    const el = e.currentTarget, x0 = e.clientX, y0 = e.clientY, pode = this.podeArrastar(i) && this.state.eixo !== 'prof';
+    const colW = el.parentElement.getBoundingClientRect().width, cols = this.colDias || [1, 2, 3, 4, 5], dia0 = dsem(i.data), ci = cols.indexOf(dia0);
+    const rr = this.raiz.current.getBoundingClientRect(), dur = hm(i.fim) - hm(i.ini);
+    let mov = false, alvo = null;
+    const move = ev => {
+      const dx = ev.clientX - x0, dy = ev.clientY - y0;
+      if (!mov && pode && Math.hypot(dx, dy) > 5) { mov = true; try { el.setPointerCapture(e.pointerId); } catch (er) {} el.style.zIndex = 8; el.style.boxShadow = '0 8px 20px rgba(0,0,0,.14)'; el.style.cursor = 'grabbing'; }
+      if (!mov) return; ev.preventDefault();
+      const ni = Math.max(0, Math.min(cols.length - 1, ci + Math.round(dx / colW)));
+      const s0 = Math.max(JAN[0], Math.min(JAN[1] - dur, Math.round((hm(i.ini) + dy / PX) / 10) * 10));
+      alvo = { dia: cols[ni], ini: mh(s0), fim: mh(s0 + dur) };
+      el.style.transform = 'translate(' + ((ni - ci) * colW) + 'px,' + ((s0 - hm(i.ini)) * PX) + 'px)';
+      const t = this.dicaRef.current; if (t) { t.textContent = DIA_C[alvo.dia] + ' ' + alvo.ini + '–' + alvo.fim; t.style.opacity = '1'; t.style.transform = 'translate(' + (ev.clientX - rr.left + 14) + 'px,' + (ev.clientY - rr.top + 14) + 'px)'; }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      if (this.dicaRef.current) this.dicaRef.current.style.opacity = '0';
+      if (!mov) return this.abrirAula(i);
+      el.style.transform = ''; el.style.zIndex = ''; el.style.boxShadow = ''; el.style.cursor = '';
+      if (alvo && !(alvo.dia === dia0 && alvo.ini === i.ini)) this.propor(i, alvo);
+    };
+    window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  }
+  propor(i, alvo) {
+    const st = this.state, d = i.disc, novaData = addD(segDe(i.data), alvo.dia - 1);
+    const c = { prof: d.prof, turma: d.turma, sala: i.sala, dia: alvo.dia, ini: alvo.ini, fim: alvo.fim };
+    const erroSemana = this.checarData(Object.assign({ data: novaData, ignorar: [i.key] }, c), st);
+    const erroGrade = i.remarcada ? 'Esta aula já foi remarcada nesta semana.' : this.checarSlot(Object.assign({ ignorar: [i.tkey] }, c), st.discs, st.profs);
+    this.setState({ pend: { inst: i, alvo, novaData, erroSemana, erroGrade }, msg: null });
+  }
+  confirmar(modo) {
+    const st = this.state, p = st.pend; if (!p) return;
+    const i = p.inst, d = i.disc, snap = { discs: st.discs, remarc: st.remarc }, txt = d.nome + ' · ' + nomeTurma(d.turma);
+    if (modo === 'semana') {
+      if (p.erroSemana) return;
+      this.setState(s => ({ remarc: s.remarc.filter(q => !(q.disc === d.id && q.idx === i.idx && q.de === i.dataOrig)).concat({ disc: d.id, idx: i.idx, de: i.dataOrig, data: p.novaData, ini: p.alvo.ini, fim: p.alvo.fim }), pend: null, msg: { t: txt + ' remarcada só nesta semana: ' + DIA_L[p.alvo.dia] + ' ' + ddmm(p.novaData) + ', ' + p.alvo.ini + '.', snap } }));
+    } else {
+      if (p.erroGrade) return;
+      this.setState(s => ({ discs: s.discs.map(x => x.id !== d.id ? x : Object.assign({}, x, { grade: x.grade.map((g, k) => k !== i.idx ? g : Object.assign({}, g, { dia_semana: p.alvo.dia, hora_inicio: p.alvo.ini, hora_fim: p.alvo.fim })) })), pend: null, msg: { t: txt + ' agora fica na grade às ' + DIA_L[p.alvo.dia] + 's, ' + p.alvo.ini + '–' + p.alvo.fim + ', até o fim do semestre.', snap } }));
+    }
+  }
+  statusProf(p, instHoje, hoje, nm, fer) {
+    const dia = dsem(hoje), its = instHoje.filter(i => i.disc.prof === p.id).sort((a, b) => hm(a.ini) - hm(b.ini));
+    const c = its.find(i => hm(i.ini) <= nm && nm < hm(i.fim));
+    if (c) return { tag: 'Em aula', forte: true, det: c.disc.nome + ' · ' + nomeTurma(c.disc.turma) + ' · ' + nomeSala(c.sala) + ' · até ' + c.fim, prog: (nm - hm(c.ini)) / (hm(c.fim) - hm(c.ini)) };
+    const o = (p.ocupados || []).find(x => x.dia_semana === dia && hm(x.hora_inicio) <= nm && nm < hm(x.hora_fim));
+    if (o) return { tag: 'Ocupado', hach: true, det: (o.motivo || 'Horário ocupado') + ' · até ' + o.hora_fim, prog: (nm - hm(o.hora_inicio)) / (hm(o.hora_fim) - hm(o.hora_inicio)) };
+    if (dia > 5) return { tag: 'Fim de semana', det: 'Sem aulas hoje.', prog: 0 };
+    if (fer[hoje]) return { tag: 'Feriado', det: fer[hoje] + '.', prog: 0 };
+    const nx = its.find(i => hm(i.ini) > nm);
+    return { tag: 'Livre', det: nx ? 'Próxima: ' + nx.disc.nome + ' · ' + nomeTurma(nx.disc.turma) + ' às ' + nx.ini + '.' : its.length ? 'Sem mais aulas hoje.' : 'Sem aulas hoje.', prog: 0 };
+  }
+  cartao(nome, s, on, ir) {
+    return { nome, tag: s.tag, det: s.det, prog: 'scaleX(' + Math.max(0, Math.min(1, s.prog || 0)).toFixed(3) + ')', on, ir,
+      borda: on || s.forte ? 'var(--texto)' : 'var(--borda-fraca)', bg: on ? 'var(--sunken)' : 'var(--fundo)',
+      tagBg: s.forte ? 'var(--texto)' : s.hach ? HACH : 'transparent', tagCor: s.forte ? 'var(--fundo)' : 'var(--texto)', tagBorda: s.forte ? 'var(--texto)' : 'var(--borda)' };
+  }
+  valsQuadro(st, P, now, fer) {
+    const hoje = now.data, nm = now.min, esc = P === 'escola', narrow = st.largura < 760;
+    const W = st.semana || segDe(hoje), eixo = esc ? (st.eixo || 'prof') : 'dias';
+    const ch = this.choques(st.discs, st.profs), ids = new Set(this.escopo(st, P).map(d => d.id));
+    const fil = i => ids.has(i.disc.id) && (!st.fTurma || i.disc.turma === st.fTurma) && (!st.fProf || String(i.disc.prof) === st.fProf) && (!st.fDisc || String(i.disc.id) === st.fDisc) && (!st.fSala || i.sala === st.fSala);
+    const inst = this.instSemana(W, st, fer, P).filter(fil), prev = [], apagar = new Set();
+    if (st.pend) { apagar.add(st.pend.inst.key); prev.push(Object.assign({}, st.pend.inst, { key: 'pv', data: st.pend.novaData, ini: st.pend.alvo.ini, fim: st.pend.alvo.fim, tipo: 'preview', feriado: '' })); }
+    if (st.iaProp && !st.iaFeito) st.iaProp.moves.forEach((m, n) => {
+      const d = st.discs.find(x => x.id === m.discId); if (!d) return;
+      if (m.idx != null && d.grade[m.idx]) apagar.add(d.id + '-' + m.idx + '-' + addD(W, d.grade[m.idx].dia_semana - 1));
+      const data = addD(W, m.dia - 1); if (data >= SEM.inicio && data <= SEM.fim) prev.push({ key: 'ia' + n, tkey: 'ia' + n, disc: d, idx: m.idx, tipo: 'proposta', data, ini: m.ini, fim: m.fim, sala: m.sala, feriado: fer[data] || '' });
+    });
+    const todos = inst.concat(prev);
+    const est = i => {
+      const passado = i.data < hoje || (i.data === hoje && hm(i.fim) <= nm), cur = i.data === hoje && hm(i.ini) <= nm && nm < hm(i.fim) && !i.feriado && !i.pendente && i.tipo !== 'preview' && i.tipo !== 'proposta';
+      const choque = i.tipo === 'grade' && !i.remarcada && ch.M[i.tkey];
+      let r = { borda: '1px solid var(--borda)', bg: 'var(--superficie)', op: 1, tag: '', tagCor: 'var(--texto)' };
+      if (i.tipo === 'preview') r = { borda: '2px dashed var(--texto)', bg: 'var(--superficie)', op: 1, tag: 'Nova posição', tagCor: 'var(--texto)' };
+      else if (i.tipo === 'proposta') r = { borda: '2px dashed var(--texto)', bg: 'var(--sunken)', op: 1, tag: 'Proposta', tagCor: 'var(--texto)' };
+      else if (i.feriado) r = { borda: '1px solid var(--borda-fraca)', bg: 'var(--fundo)', op: 0.45, tag: 'Feriado', tagCor: 'var(--texto-suave)' };
+      else if (i.pendente) r = { borda: '1px dashed var(--texto)', bg: 'var(--fundo)', op: 1, tag: i.pedido && i.pedido.status === 'sugestao' ? 'Extra · sugestão' : 'Extra · em análise', tagCor: 'var(--texto)' };
+      else if (choque && esc) r = { borda: '1px solid var(--aviso)', bg: 'var(--aviso-suave)', op: 1, tag: 'Choque', tagCor: 'var(--aviso)' };
+      else if (cur) r = { borda: '2px solid var(--texto)', bg: 'var(--sunken)', op: 1, tag: 'Agora', tagCor: 'var(--texto)' };
+      else if (i.tipo === 'extra') r.tag = 'Extra';
+      else if (i.remarcada) r.tag = 'Remarcada';
+      if (!cur && passado && i.tipo !== 'preview' && i.tipo !== 'proposta' && !r.tag) r.op = 0.62;
+      if (apagar.has(i.key)) r.op = 0.28;
+      if (st.soChoques && !choque && i.tipo !== 'preview') r.op = Math.min(r.op, 0.22);
+      return r;
+    };
+    const instHoje = this.instSemana(segDe(hoje), st, fer, 'escola').filter(i => i.data === hoje && !i.pendente && !i.feriado);
+    const dSel = st.diaM || (dsem(hoje) <= 5 ? dsem(hoje) : 1);
+    const colDias = narrow ? [dSel] : [1, 2, 3, 4, 5]; this.colDias = colDias;
+    const evs = this.evVisiveis(st, P).filter(e => e.tipo !== 'feriado' && e.tipo !== 'bimestre');
+    const evsDia = data => evs.filter(e => e.data <= data && data <= (e.fim || e.data));
+    const profsOc = esc ? (st.fProf ? st.profs.filter(p => String(p.id) === st.fProf) : st.verOcup ? st.profs : []) : P === 'prof' ? st.profs.filter(p => p.id === PROF_DEMO) : [];
+    const bloco = (i, modo) => {
+      const pode = this.podeArrastar(i) && modo === 'dias', e = est(i), d = i.disc, pn = this.profNome(d.prof, st.profs);
+      return Object.assign(e, { key: i.key, nome: d.nome, curto: d.sigla + ' ' + d.turma, l2: nomeTurma(d.turma) + ' · ' + nomeSala(i.sala), l3: (P === 'aluno' ? pn : pn.split(' ')[0]) + ' · ' + i.ini + '–' + i.fim, temTag: !!e.tag,
+        titulo: d.nome + ' · ' + nomeTurma(d.turma) + ' · ' + nomeSala(i.sala) + ' · ' + pn + ' · ' + i.ini + '–' + i.fim + (e.tag ? ' · ' + e.tag : ''),
+        cursor: pode ? 'grab' : 'pointer', touch: pode ? 'none' : 'auto', down: ev => this.blocoDown(ev, i), tecla: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.abrirAula(i); } } });
+    };
+    const cols = colDias.map(dia => {
+      const data = addD(W, dia - 1), its = todos.filter(i => i.data === data).sort((a, b) => hm(a.ini) - hm(b.ini) || hm(b.fim) - hm(a.fim));
+      let grupo = [], fimG = -1;
+      const fechar = () => { const ln = []; grupo.forEach(i => { let l = ln.findIndex(x => x <= hm(i.ini)); if (l < 0) { l = ln.length; ln.push(0); } ln[l] = hm(i.fim); i._l = l; }); grupo.forEach(i => { i._n = ln.length; }); grupo = []; };
+      its.forEach(i => { if (grupo.length && hm(i.ini) >= fimG) fechar(); grupo.push(i); fimG = Math.max(fimG, hm(i.fim)); }); fechar();
+      const ed = evsDia(data);
+      return { dia: DIA_C[dia], data: ddmm(data), hdBg: data === hoje ? 'var(--sunken)' : 'var(--superficie)', hdPeso: data === hoje ? 700 : 600,
+        evs: ed.slice(0, 2).map(e => ({ ab: TIPOS[e.tipo].ab, bBg: TIPOS[e.tipo].bg, bCor: TIPOS[e.tipo].cor, bBorda: TIPOS[e.tipo].borda, titulo: e.titulo, abrir: () => this.setState({ painel: { tipo: 'evento', id: e.id } }) })), temMais: ed.length > 2, mais: '+' + (ed.length - 2),
+        feriado: !!fer[data], feriadoTxt: fer[data] || '', agora: data === hoje && nm >= G0 && nm <= G1,
+        ocup: profsOc.flatMap(p => (p.ocupados || []).filter(o => o.dia_semana === dia).map(o => ({ top: (hm(o.hora_inicio) - G0) * PX + 'px', h: (hm(o.hora_fim) - hm(o.hora_inicio)) * PX + 'px', txt: p.nome.split(' ')[0] + ' · ' + (o.motivo || 'ocupado') }))),
+        blocos: its.map(i => Object.assign(bloco(i, 'dias'), { top: (hm(i.ini) - G0) * PX + 1 + 'px', h: (hm(i.fim) - hm(i.ini)) * PX - 2 + 'px', left: 'calc(' + (i._l / i._n * 100) + '% + 2px)', w: 'calc(' + (100 / i._n) + '% - 4px)' })) };
+    });
+    const profsLinhas = esc ? (st.fProf ? st.profs.filter(p => String(p.id) === st.fProf) : st.profs) : [];
+    const pct = m => ((m - JAN[0]) / (JAN[1] - JAN[0]) * 100) + '%';
+    const linhasP = profsLinhas.map(p => {
+      const s = this.statusProf(p, instHoje, hoje, nm, fer);
+      return { nome: p.nome, tag: s.tag, tagBg: s.forte ? 'var(--texto)' : s.hach ? HACH : 'transparent', tagCor: s.forte ? 'var(--fundo)' : 'var(--texto)', tagBorda: s.forte ? 'var(--texto)' : 'var(--borda)',
+        dias: [1, 2, 3, 4, 5].map(dia => { const data = addD(W, dia - 1);
+          return { bg: data === hoje ? 'var(--sunken)' : 'transparent', feriado: !!fer[data], agora: data === hoje && nm >= JAN[0] && nm <= JAN[1], agoraL: pct(nm),
+            ocup: (p.ocupados || []).filter(o => o.dia_semana === dia).map(o => ({ left: pct(hm(o.hora_inicio)), w: ((hm(o.hora_fim) - hm(o.hora_inicio)) / (JAN[1] - JAN[0]) * 100) + '%', titulo: p.nome + ' · ' + (o.motivo || 'ocupado') + ' · ' + o.hora_inicio + '–' + o.hora_fim })),
+            blocos: todos.filter(i => i.data === data && i.disc.prof === p.id).map(i => Object.assign(bloco(i, 'prof'), { left: pct(hm(i.ini)), w: ((hm(i.fim) - hm(i.ini)) / (JAN[1] - JAN[0]) * 100) + '%' })) }; }) };
+    });
+    const slot = SLOTS.findIndex(s => hm(s[0]) <= nm && nm < hm(s[1])), prox = SLOTS.find(s => hm(s[0]) > nm), diaH = dsem(hoje);
+    const periodo = diaH > 5 ? 'Fim de semana · sem aulas' : fer[hoje] ? 'Feriado: ' + fer[hoje] : slot >= 0 ? (slot + 1) + 'º horário · termina às ' + SLOTS[slot][1] : nm < JAN[0] ? 'Antes do 1º horário · começa às 08:00' : prox ? 'Intervalo · próximo horário às ' + prox[0] : 'Fora do horário de aula';
+    let cartoes;
+    if (esc) cartoes = st.profs.map(p => this.cartao(p.nome, this.statusProf(p, instHoje, hoje, nm, fer), st.fProf === String(p.id), () => this.setState(s2 => ({ fProf: s2.fProf === String(p.id) ? '' : String(p.id) }))));
+    else if (P === 'prof') cartoes = [this.cartao('Você', this.statusProf(st.profs.find(p => p.id === PROF_DEMO), instHoje, hoje, nm, fer), false, () => {})];
+    else {
+      const its = instHoje.filter(i => i.disc.turma === TURMA_DEMO).sort((a, b) => hm(a.ini) - hm(b.ini)), c = its.find(i => hm(i.ini) <= nm && nm < hm(i.fim)), nx = its.find(i => hm(i.ini) > nm);
+      cartoes = [this.cartao('Agora', c ? { tag: 'Em aula', forte: true, det: c.disc.nome + ' · ' + nomeSala(c.sala) + ' · ' + this.profNome(c.disc.prof) + ' · até ' + c.fim, prog: (nm - hm(c.ini)) / (hm(c.fim) - hm(c.ini)) } : { tag: 'Sem aula', det: 'Nenhuma aula da turma neste momento.', prog: 0 }, false, () => {}),
+        this.cartao('Próxima', nx ? { tag: nx.ini, det: nx.disc.nome + ' · ' + nomeSala(nx.sala) + ' · ' + this.profNome(nx.disc.prof) } : { tag: '—', det: 'Sem mais aulas hoje.' }, false, () => {})];
+    }
+    const pd = st.pend, op = (lista, v) => lista.map(x => ({ v: String(x.id), l: x.nome, on: v === String(x.id) }));
+    const escD = this.escopo(st, P), msgIa = st.iaProp;
+    return {
+      horaTxt: mh(nm), dataTxt: DIA_L[diaH] + ', ' + hoje.slice(8, 10) + ' de ' + MESES[+hoje.slice(5, 7) - 1], relogioRot: now.vivo ? 'Ao vivo' : 'Relógio simulado', periodoTxt: periodo,
+      pulsoRef: el => { if (el && el.animate && !this.rm && !el._pul) { el._pul = 1; el.animate([{ opacity: 1 }, { opacity: 0.25 }, { opacity: 1 }], { duration: 1800, iterations: Infinity }); } },
+      cartoes, cartaoAjuda: esc ? 'Toque num professor para filtrar o quadro.' : '',
+      eixoVis: esc, eixos: [['prof', 'Professores'], ['dias', 'Dias × horários']].map(([id, l]) => ({ label: l, on: eixo === id, bg: eixo === id ? 'var(--texto)' : 'transparent', cor: eixo === id ? 'var(--fundo)' : 'var(--texto)', peso: eixo === id ? 600 : 500, ir: () => this.setState({ eixo: id, pend: null }) })),
+      eixoDias: eixo === 'dias', eixoProf: eixo === 'prof',
+      semanaTxt: 'Semana de ' + ddmm(W) + ' a ' + ddmm(addD(W, 4)), semAnt: () => this.setState({ semana: addD(W, -7), pend: null }), semProx: () => this.setState({ semana: addD(W, 7), pend: null }), naoAtual: W !== segDe(hoje), irHoje: () => this.setState({ semana: null, pend: null }),
+      filtrosVis: P !== 'aluno', fTurmaVis: esc, fProfVis: esc, fSalaVis: esc,
+      optTurmas: TURMAS.map(t => ({ v: t.id, l: t.nome })), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optDiscs: escD.map(d => ({ v: String(d.id), l: d.nome + ' · ' + nomeTurma(d.turma) })), optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })),
+      fTurma: st.fTurma, fProf: st.fProf, fDisc: st.fDisc, fSala: st.fSala,
+      setFTurma: e => this.setState({ fTurma: e.target.value }), setFProf: e => this.setState({ fProf: e.target.value }), setFDisc: e => this.setState({ fDisc: e.target.value }), setFSala: e => this.setState({ fSala: e.target.value }),
+      filtrado: !!(st.fTurma || st.fProf || st.fDisc || st.fSala), limparFiltros: () => this.setState({ fTurma: '', fProf: '', fDisc: '', fSala: '' }),
+      ocupVis: esc, verOcup: st.verOcup, alternarOcup: () => this.setState(s => ({ verOcup: !s.verOcup })), ocupBg: st.verOcup ? 'var(--sunken)' : 'var(--superficie)',
+      choquesVis: esc, choquesTxt: ch.n ? ch.n + (ch.n === 1 ? ' choque' : ' choques') : 'Sem choques', soChoques: st.soChoques, alternarChoques: () => { if (ch.n) this.setState(s => ({ soChoques: !s.soChoques })); },
+      choquesBorda: ch.n ? 'var(--aviso)' : 'var(--borda)', choquesCor: ch.n ? 'var(--aviso)' : 'var(--texto-suave)', choquesBg: st.soChoques ? 'var(--aviso-suave)' : 'var(--superficie)',
+      iaBotaoVis: esc, iaAberto: esc && st.iaAberto, alternarIa: () => this.setState(s => ({ iaAberto: !s.iaAberto })), iaBotaoBg: st.iaAberto ? 'var(--sunken)' : 'var(--superficie)',
+      diasMVis: narrow && eixo === 'dias', diasM: [1, 2, 3, 4, 5].map(d => ({ l: DIA_C[d] + ' ' + ddmm(addD(W, d - 1)), on: d === dSel, bg: d === dSel ? 'var(--texto)' : 'var(--superficie)', cor: d === dSel ? 'var(--fundo)' : 'var(--texto)', ir: () => this.setState({ diaM: d }) })),
+      gridCols: '56px repeat(' + colDias.length + ',minmax(0,1fr))', gridMinW: narrow ? '0' : '760px', gridH: (G1 - G0) * PX + 'px',
+      horas: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(h => ({ t: pad(h) + ':00', top: (h * 60 - G0) * PX + 'px' })),
+      intTop: (700 - G0) * PX + 'px', intH: 110 * PX + 'px', agoraTop: (nm - G0) * PX + 'px', cols, linhasP, profVazio: !linhasP.length,
+      dragDica: esc && eixo === 'dias' ? 'Arraste uma aula para remarcar. Toque para ver os detalhes.' : 'Toque numa aula para ver os detalhes.',
+      pendVis: !!pd, pendErroTotal: !!(pd && pd.erroSemana && pd.erroGrade), pendOk: !!(pd && !(pd.erroSemana && pd.erroGrade)),
+      pendTxt: pd ? 'Mover ' + pd.inst.disc.nome + ' · ' + nomeTurma(pd.inst.disc.turma) + ' de ' + DIA_L[dsem(pd.inst.data)] + ' ' + ddmm(pd.inst.data) + ', ' + pd.inst.ini + ' para ' + DIA_L[pd.alvo.dia] + ' ' + ddmm(pd.novaData) + ', ' + pd.alvo.ini + '?' : '',
+      pendErro: pd ? (pd.erroSemana || pd.erroGrade) : '', pendSemOff: !!(pd && pd.erroSemana), pendGrOff: !!(pd && pd.erroGrade), pendSemO: pd && pd.erroSemana ? 0.4 : 1, pendGrO: pd && pd.erroGrade ? 0.4 : 1,
+      pendNotas: pd ? [pd.erroSemana && !pd.erroGrade ? 'Só nesta semana não dá: ' + pd.erroSemana : '', pd.erroGrade && !pd.erroSemana ? 'Na grade do semestre não dá: ' + pd.erroGrade : ''].filter(Boolean).map(t => ({ t })) : [],
+      confSemana: () => this.confirmar('semana'), confGrade: () => this.confirmar('grade'), cancelarPend: () => this.setState({ pend: null }),
+      msgVis: !!st.msg, msgTxt: st.msg ? st.msg.t : '', desfazer: () => { const m = this.state.msg; if (m && m.snap) this.setState({ discs: m.snap.discs, remarc: m.snap.remarc, msg: { t: 'Desfeito.' } }); }, fecharMsg: () => this.setState({ msg: null }), temDesfazer: !!(st.msg && st.msg.snap)
+    };
+  }
+  renderVals() {
+    const st = this.state, P = this.perfil(), now = this.agora(), esc = P === 'escola';
+    const nPend = st.pedidos.filter(p => p.status === 'pendente').length, nSug = st.pedidos.filter(p => p.prof === PROF_DEMO && p.status === 'sugestao').length;
+    const tabs = esc ? [['quadro', 'Quadro semanal'], ['ano', 'Ano letivo'], ['disc', 'Disciplinas'], ['pedidos', 'Pedidos de aula extra', nPend]] : P === 'prof' ? [['quadro', 'Minha semana'], ['ano', 'Ano letivo'], ['pedidos', 'Aulas extras', nSug]] : [['quadro', 'Minha semana'], ['ano', 'Ano letivo']];
+    const aba = tabs.some(t => t[0] === st.aba) ? st.aba : 'quadro';
+    const me = this.profNome(PROF_DEMO), fer = this.ferMap(st.eventos);
+    return Object.assign(aba === 'quadro' ? this.valsQuadro(st, P, now, fer) : {}, aba === 'quadro' && esc ? this.valsIa(st) : {}, aba === 'ano' ? this.valsAno(st, P, now, fer) : {}, aba === 'disc' ? this.valsDisc(st, now, fer) : {}, aba === 'pedidos' ? this.valsPed(st, P) : {}, this.valsPainel(st, P, now, fer), {
+      raiz: this.raiz, dicaRef: this.dicaRef,
+      ...(() => { const emb = !!this.props.embutido, g = st.pGeo || { top: 0, h: 0 }; return { raizMinH: emb ? '0' : '100vh', raizBg: emb ? 'transparent' : 'var(--fundo)', raizMaxW: emb ? 'none' : '1320px', raizPad: emb ? '0' : 'clamp(20px,4cqi,40px) clamp(16px,3cqi,40px) 96px',
+        pPos: emb ? 'absolute' : 'fixed', pTop: emb ? g.top + 'px' : '0', pH: emb ? g.h + 'px' : '100vh' }; })(),
+      rotulo: (esc ? 'Escola' : P === 'prof' ? me : nomeTurma(TURMA_DEMO)) + ' · semestre ' + SEM.nome,
+      subtitulo: esc ? 'O quadro mostra a escala de todos os professores agora e na semana. O ano letivo junta provas, eventos e feriados.' : P === 'prof' ? 'Suas aulas da semana, o calendário da escola e os seus pedidos de aula extra.' : 'As aulas da sua turma e o que vem pela frente no ano letivo.',
+      abas: tabs.map(([id, label, n]) => ({ label, on: aba === id, peso: aba === id ? 600 : 500, cor: aba === id ? 'var(--texto)' : 'var(--texto-suave)', barra: aba === id ? 'var(--texto)' : 'transparent', temN: !!n, n: n || '', ir: () => this.setState({ aba: id, painel: null, pend: null }) })),
+      abaQuadro: aba === 'quadro', abaAno: aba === 'ano', abaDisc: aba === 'disc', abaPed: aba === 'pedidos'
+    });
+  }
+  iaPlanejar(alvos, soManha) {
+    const st = this.state, SL = soManha ? SLOTS.slice(0, 2) : SLOTS, ig = alvos.filter(a => a.idx != null).map(a => a.d.id + '-' + a.idx), virt = [], moves = [], rec = [];
+    alvos.forEach(a => {
+      const d = a.d, n = a.idx == null ? 2 : 1, dias = new Set((d.grade || []).filter((x, k) => !ig.includes(d.id + '-' + k)).map(x => x.dia_semana));
+      virt.filter(v => v.id === 'v' + d.id).forEach(v => dias.add(v.grade[0].dia_semana));
+      const achados = [];
+      for (const s of SL) for (let dia = 1; dia <= 5 && achados.length < n; dia++) {
+        if (dias.has(dia) || achados.some(x => x.dia === dia)) continue;
+        const sala = a.idx != null ? (d.grade[a.idx].sala || d.sala) : d.sala;
+        const e = this.checarSlot({ prof: d.prof, turma: d.turma, sala, dia, ini: s[0], fim: s[1], ignorar: ig }, st.discs.concat(virt), st.profs);
+        if (!e) achados.push({ dia, ini: s[0], fim: s[1], sala });
+      }
+      if (achados.length < n) { const p = st.profs.find(q => q.id === d.prof); rec.push({ nome: d.nome + ' · ' + nomeTurma(d.turma), motivo: p && (p.ocupados || []).length ? 'Choca com um horário ocupado de ' + p.nome + ' em todas as opções livres' + (soManha ? ' de manhã.' : '.') : 'Não há horário livre para o professor, a turma e a sala' + (soManha ? ' de manhã.' : '.') }); return; }
+      achados.forEach((x, k) => { virt.push({ id: 'v' + d.id, nome: d.nome, prof: d.prof, turma: d.turma, sala: x.sala, grade: [{ dia_semana: x.dia, hora_inicio: x.ini, hora_fim: x.fim, sala: x.sala }] });
+        const de = a.idx != null ? DIA_C[d.grade[a.idx].dia_semana] + ' ' + d.grade[a.idx].hora_inicio : 'sem horário';
+        moves.push({ discId: d.id, idx: a.idx, novo: a.idx == null, nome: d.nome + ' · ' + nomeTurma(d.turma), de, dia: x.dia, ini: x.ini, fim: x.fim, sala: x.sala }); });
+    });
+    return { moves, rec };
+  }
+  iaResponder(t0) {
+    const st = this.state, t = t0.toLowerCase(), ch = this.choques(st.discs, st.profs);
+    const pm = st.profs.find(p => t.includes(p.nome.split(' ')[0].toLowerCase()));
+    if (/choque|conflit/.test(t) && !/resolv|reorganiz|mont|corrij/.test(t)) {
+      if (!ch.n) return { resposta: 'Não encontrei choques. Nenhuma aula cai em horário ocupado de professor, e nenhum professor, turma ou sala tem duas aulas ao mesmo tempo.' };
+      const linhas = []; Object.keys(ch.M).forEach(k => { const [id, ix] = k.split('-').map(Number), d = st.discs.find(x => x.id === id); ch.M[k].forEach(m => { const l = '· ' + d.nome + ' · ' + nomeTurma(d.turma) + ': ' + m; if (!linhas.includes(l)) linhas.push(l); }); });
+      return { resposta: 'Encontrei ' + ch.n + (ch.n === 1 ? ' choque' : ' choques') + ', marcados no quadro:\n' + linhas.join('\n') + '\n\nPeça "Resolva os choques" e eu monto uma proposta.' };
+    }
+    const fala = (r, intro) => { const pt = []; if (r.moves.length) pt.push(intro); if (r.rec.length) pt.push(r.rec.length === 1 ? 'Um item não coube.' : r.rec.length + ' itens não couberam.'); return pt.join(' ') + (r.moves.length ? ' A proposta aparece tracejada no quadro. Confira e aplique.' : ''); };
+    if (pm && /manh/.test(t)) {
+      const alvos = []; st.discs.filter(d => d.prof === pm.id).forEach(d => (d.grade || []).forEach((x, idx) => { if (hm(x.hora_inicio) >= 720 || (pm.ocupados || []).some(o => o.dia_semana === x.dia_semana && hm(x.hora_inicio) < hm(o.hora_fim) && hm(o.hora_inicio) < hm(x.hora_fim))) alvos.push({ d, idx }); }));
+      if (!alvos.length) return { resposta: 'As aulas de ' + pm.nome + ' já estão todas de manhã e fora dos horários ocupados dele.' };
+      const r = this.iaPlanejar(alvos, true); return Object.assign({ resposta: fala(r, 'Movi ' + r.moves.length + (r.moves.length === 1 ? ' aula' : ' aulas') + ' de ' + pm.nome + ' para a manhã, fora dos horários ocupados e sem choque de turma ou sala.') }, r);
+    }
+    if (/sem hor|mont|resolv|reorganiz|corrij/.test(t)) {
+      const alvos = st.discs.filter(d => !(d.grade || []).length).map(d => ({ d, idx: null }));
+      if (/resolv|choque|corrij|reorganiz/.test(t)) ch.alvos.forEach(k => { const [id, ix] = k.split('-').map(Number); alvos.push({ d: st.discs.find(x => x.id === id), idx: ix }); });
+      if (!alvos.length) return { resposta: 'Todas as disciplinas já têm horário e não há choques. Nada a mudar.' };
+      const r = this.iaPlanejar(alvos, false); return Object.assign({ resposta: fala(r, 'Montei ' + r.moves.length + (r.moves.length === 1 ? ' horário' : ' horários') + ' sem choque com professores, turmas e salas.') }, r);
+    }
+    return { resposta: 'Posso montar a grade das disciplinas sem horário, resolver os choques do quadro ou reorganizar as aulas de um professor (por exemplo, só de manhã). Diga qual.' };
+  }
+  iaEnviar(txt) {
+    const t = (txt != null ? txt : this.state.iaTexto).trim(); if (!t || this.state.iaEnv) return;
+    this.setState(s => ({ iaMsgs: s.iaMsgs.concat({ papel: 'usuario', texto: t }), iaTexto: '', iaEnv: true }));
+    clearTimeout(this.iaT); this.iaT = setTimeout(() => { const r = this.iaResponder(t); this.setState(s => Object.assign({ iaEnv: false, iaMsgs: s.iaMsgs.concat({ papel: 'ia', texto: r.resposta }) }, r.moves && (r.moves.length || r.rec.length) ? { iaProp: { moves: r.moves, rec: r.rec, idx: s.iaMsgs.length }, iaFeito: null } : {})); }, this.rm ? 500 : 1000);
+  }
+  iaAplicar() {
+    const st = this.state, p = st.iaProp; if (!p || st.iaFeito) return;
+    const snap = { discs: st.discs, remarc: st.remarc };
+    let discs = st.discs.map(d => Object.assign({}, d, { grade: (d.grade || []).slice() }));
+    p.moves.forEach(m => { const d = discs.find(x => x.id === m.discId); if (!d) return; const g = { dia_semana: m.dia, hora_inicio: m.ini, hora_fim: m.fim, sala: m.sala }; if (m.idx != null) d.grade[m.idx] = g; else d.grade.push(g); });
+    const n = this.choques(discs, st.profs).n;
+    this.setState({ discs, iaFeito: n ? 'Aplicado. Ainda restam ' + n + (n === 1 ? ' choque' : ' choques') + ' no quadro.' : 'Aplicado. O quadro está sem choques.', msg: { t: 'Proposta do assistente aplicada na grade do semestre.', snap } });
+  }
+  valsIa(st) {
+    const p = st.iaProp;
+    return { iaVazio: !st.iaMsgs.length && !st.iaEnv, iaSug: ['Tem algum choque na grade atual?', 'Resolva os choques e monte a grade das disciplinas sem horário.', 'O professor Carlos só pode de manhã. Reorganize as aulas dele.'].map(t => ({ t, usar: () => this.iaEnviar(t) })),
+      iaLista: st.iaMsgs.map((m, i) => ({ autor: m.papel === 'usuario' ? 'Escola' : 'Assistente', usuario: m.papel === 'usuario', ia: m.papel === 'ia', texto: m.texto, temProp: !!p && p.idx === i })),
+      iaMoves: p ? p.moves.map(m => ({ nome: m.nome, de: m.de, para: DIA_C[m.dia] + ' ' + m.ini + '–' + m.fim + ' · ' + nomeSala(m.sala) })) : [], iaTemMoves: !!(p && p.moves.length), iaRec: p ? p.rec : [], iaTemRec: !!(p && p.rec.length),
+      iaAcoes: !!(p && p.moves.length && !st.iaFeito), iaFeitoVis: !!st.iaFeito, iaFeito: st.iaFeito || '', iaAplicar: () => this.iaAplicar(), iaDescartar: () => this.setState({ iaProp: null, iaFeito: null }),
+      iaEnv: st.iaEnv, iaTexto: st.iaTexto, setIaTexto: e => this.setState({ iaTexto: e.target.value }), iaTecla: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.iaEnviar(); } },
+      iaSubmit: e => { e.preventDefault(); this.iaEnviar(); }, iaOff: st.iaEnv || !st.iaTexto.trim(), iaEnvO: st.iaEnv || !st.iaTexto.trim() ? 0.4 : 1, fecharIa: () => this.setState({ iaAberto: false }),
+      iaMsgRef: el => { if (el && el.animate && !el._a) { el._a = 1; el.animate(this.rm ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }); } },
+      iaFimRef: el => { if (el) { const p2 = el.parentElement; if (p2) p2.scrollTop = p2.scrollHeight; } } };
+  }
+  chipEv(e) { const T = TIPOS[e.tipo]; return { ab: T.ab, bBg: T.bg, bCor: T.cor, bBorda: T.borda, titulo: e.titulo, tipoTxt: T.label, quem: e.turmas === 'todas' ? 'Todas as turmas' : e.turmas.map(nomeTurma).join(', '), hora: e.hi ? e.hi + (e.hf ? '–' + e.hf : '') : '', datas: ddmm(e.data) + (e.fim ? ' a ' + ddmm(e.fim) : ''), abrir: () => this.setState({ painel: { tipo: 'evento', id: e.id } }) }; }
+  novoEvento(data) { this.setState({ painel: { tipo: 'eventoForm', id: null }, eErro: '', eF: { tipo: 'prova', titulo: '', data: data || '', fim: '', hi: '', hf: '', todas: true, turmas: [], disc: '', desc: '' } }); }
+  editarEvento(e) { this.setState({ painel: { tipo: 'eventoForm', id: e.id }, eErro: '', eF: { tipo: e.tipo, titulo: e.titulo, data: e.data, fim: e.fim || '', hi: e.hi || '', hf: e.hf || '', todas: e.turmas === 'todas', turmas: e.turmas === 'todas' ? [] : e.turmas.slice(), disc: e.disc ? String(e.disc) : '', desc: e.desc || '' } }); }
+  salvarEvento(ev) {
+    ev.preventDefault(); const st = this.state, f = st.eF, id = st.painel.id, erro = t => this.setState({ eErro: t });
+    if (!f.titulo.trim()) return erro('Dê um título ao evento.');
+    if (!f.data) return erro('Escolha a data.');
+    if (f.data < '2026-01-01' || f.data > '2026-12-31') return erro('A data precisa estar no ano letivo de 2026.');
+    if (f.fim && f.fim < f.data) return erro('O fim precisa ser no mesmo dia ou depois do início.');
+    if ((f.hi && !f.hf) || (!f.hi && f.hf)) return erro('Preencha os dois horários ou deixe os dois em branco.');
+    if (f.hi && !(hm(f.hi) < hm(f.hf))) return erro('O horário de fim precisa ser depois do início.');
+    if (!f.todas && !f.turmas.length) return erro('Escolha pelo menos uma turma.');
+    const obj = { id: id || Date.now(), tipo: f.tipo, titulo: f.titulo.trim(), data: f.data, fim: f.fim && f.fim !== f.data ? f.fim : '', hi: f.hi, hf: f.hf, turmas: f.todas ? 'todas' : f.turmas.slice(), disc: f.disc ? +f.disc : null, desc: f.desc.trim() };
+    this.setState(s => ({ eventos: id ? s.eventos.map(x => x.id === id ? obj : x) : s.eventos.concat(obj), painel: { tipo: 'evento', id: obj.id }, msgAno: id ? 'Evento atualizado.' : 'Evento publicado no calendário.', ref: obj.data }));
+  }
+  valsAno(st, P, now, fer) {
+    const hoje = now.data, ref = st.ref || hoje, esc = P === 'escola', vis = st.vis;
+    const evs = this.evVisiveis(st, P).filter(e => !st.tiposOff[e.tipo] && (!esc || !st.aTurma || e.turmas === 'todas' || e.turmas.includes(st.aTurma))).sort((a, b) => a.data.localeCompare(b.data) || (a.hi || '').localeCompare(b.hi || ''));
+    const doDia = d => evs.filter(e => e.data <= d && d <= (e.fim || e.data));
+    const mesTxt = d => MESES[+d.slice(5, 7) - 1] + ' de ' + d.slice(0, 4), first = d => d.slice(0, 8) + '01', lastDay = d => { const y = +d.slice(0, 4), m = +d.slice(5, 7); return new Date(Date.UTC(y, m, 0)).getUTCDate(); };
+    const nav = n => { let r = ref; if (vis === 'ano') r = (+ref.slice(0, 4) + n) + ref.slice(4); else if (vis === 'mes') { const y = +ref.slice(0, 4), m = +ref.slice(5, 7) - 1 + n; r = (y + Math.floor(m / 12)) + '-' + pad(((m % 12) + 12) % 12 + 1) + '-01'; } else if (vis === 'semana') r = addD(ref, 7 * n); else r = addD(ref, n); this.setState({ ref: r }); };
+    const W = segDe(ref);
+    const titulo = vis === 'ano' ? ref.slice(0, 4) : vis === 'mes' ? mesTxt(ref) : vis === 'semana' ? ddmm(W) + ' a ' + ddmm(addD(W, 6)) : vis === 'dia' ? DIA_L[dsem(ref)] + ', ' + ref.slice(8, 10) + ' de ' + MESES[+ref.slice(5, 7) - 1] : st.passados ? 'Ano letivo inteiro' : 'A partir de hoje';
+    const r = {
+      visOps: [['ano', 'Ano'], ['mes', 'Mês'], ['semana', 'Semana'], ['dia', 'Dia'], ['lista', 'Lista']].map(([id, l]) => ({ label: l, on: vis === id, bg: vis === id ? 'var(--texto)' : 'transparent', cor: vis === id ? 'var(--fundo)' : 'var(--texto)', peso: vis === id ? 600 : 500, ir: () => this.setState({ vis: id }) })),
+      anoTitulo: titulo, anoNavVis: vis !== 'lista', anoAnt: () => nav(-1), anoProx: () => nav(1), anoHoje: () => this.setState({ ref: null }), anoNaoHoje: ref !== hoje,
+      aTurmaVis: esc, aTurma: st.aTurma, setATurma: e => this.setState({ aTurma: e.target.value }), optTurmas: TURMAS.map(t => ({ v: t.id, l: t.nome })), novoEvVis: esc, novoEv: () => this.novoEvento(vis === 'dia' ? ref : ''),
+      tiposF: Object.keys(TIPOS).map(k => { const T = TIPOS[k], on = !st.tiposOff[k]; return { label: T.label, ab: T.ab, bBg: T.bg, bCor: T.cor, bBorda: T.borda, on, op: on ? 1 : 0.45, borda: on ? 'var(--texto)' : 'var(--borda)', ir: () => this.setState(s => ({ tiposOff: Object.assign({}, s.tiposOff, { [k]: !s.tiposOff[k] }) })) }; }),
+      escopoAno: esc ? 'A escola vê o calendário de todas as turmas.' : P === 'prof' ? 'Você vê os eventos gerais e os das turmas em que dá aula.' : 'Você vê os eventos gerais e os do ' + nomeTurma(TURMA_DEMO) + '.',
+      visAno: vis === 'ano', visMes: vis === 'mes', visSemana: vis === 'semana', visDia: vis === 'dia', visLista: vis === 'lista', msgAnoVis: !!st.msgAno, msgAno: st.msgAno || '', fecharMsgAno: () => this.setState({ msgAno: '' })
+    };
+    const diaCel = (d, opts) => { const ds = doDia(d), fe = !!fer[d], bim = ds.some(e => e.tipo === 'bimestre'), letivo = d >= ANO.inicio && d <= ANO.fim, tp = [...new Set(ds.filter(e => e.tipo !== 'feriado').map(e => e.tipo))].slice(0, 3);
+      return { n: String(+d.slice(8, 10)), hoje: d === hoje, bg: d === hoje ? 'var(--texto)' : fe ? HACH : 'transparent', cor: d === hoje ? 'var(--fundo)' : letivo ? 'var(--texto)' : 'var(--texto-suave)', peso: ds.length ? 700 : 400, borda: bim ? 'var(--texto)' : 'transparent',
+        marcas: tp.map(k => ({ bg: TIPOS[k].bg, borda: TIPOS[k].borda })), title: ds.map(e => e.titulo).join(' · '), aria: d.slice(8, 10) + ' de ' + MESES[+d.slice(5, 7) - 1] + (ds.length ? ': ' + ds.map(e => e.titulo).join(', ') : ''), ir: () => this.setState({ vis: 'dia', ref: d }) }; };
+    if (vis === 'ano') {
+      const y = ref.slice(0, 4);
+      r.meses = MESES.map((nm, i) => { const f = y + '-' + pad(i + 1) + '-01', L = lastDay(f), lead = dsem(f) - 1, dias = [];
+        for (let k = 0; k < lead; k++) dias.push({ vazio: true, n: '', vis: 'hidden', marcas: [], ir: () => {} });
+        for (let k = 1; k <= L; k++) dias.push(Object.assign(diaCel(y + '-' + pad(i + 1) + '-' + pad(k)), { vis: 'visible' }));
+        const nEv = evs.filter(e => e.data.slice(0, 7) === f.slice(0, 7) && e.tipo !== 'bimestre').length;
+        return { nome: nm.charAt(0).toUpperCase() + nm.slice(1), nEv: nEv ? nEv + (nEv === 1 ? ' evento' : ' eventos') : '', dias, op: f.slice(0, 7) < ANO.inicio.slice(0, 7) ? 0.55 : 1, ir: () => this.setState({ vis: 'mes', ref: f }) }; });
+      r.legenda = Object.keys(TIPOS).map(k => ({ ab: TIPOS[k].ab, label: TIPOS[k].label, bBg: TIPOS[k].bg, bCor: TIPOS[k].cor, bBorda: TIPOS[k].borda }));
+    }
+    if (vis === 'mes') {
+      const f = first(ref), ini = segDe(f), L = lastDay(f), fimM = f.slice(0, 8) + pad(L), fimG = addD(segDe(fimM), 6), cel = [];
+      for (let d = ini; d <= fimG; d = addD(d, 1)) { const ds = doDia(d).filter(e => e.tipo !== 'feriado'), dc = diaCel(d);
+        cel.push({ n: dc.n, ir: dc.ir, numBg: d === hoje ? 'var(--texto)' : 'transparent', numCor: d === hoje ? 'var(--fundo)' : 'var(--texto)', bg: fer[d] ? HACH : d.slice(0, 7) === f.slice(0, 7) ? 'var(--superficie)' : 'var(--fundo)', op: d.slice(0, 7) === f.slice(0, 7) ? 1 : 0.5, fer: fer[d] || '', temFer: !!fer[d],
+          evs: ds.slice(0, 3).map(e => this.chipEv(e)), temMais: ds.length > 3, mais: '+' + (ds.length - 3) + ' no dia' }); }
+      r.celMes = cel; r.semDias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(t => ({ t }));
+    }
+    if (vis === 'semana') {
+      const ins = this.instSemana(W, st, fer, P), ids = new Set(this.escopo(st, P).map(d => d.id));
+      r.semCols = [0, 1, 2, 3, 4, 5, 6].map(k => { const d = addD(W, k), na = ins.filter(i => i.data === d && ids.has(i.disc.id) && !i.feriado && !i.pendente).length;
+        return { dia: DIA_C[k + 1] + ' ' + ddmm(d), bg: d === hoje ? 'var(--sunken)' : 'var(--superficie)', fer: fer[d] || '', temFer: !!fer[d], evs: doDia(d).filter(e => e.tipo !== 'feriado').map(e => this.chipEv(e)), aulas: na ? na + (na === 1 ? ' aula' : ' aulas') : '', temAulas: !!na, irDia: () => this.setState({ vis: 'dia', ref: d }), vazio: !doDia(d).length && !na }; });
+    }
+    if (vis === 'dia') {
+      const ids = new Set(this.escopo(st, P).map(d => d.id)), ins = this.instSemana(segDe(ref), st, fer, P).filter(i => i.data === ref && ids.has(i.disc.id)).sort((a, b) => hm(a.ini) - hm(b.ini));
+      r.diaAulas = ins.map(i => { const passado = ref < hoje || (ref === hoje && hm(i.fim) <= now.min), cur = ref === hoje && hm(i.ini) <= now.min && now.min < hm(i.fim);
+        return { hora: i.ini + '–' + i.fim, nome: i.disc.nome + ' · ' + nomeTurma(i.disc.turma), sub: nomeSala(i.sala) + ' · ' + this.profNome(i.disc.prof), st: i.feriado ? 'Sem aula · feriado' : i.pendente ? 'Extra em análise' : cur ? 'Agora' : passado ? 'Dada' : 'Prevista', forte: cur, abrir: () => this.abrirAula(i) }; });
+      r.diaTemAulas = ins.length > 0; r.diaSemAulas = !ins.length; r.diaSemAulasTxt = fer[ref] ? 'Sem aula: ' + fer[ref] + '.' : dsem(ref) > 5 ? 'Fim de semana.' : 'Nenhuma aula neste dia.';
+      r.diaEvs = doDia(ref).map(e => Object.assign(this.chipEv(e), { desc: e.desc })); r.diaTemEvs = r.diaEvs.length > 0; r.diaSemEvs = !r.diaEvs.length;
+    }
+    if (vis === 'lista') {
+      const lst = evs.filter(e => st.passados || (e.fim || e.data) >= hoje), grupos = [];
+      lst.forEach(e => { const k = e.data.slice(0, 7); let g = grupos.find(x => x.k === k); if (!g) { g = { k, mes: mesTxt(e.data + ''), itens: [] }; g.mes = g.mes.charAt(0).toUpperCase() + g.mes.slice(1); grupos.push(g); } g.itens.push(Object.assign(this.chipEv(e), { dia: DIA_C[dsem(e.data)] })); });
+      r.grupos = grupos; r.listaVazia = !grupos.length; r.passados = st.passados; r.alternarPassados = () => this.setState(s => ({ passados: !s.passados })); r.passadosTxt = st.passados ? 'Esconder passados' : 'Mostrar passados';
+    }
+    return r;
+  }
+  abrirDisc(d) {
+    const f = d ? { nome: d.nome, turma: d.turma, prof: String(d.prof || ''), sala: d.sala, carga: String(d.carga), grade: (d.grade || []).map((g, k) => ({ k: k + 1, dia: String(g.dia_semana), ini: g.hora_inicio, fim: g.hora_fim, sala: g.sala || d.sala })) }
+      : { nome: '', turma: '1A', prof: '', sala: '101', carga: '60', grade: [{ k: 1, dia: '1', ini: '08:00', fim: '09:40', sala: '101' }] };
+    this.setState({ painel: { tipo: 'disc', id: d ? d.id : null }, dF: f, dErro: '', dOk: '' });
+  }
+  setDF(campo, v) { this.setState(s => ({ dF: Object.assign({}, s.dF, { [campo]: v }), dErro: '', dOk: '' })); }
+  setLinhaD(k, campo, v) { this.setState(s => ({ dF: Object.assign({}, s.dF, { grade: s.dF.grade.map(r => r.k === k ? Object.assign({}, r, { [campo]: v }) : r) }), dErro: '', dOk: '' })); }
+  errosDisc(f, id) {
+    const st = this.state, ig = id ? (st.discs.find(d => d.id === id).grade || []).map((x, k) => id + '-' + k) : [];
+    return f.grade.map((r, i) => {
+      for (let j = 0; j < f.grade.length; j++) { if (j === i) continue; const o = f.grade[j]; if (o.dia === r.dia && hm(r.ini) < hm(o.fim) && hm(o.ini) < hm(r.fim)) return 'Sobrepõe o horário ' + (j + 1) + '.'; }
+      return this.checarSlot({ prof: f.prof ? +f.prof : null, turma: f.turma, sala: r.sala, dia: +r.dia, ini: r.ini, fim: r.fim, ignorar: ig }, st.discs, st.profs);
+    });
+  }
+  salvarDisc(e) {
+    e.preventDefault(); const st = this.state, f = st.dF, id = st.painel.id, erro = t => this.setState({ dErro: t, dOk: '' });
+    if (!f.nome.trim()) return erro('Informe o nome.');
+    if (st.discs.some(d => d.id !== id && d.turma === f.turma && d.nome.trim().toLowerCase() === f.nome.trim().toLowerCase())) return erro('Essa turma já tem uma disciplina com esse nome.');
+    const c = parseInt(f.carga, 10); if (isNaN(c) || c <= 0) return erro('A carga horária precisa ser maior que zero.');
+    const errs = this.errosDisc(f, id), k = errs.findIndex(Boolean); if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
+    const nid = id || Date.now(), nome = f.nome.trim();
+    const obj = { id: nid, nome, sigla: (st.discs.find(d => d.id === id) || {}).sigla || nome.split(' ').map(p => p[0]).join('').slice(0, 3).toUpperCase(), turma: f.turma, prof: f.prof ? +f.prof : null, sala: f.sala, carga: c, grade: f.grade.map(r => ({ dia_semana: +r.dia, hora_inicio: r.ini, hora_fim: r.fim, sala: r.sala })) };
+    this.setState(s => ({ discs: id ? s.discs.map(d => d.id === id ? obj : d) : s.discs.concat(obj), painel: { tipo: 'disc', id: nid }, dErro: '', dOk: obj.grade.length ? 'Grade salva: ' + obj.grade.length + (obj.grade.length === 1 ? ' aula' : ' aulas') + ' por semana.' : 'Salvo. Sem horários, a disciplina não aparece no quadro.' }));
+  }
+  valsDisc(st, now, fer) {
+    const ch = this.choques(st.discs, st.profs);
+    return {
+      novaDisc: () => this.abrirDisc(null), discResumo: st.discs.length + ' disciplinas · ' + TURMAS.length + ' turmas · ' + (ch.n ? ch.n + (ch.n === 1 ? ' choque na grade' : ' choques na grade') : 'grade sem choques'),
+      turmasD: TURMAS.map(t => { const ds = st.discs.filter(d => d.turma === t.id); const aulas = ds.reduce((x, d) => x + (d.grade || []).length, 0);
+        return { nome: t.nome, sub: ds.length + (ds.length === 1 ? ' disciplina' : ' disciplinas') + ' · ' + aulas + (aulas === 1 ? ' aula' : ' aulas') + ' por semana',
+          linhas: ds.map(d => { const c = this.carga(d, st, fer, now.data, now.min), temCh = (d.grade || []).some((x, k) => ch.M[d.id + '-' + k]), falta = d.carga - c.total;
+            return { nome: d.nome, prof: this.profNome(d.prof), sala: nomeSala(d.sala), horarios: (d.grade || []).length ? d.grade.map(x => DIA_C[x.dia_semana] + ' ' + x.hora_inicio).join(' · ') : 'Sem horário',
+              cargaTxt: fmtH(c.feito) + ' de ' + d.carga + ' h', bar: 'scaleX(' + Math.min(1, c.feito / d.carga).toFixed(3) + ')', proj: !(d.grade || []).length ? 'Sem horário, não acumula carga.' : falta > 0.05 ? 'A grade não fecha a carga: faltam ' + fmtH(falta) + ' até ' + ddmm(SEM.fim) + '.' : 'Fecha a carga até ' + ddmm(SEM.fim) + '.',
+              projCor: !(d.grade || []).length || falta > 0.05 ? 'var(--aviso)' : 'var(--texto-suave)', temCh, semH: !(d.grade || []).length, abrir: () => this.abrirDisc(d) }; }) }; })
+    };
+  }
+  pedCheck(p, q, st) { const d = st.discs.find(x => x.id === p.disc); return d ? this.checarData({ data: q.data, ini: q.ini, fim: q.fim, prof: p.prof, turma: d.turma, sala: q.sala }, st) : 'Disciplina não encontrada.'; }
+  enviarPed(e) {
+    e.preventDefault(); const st = this.state, f = st.pF, erro = t => this.setState({ pMsg: { erro: true, t } });
+    if (!f.disc) return erro('Escolha a disciplina.');
+    const ck = this.pedCheck({ disc: +f.disc, prof: PROF_DEMO }, f, st); if (ck) return erro('Não dá para enviar: ' + ck);
+    if (!f.motivo.trim()) return erro('Explique o motivo da aula extra.');
+    this.setState(s => ({ pedidos: [{ id: Date.now(), prof: PROF_DEMO, disc: +f.disc, data: f.data, ini: f.ini, fim: f.fim, sala: f.sala, motivo: f.motivo.trim(), status: 'pendente', resposta: '', sug: null }].concat(s.pedidos), pF: { disc: f.disc, data: '', ini: '', fim: '', sala: f.sala, motivo: '' }, pMsg: { erro: false, t: 'Pedido enviado. A escola analisa e você vê a resposta aqui.' } }));
+  }
+  valsPed(st, P) {
+    const esc = P === 'escola', f = st.pF, minhas = st.discs.filter(d => d.prof === PROF_DEMO);
+    const fmtP = (p, q) => { const d = st.discs.find(x => x.id === p.disc) || {}; return { nome: (d.nome || '—') + ' · ' + nomeTurma(d.turma), prof: this.profNome(p.prof), quando: DIA_L[dsem(q.data)] + ', ' + ddmm(q.data) + ' · ' + q.ini + '–' + q.fim, sala: nomeSala(q.sala), motivo: p.motivo }; };
+    const STT = { pendente: 'Em análise', aprovada: 'Aprovada', recusada: 'Recusada', sugestao: 'Sugestão da escola' };
+    const tagSt = s => ({ tag: STT[s], tagBg: s === 'aprovada' ? 'var(--texto)' : s === 'recusada' ? 'var(--aviso-suave)' : 'transparent', tagCor: s === 'aprovada' ? 'var(--fundo)' : s === 'recusada' ? 'var(--aviso)' : 'var(--texto)', tagBorda: s === 'aprovada' ? 'var(--texto)' : s === 'recusada' ? 'var(--aviso)' : 'var(--texto)' });
+    const set = (k, v) => this.setState(s => ({ [k]: v }));
+    if (esc) {
+      const pend = st.pedidos.filter(p => p.status === 'pendente'), hist = st.pedidos.filter(p => p.status !== 'pendente');
+      return { pedEsc: true, pedProf: false, pendTitulo: pend.length ? pend.length + (pend.length === 1 ? ' pedido aguardando análise' : ' pedidos aguardando análise') : 'Nenhum pedido aguardando análise',
+        pendLista: pend.map(p => { const ck = this.pedCheck(p, p, st), rec = st.recusando === p.id, sug = st.sugerindo === p.id;
+          return Object.assign(fmtP(p, p), { ok: !ck, ck: ck ? 'Choque: ' + ck : 'Sem choque com professor, turma e sala.', ckCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', aprovarOff: !!ck, aprovarO: ck ? 0.4 : 1,
+            normal: !rec && !sug, rec, sug, recMotivo: st.recMotivo, recErro: st.recErro, sugF: st.sug, sugErro: st.sugErro,
+            aprovar: () => { const c2 = this.pedCheck(p, p, this.state); if (c2) return; this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', resposta: '' }) : x), msgPed: 'Aula extra aprovada. Ela entra no quadro e na semana dos alunos.' })); },
+            pedirRec: () => this.setState({ recusando: p.id, recMotivo: '', recErro: '', sugerindo: null }), pedirSug: () => this.setState({ sugerindo: p.id, recusando: null, sugErro: '', sug: { data: p.data, ini: p.ini, fim: p.fim, sala: p.sala } }),
+            cancelar: () => this.setState({ recusando: null, sugerindo: null }),
+            setRec: e => this.setState({ recMotivo: e.target.value, recErro: '' }),
+            confRec: () => { if (!this.state.recMotivo.trim()) return this.setState({ recErro: 'Escreva o motivo da recusa. O professor vai ver.' }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: s.recMotivo.trim() }) : x), recusando: null, msgPed: 'Pedido recusado. O professor vê o motivo.' })); },
+            setSugData: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { data: e.target.value }), sugErro: '' })), setSugIni: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { ini: e.target.value }), sugErro: '' })), setSugFim: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { fim: e.target.value }), sugErro: '' })), setSugSala: e => this.setState(s => ({ sug: Object.assign({}, s.sug, { sala: e.target.value }), sugErro: '' })),
+            sugCk: (() => { const c3 = this.pedCheck(p, st.sug, st); return c3 ? 'Choque: ' + c3 : 'Horário livre.'; })(), sugCkCor: this.pedCheck(p, st.sug, st) ? 'var(--aviso)' : 'var(--texto-suave)',
+            confSug: () => { const c4 = this.pedCheck(p, this.state.sug, this.state); if (c4) return this.setState({ sugErro: 'Esse horário também tem choque. ' + c4 }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'sugestao', sug: Object.assign({}, s.sug) }) : x), sugerindo: null, msgPed: 'Sugestão enviada. O professor aceita ou recusa.' })); } }); }),
+        temPend: pend.length > 0, histLista: hist.map(p => { const q = p.status === 'sugestao' ? p.sug : p; return Object.assign(fmtP(p, q), tagSt(p.status), { resposta: p.resposta, temResp: !!p.resposta }); }), temHist: hist.length > 0,
+        optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })), msgPedVis: !!st.msgPed, msgPed: st.msgPed || '', fecharMsgPed: () => this.setState({ msgPed: '' }) };
+    }
+    const meus = st.pedidos.filter(p => p.prof === PROF_DEMO), d = st.discs.find(x => String(x.id) === f.disc);
+    const ck = f.disc && f.data && f.ini && f.fim ? this.pedCheck({ disc: +f.disc, prof: PROF_DEMO }, Object.assign({}, f, { sala: f.sala || (d && d.sala) }), st) : '';
+    const setF = k => e => { const v = e.target.value; this.setState(s => { const n = Object.assign({}, s.pF, { [k]: v }); if (k === 'disc' && !s.pF.sala) { const dd = s.discs.find(x => String(x.id) === v); if (dd) n.sala = dd.sala; } return { pF: n, pMsg: null }; }); };
+    return { pedEsc: false, pedProf: true, optMinhas: minhas.map(x => ({ v: String(x.id), l: x.nome + ' · ' + nomeTurma(x.turma) })), optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })),
+      pF: f, setPDisc: setF('disc'), setPData: setF('data'), setPIni: setF('ini'), setPFim: setF('fim'), setPSala: setF('sala'), setPMotivo: setF('motivo'), enviarPed: e => this.enviarPed(e),
+      pCkVis: !!(f.disc && f.data && f.ini && f.fim), pCk: ck ? 'Choque: ' + ck : 'Horário livre para você, a turma e a sala.', pCkCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', pEnvOff: !!ck, pEnvO: ck ? 0.4 : 1,
+      pMsgVis: !!st.pMsg, pMsg: st.pMsg ? st.pMsg.t : '', pMsgCor: st.pMsg && st.pMsg.erro ? 'var(--aviso)' : 'var(--texto)',
+      meusLista: meus.map(p => { const q = p.status === 'sugestao' ? p.sug : p; return Object.assign(fmtP(p, q), tagSt(p.status), { resposta: p.resposta, temResp: !!p.resposta, ehSug: p.status === 'sugestao', original: 'Você pediu ' + DIA_L[dsem(p.data)] + ', ' + ddmm(p.data) + ' · ' + p.ini + '–' + p.fim + '.',
+        aceitar: () => { const c5 = this.pedCheck(p, p.sug, this.state); if (c5) return this.setState({ pMsg: { erro: true, t: 'A sugestão deixou de estar livre: ' + c5 } }); this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'aprovada', data: p.sug.data, ini: p.sug.ini, fim: p.sug.fim, sala: p.sug.sala, sug: null }) : x), pMsg: { erro: false, t: 'Sugestão aceita. A aula extra está no quadro.' } })); },
+        recusar: () => this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === p.id ? Object.assign({}, x, { status: 'recusada', resposta: 'Você recusou a sugestão da escola.', sug: null }) : x) })) }); }),
+      temMeus: meus.length > 0 };
+  }
+  valsPainel(st, P, now, fer) {
+    const pn = st.painel, esc = P === 'escola', base = { painelVis: !!pn, fecharPainel: () => this.setState({ painel: null }), pAula: false, pEv: false, pEvForm: false, pDisc: false, painelTitulo: '' };
+    if (!pn) return base;
+    if (pn.tipo === 'aula') {
+      const d = st.discs.find(x => x.id === pn.disc); if (!d) return base;
+      const c = this.carga(d, st, fer, now.data, now.min), ch = this.choques(st.discs, st.profs), msgs = pn.itipo === 'grade' && !pn.remarcada ? (ch.M[pn.tkey] || []) : [];
+      const prox = this.evVisiveis(st, P).filter(e => e.disc === d.id && (e.fim || e.data) >= now.data).slice(0, 3).map(e => this.chipEv(e));
+      const cur = pn.data === now.data && hm(pn.ini) <= now.min && now.min < hm(pn.fim), passado = pn.data < now.data || (pn.data === now.data && hm(pn.fim) <= now.min);
+      return Object.assign(base, { painelTitulo: 'Aula', pAula: true, pa: { nome: d.nome, sub: nomeTurma(d.turma) + ' · ' + nomeSala(pn.sala) + ' · ' + this.profNome(d.prof), quando: DIA_L[dsem(pn.data)] + ', ' + ddmm(pn.data) + ' · ' + pn.ini + '–' + pn.fim,
+        status: pn.feriado ? 'Sem aula: ' + pn.feriado : pn.pendente ? 'Aula extra aguardando análise da escola' : cur ? 'Acontecendo agora' : passado ? 'Aula dada' : pn.remarcada ? 'Remarcada só nesta semana' : pn.itipo === 'extra' ? 'Aula extra aprovada' : 'Prevista',
+        cargaTxt: fmtH(c.feito) + ' de ' + d.carga + ' h cumpridas', bar: 'scaleX(' + Math.min(1, c.feito / d.carga).toFixed(3) + ')' }, paChoques: msgs.map(t => ({ t })), paTemCh: esc && msgs.length > 0, paProx: prox, paTemProx: prox.length > 0,
+        paEditarVis: esc && pn.itipo === 'grade', paEditar: () => this.abrirDisc(d), paPedVis: esc && pn.pendente, paIrPed: () => this.setState({ aba: 'pedidos', painel: null }) });
+    }
+    if (pn.tipo === 'evento') {
+      const e = st.eventos.find(x => x.id === pn.id); if (!e) return base;
+      const d = e.disc ? st.discs.find(x => x.id === e.disc) : null, c = this.chipEv(e);
+      return Object.assign(base, { painelTitulo: 'Calendário', pEv: true, pe: Object.assign(c, { quando: (e.fim ? ddmm(e.data) + ' a ' + ddmm(e.fim) + ' de ' : DIA_L[dsem(e.data)] + ', ' + e.data.slice(8, 10) + ' de ') + MESES[+e.data.slice(5, 7) - 1] + (e.hi ? ' · ' + e.hi + '–' + e.hf : ''), disc: d ? d.nome + ' · ' + nomeTurma(d.turma) : '', temDisc: !!d, desc: e.desc, temDesc: !!e.desc }),
+        peAcoes: esc, peEditar: () => this.editarEvento(e), peExcluir: () => this.setState(s => ({ eventos: s.eventos.filter(x => x.id !== e.id), painel: null, msgAno: 'Evento removido do calendário.' })) });
+    }
+    if (pn.tipo === 'eventoForm' && st.eF) {
+      const f = st.eF, setE = k => ev => { const v = ev.target.value; this.setState(s => ({ eF: Object.assign({}, s.eF, { [k]: v }), eErro: '' })); };
+      return Object.assign(base, { painelTitulo: 'Calendário', pEvForm: true, ef: f, efTitulo: pn.id ? 'Editar evento' : 'Novo evento', optTipos: Object.keys(TIPOS).map(k => ({ v: k, l: TIPOS[k].label })),
+        setETipo: setE('tipo'), setETitulo: setE('titulo'), setEData: setE('data'), setEFim: setE('fim'), setEHi: setE('hi'), setEHf: setE('hf'), setEDisc: setE('disc'), setEDesc: setE('desc'),
+        quemOps: [[true, 'Todas as turmas'], [false, 'Turmas específicas']].map(([v, l]) => ({ label: l, on: f.todas === v, bg: f.todas === v ? 'var(--texto)' : 'transparent', cor: f.todas === v ? 'var(--fundo)' : 'var(--texto)', ir: () => this.setState(s => ({ eF: Object.assign({}, s.eF, { todas: v }), eErro: '' })) })),
+        turmasVis: !f.todas, turmasOps: TURMAS.map(t => { const on = f.turmas.includes(t.id); return { label: t.nome, on, bg: on ? 'var(--texto)' : 'var(--superficie)', cor: on ? 'var(--fundo)' : 'var(--texto)', ir: () => this.setState(s => ({ eF: Object.assign({}, s.eF, { turmas: on ? s.eF.turmas.filter(x => x !== t.id) : s.eF.turmas.concat(t.id) }), eErro: '' })) }; }),
+        optDiscE: st.discs.filter(d => f.todas || f.turmas.includes(d.turma)).map(d => ({ v: String(d.id), l: d.nome + ' · ' + nomeTurma(d.turma) })), eErro: st.eErro, salvarEvento: ev => this.salvarEvento(ev) });
+    }
+    if (pn.tipo === 'disc' && st.dF) {
+      const f = st.dF, errs = this.errosDisc(f, pn.id), set = k => e => this.setDF(k, e.target.value);
+      const c = pn.id ? this.carga(st.discs.find(x => x.id === pn.id), st, fer, now.data, now.min) : null;
+      return Object.assign(base, { painelTitulo: 'Disciplina', pDisc: true, df: f, dfTitulo: pn.id ? f.nome || 'Disciplina' : 'Nova disciplina', setDNome: set('nome'), setDTurma: set('turma'), setDProf: set('prof'), setDSala: set('sala'), setDCarga: set('carga'),
+        optTurmas: TURMAS.map(t => ({ v: t.id, l: t.nome })), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optSalas: SALAS.map(s => ({ v: s.id, l: s.nome })),
+        dfCarga: c ? fmtH(c.feito) + ' cumpridas de ' + f.carga + ' h · a grade soma ' + fmtH(c.total) + ' no semestre' : '', dfTemCarga: !!c,
+        dfLinhas: f.grade.map((r, i) => ({ n: String(i + 1), dia: r.dia, ini: r.ini, fim: r.fim, sala: r.sala, nota: errs[i] || 'Livre para o professor, a turma e a sala.', notaCor: errs[i] ? 'var(--aviso)' : 'var(--texto-suave)', borda: errs[i] ? 'var(--aviso)' : 'var(--borda)',
+          setDia: e => this.setLinhaD(r.k, 'dia', e.target.value), setIni: e => this.setLinhaD(r.k, 'ini', e.target.value), setFim: e => this.setLinhaD(r.k, 'fim', e.target.value), setSala: e => this.setLinhaD(r.k, 'sala', e.target.value),
+          remover: () => this.setState(s => ({ dF: Object.assign({}, s.dF, { grade: s.dF.grade.filter(x => x.k !== r.k) }), dErro: '', dOk: '' })), remLabel: 'Remover horário ' + (i + 1) })),
+        dfSemLinhas: !f.grade.length, addLinhaD: () => this.setState(s => { const g = s.dF.grade, u = g[g.length - 1]; return { dF: Object.assign({}, s.dF, { grade: g.concat({ k: Date.now(), dia: u ? String(Math.min(5, +u.dia + 1)) : '1', ini: u ? u.ini : '08:00', fim: u ? u.fim : '09:40', sala: u ? u.sala : s.dF.sala }) }), dErro: '', dOk: '' }; }),
+        dErro: st.dErro, dOk: st.dOk, temDOk: !!st.dOk, salvarDisc: e => this.salvarDisc(e) });
+    }
+    return base;
+  }
+}
+</script>
+</body>
+</html>

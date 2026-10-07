@@ -161,6 +161,44 @@ input,select,textarea,button{font:inherit;color:inherit}
       <div style="display:flex;flex-direction:column;gap:12px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Funções · {{ funcTotal }}</span><h2 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:clamp(30px,5cqi,48px);line-height:1.05;max-width:22ch;text-wrap:balance">Cada decisão já tomada. Sobra a aula.</h2></div>
       <p style="margin:0;flex:0 1 380px;color:var(--texto-suave);text-wrap:pretty">{{ funcDica }}</p>
     </div>
+    <sc-if value="{{ tintaModo }}" hint-placeholder-val="{{ true }}">
+    <div ref="{{ tintaMarca }}" aria-hidden="true" style="height:0"></div>
+    <div ref="{{ tintaStick }}" data-tinta="" style="position:{{ funcPos }};top:72px;display:flex;align-items:stretch;height:{{ tintaH }};background:var(--fundo);border:1px solid var(--borda-fraca);overflow:hidden">
+      <sc-if value="{{ tintaSumVis }}" hint-placeholder-val="{{ true }}">
+        <nav aria-label="Sumário das funções" style="flex:0 0 clamp(200px,22cqi,260px);display:flex;flex-direction:column;justify-content:center;gap:2px;padding:24px 20px;border-right:1px solid var(--borda)">
+          <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave);margin-bottom:8px">Sumário</span>
+          <sc-for list="{{ funcoes }}" as="f" hint-placeholder-count="7">
+            <button data-si="{{ f.i }}" onClick="{{ f.tinta }}" style="display:flex;align-items:baseline;gap:10px;min-height:44px;padding:8px 0;border:0;background:transparent;font-family:inherit;text-align:left;color:var(--texto-suave);cursor:pointer;transition:color 200ms" style-hover="color:var(--texto)"><span style="flex:none;font-size:13px;font-variant-numeric:tabular-nums">{{ f.n }}</span><span style="position:relative;font-size:15px;font-weight:500;line-height:1.25">{{ f.nome }}<span data-sr="" aria-hidden="true" style="position:absolute;left:-3px;right:-3px;top:54%;height:2px;background:var(--texto);transform:scaleX(0);transform-origin:0 50%"></span></span></button>
+          </sc-for>
+        </nav>
+      </sc-if>
+      <div data-pilha="" style="position:relative;flex:1 1 0;min-width:0;display:{{ tintaPilha }};flex-direction:column;background-color:var(--superficie);background-image:repeating-linear-gradient(to bottom,transparent 0 35px,var(--borda-fraca) 35px 36px)">
+        <sc-for list="{{ tintaPags }}" as="f" hint-placeholder-count="7">
+          <article data-tp="{{ f.i }}" aria-label="{{ f.nome }}" style="grid-area:1/1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:clamp(14px,2.2cqi,24px);padding:clamp(24px,4cqi,56px);border-top:{{ tintaPagBorda }};visibility:{{ tintaVis0 }};will-change:transform,opacity">
+            <span data-nl="" style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave);font-variant-numeric:tabular-nums">Nº {{ f.n }} / {{ funcN }}</span>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:28px clamp(24px,4cqi,56px)">
+              <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:18px">
+                <h3 data-nome="" style="position:relative;margin:0;display:flex;flex-wrap:wrap;column-gap:.24em;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(44px,6.6cqi,96px);line-height:1;letter-spacing:-.01em">
+                  <sc-for list="{{ f.nomeW }}" as="w" hint-placeholder-count="2"><span style="display:inline-flex;white-space:nowrap"><sc-for list="{{ w.ls }}" as="l" hint-placeholder-count="5"><span data-l="" style="display:inline-block;opacity:{{ tintaOp0 }};transform-origin:50% 85%">{{ l.c }}</span></sc-for></span></sc-for>
+                  <span data-pena="" aria-hidden="true" style="position:absolute;left:0;top:0;width:3px;height:0;background:var(--texto);border-radius:1px;opacity:0;pointer-events:none;transform-origin:50% 100%"></span>
+                </h3>
+                <span data-sub="" aria-hidden="true" style="display:block;height:2px;width:min(100%,240px);background:var(--texto);transform:scaleX({{ tintaOp0 }});transform-origin:0 50%"></span>
+                <p style="margin:0;display:flex;flex-wrap:wrap;column-gap:.28em;max-width:28ch;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:clamp(20px,2.4cqi,28px);line-height:1.25">
+                  <sc-for list="{{ f.tituloW }}" as="w" hint-placeholder-count="6"><span data-w="" style="display:inline-block;opacity:{{ tintaOp0 }}">{{ w.t }}</span></sc-for>
+                </p>
+              </div>
+              <div data-pvw="" style="position:relative;flex:1 1 360px;min-width:0;opacity:{{ tintaOp0 }}">
+                <div style="padding:clamp(12px,2cqi,20px);background:var(--fundo);border:1px solid var(--borda)"><dc-import name="FuncaoPrevia" n="{{ f.i }}" hint-size="100%,260px"></dc-import></div>
+                <span data-ring="" aria-hidden="true" style="position:absolute;right:20px;top:-6px;width:120px;height:120px;margin:-40px -40px 0 0;border:2px solid var(--texto);border-radius:50%;opacity:0;pointer-events:none"></span>
+                <span data-st="" aria-hidden="true" style="position:absolute;right:-6px;top:-18px;display:inline-flex;align-items:center;height:40px;padding:0 16px;border:2px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;opacity:{{ tintaOp0 }};transform:rotate(-9deg)">Decidido</span>
+              </div>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ espiralModo }}" hint-placeholder-val="{{ false }}">
     <div ref="{{ funcMarca }}" aria-hidden="true" style="height:0"></div>
     <div ref="{{ funcStick }}" style="position:{{ funcPos }};top:72px;display:flex;flex-wrap:wrap;align-items:stretch;background:var(--fundo);border:1px solid var(--borda-fraca);overflow:hidden">
       <div ref="{{ funcRoda }}" data-roda="" role="tablist" aria-label="Funções" aria-orientation="vertical" tabindex="0" onPointerDown="{{ funcDown }}" onKeyDown="{{ funcKey }}" style="position:relative;flex:1 1 380px;min-width:0;min-height:{{ rodaMinH }};overflow:hidden;touch-action:pan-y;cursor:grab;outline-offset:-2px">
@@ -182,6 +220,7 @@ input,select,textarea,button{font:inherit;color:inherit}
         </div>
       </div>
     </div>
+    </sc-if>
   </section>
 
   <section id="demo" data-revela="" style="display:flex;flex-direction:column;gap:24px;padding:48px 0;border-top:1px solid var(--borda-fraca)">
@@ -514,10 +553,10 @@ input,select,textarea,button{font:inherit;color:inherit}
     </sc-if>
     <div data-fluid="" style="display:flex;flex-direction:column">
       <sc-for list="{{ profsLista }}" as="p" hint-placeholder-count="3">
-        <div data-fi="" data-linha-professor="" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;min-height:64px;padding:10px 16px;border-top:1px solid var(--borda-fraca)">
+        <div data-fi="" data-linha-professor="" role="button" tabIndex="0" aria-label="{{ p.abrirLabel }}" onClick="{{ p.abrir }}" onKeyDown="{{ p.tecla }}" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;min-height:64px;padding:10px 16px;border-top:1px solid var(--borda-fraca);cursor:pointer">
           <span style="flex:1.4 1 220px;display:flex;align-items:center;gap:12px;min-width:0">
             <span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border:1px solid var(--borda);border-radius:50%;font-size:12px;font-weight:600;color:var(--texto-suave);background:var(--fundo)">{{ p.iniciais }}</span>
-            <span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:500">{{ p.nome }}</span><span style="font-size:13px;color:var(--texto-suave);overflow-wrap:anywhere">{{ p.email }}</span></span>
+            <span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:500">{{ p.nome }}</span><span style="font-size:13px;color:var(--texto-suave);overflow-wrap:anywhere">{{ p.email }}</span><span data-resumo-ocupado="" style="font-size:13px;color:{{ p.ocupCor }};font-variant-numeric:tabular-nums;text-wrap:pretty">{{ p.ocupTxt }}</span></span>
           </span>
           <span style="flex:1.6 1 220px;display:flex;flex-wrap:wrap;gap:6px;min-width:0">
             <sc-for list="{{ p.discs }}" as="d" hint-placeholder-count="2"><button onClick="{{ d.ir }}" style="height:30px;display:inline-flex;align-items:center;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--fundo);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">{{ d.nome }}</button></sc-for>
@@ -606,7 +645,10 @@ input,select,textarea,button{font:inherit;color:inherit}
       <h1 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(32px,6cqi,44px);line-height:1.05">{{ telaLabel }}</h1>
       <p style="margin:0;color:var(--texto-suave);max-width:60ch;text-wrap:pretty">{{ discSub }}</p>
     </div>
-    <sc-if value="{{ discAdminH }}" hint-placeholder-val="{{ true }}"><button onClick="{{ abrirNovaDisc }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;transition:transform 80ms" style-active="transform:scale(.98)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Nova disciplina</button></sc-if>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-if value="{{ discAdminH }}" hint-placeholder-val="{{ true }}"><button onClick="{{ abrirIA }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;cursor:pointer;color:var(--texto);font-size:14px;font-weight:500;transition:transform 80ms" style-hover="border-color:var(--texto)" style-active="transform:scale(.98)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H9l-5 4z"></path><path d="M8 9h8M8 12h5"></path></svg>Assistente de grade</button></sc-if>
+      <sc-if value="{{ discAdminH }}" hint-placeholder-val="{{ true }}"><button onClick="{{ abrirNovaDisc }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:14px;font-weight:500;cursor:pointer;transition:transform 80ms" style-active="transform:scale(.98)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Nova disciplina</button></sc-if>
+    </div>
   </header>
   <sc-if value="{{ bloqueado }}" hint-placeholder-val="{{ false }}"><div role="status" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:12px 16px;margin-bottom:24px;border:1px solid var(--borda);border-radius:2px;background:var(--sunken);font-size:14px"><span style="text-wrap:pretty">{{ bloqueioTxt }}</span><button onClick="{{ irSemestre }}" style="flex:none;white-space:nowrap;min-height:36px;padding:0 12px;border:1px solid var(--texto);border-radius:2px;background:transparent;font-size:13px;font-weight:500;cursor:pointer">Ver semestre</button></div></sc-if>
   <sc-if value="{{ semPermVis }}" hint-placeholder-val="{{ false }}">
@@ -894,6 +936,8 @@ input,select,textarea,button{font:inherit;color:inherit}
 </sc-if>
 
 <sc-if value="{{ v.frequencia }}" hint-placeholder-val="{{ false }}">
+<dc-import name="Grade e Agenda" perfil="{{ gradePerfil }}" embutido="{{ true }}" hint-size="100%,900px"></dc-import>
+<sc-if value="{{ agendaLegado }}" hint-placeholder-val="{{ false }}">
   <header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--borda-fraca)">
     <div style="display:flex;flex-direction:column;gap:8px;min-width:0"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ agRotulo }}</span><h1 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(32px,6cqi,44px);line-height:1.05">Agenda</h1></div>
     <sc-if value="{{ podeEditar }}" hint-placeholder-val="{{ true }}"><button onClick="{{ abrirExtra }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;min-height:clamp(36px,calc(56px - 2cqi),44px);padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer;transition:transform 80ms" style-hover="background:var(--sunken)" style-active="transform:scale(.98)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Aula extra</button></sc-if>
@@ -975,6 +1019,12 @@ input,select,textarea,button{font:inherit;color:inherit}
     </section>
   </div>
 </sc-if>
+</sc-if>
+
+<sc-if value="{{ v.grade }}" hint-placeholder-val="{{ false }}">
+  <button onClick="{{ irMeu }}" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;margin-bottom:16px;padding:0 12px 0 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"></path></svg>Meu painel</button>
+  <dc-import name="Grade e Agenda" perfil="{{ gradePerfil }}" embutido="{{ true }}" hint-size="100%,900px"></dc-import>
+</sc-if>
 
 <sc-if value="{{ v.avisos }}" hint-placeholder-val="{{ false }}">
   <header style="display:flex;flex-direction:column;gap:8px;padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--borda-fraca)">
@@ -1024,6 +1074,7 @@ input,select,textarea,button{font:inherit;color:inherit}
     <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ meRotulo }}</span>
     <h1 style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:clamp(32px,6cqi,44px);line-height:1.05">{{ me.nome }}</h1>
     <p style="margin:0;color:var(--texto-suave);max-width:60ch">{{ meResumo }}</p>
+    <button onClick="{{ irGrade }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:4px;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);font-size:14px;font-weight:500;cursor:pointer" style-hover="background:var(--sunken)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="1"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Grade e agenda</button>
   </header>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:1px;background:var(--borda-fraca);border:1px solid var(--borda-fraca);margin-bottom:24px">
     <div style="display:flex;flex-direction:column;gap:4px;padding:20px;background:var(--superficie)"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Média geral</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:44px;line-height:1;color:{{ me.mediaCor }}">{{ me.mediaTxt }}</span></div>
@@ -1104,6 +1155,7 @@ input,select,textarea,button{font:inherit;color:inherit}
   </nav>
 </sc-if>
 
+<button aria-label="Voltar ao começo" title="Voltar ao começo" onClick="{{ irTopo }}" style="position:absolute;right:clamp(16px,3vw,28px);bottom:clamp(16px,3vw,28px);z-index:20;width:48px;height:48px;display:grid;place-items:center;padding:0;border:1px solid var(--texto);border-radius:2px;background:var(--superficie);color:var(--texto);cursor:pointer;opacity:{{ topoO }};transform:{{ topoT }};pointer-events:{{ topoPE }};transition:opacity 200ms linear,transform 300ms var(--mola-moderada),background-color 150ms linear,color 150ms linear" style-hover="background:var(--texto);color:var(--fundo)" style-active="transform:scale(.94)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
 <div onClick="{{ fecharPainel }}" style="position:absolute;inset:0;z-index:30;background:var(--texto);opacity:{{ scrimO }};pointer-events:{{ scrimPE }};transition:opacity 200ms linear"></div>
 <aside role="dialog" aria-modal="true" aria-label="{{ painelTitulo }}" style="position:absolute;z-index:31;top:{{ pTop }};right:0;bottom:0;left:{{ pLeft }};width:{{ pW }};display:flex;flex-direction:column;background:var(--superficie);border-left:1px solid var(--borda-fraca);border-top:1px solid var(--borda-fraca);container-type:inline-size;transform:{{ pT }};opacity:{{ pO }};visibility:{{ pVis }};transition:{{ pTr }}">
   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid var(--borda-fraca)">
@@ -1370,6 +1422,40 @@ input,select,textarea,button{font:inherit;color:inherit}
           <button type="submit" style="min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-size:15px;font-weight:500;cursor:pointer;transition:transform 80ms" style-active="transform:scale(.98)">Criar conta do professor</button>
         </form>
       </sc-if>
+      <sc-if value="{{ profFicha }}" hint-placeholder-val="{{ false }}">
+        <form onSubmit="{{ salvarOcup }}" data-ficha-professor="" style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ pf.nome }}</span><span style="font-size:14px;color:var(--texto-suave);overflow-wrap:anywhere">{{ pf.email }}</span><span style="font-size:14px;color:var(--texto-suave);text-wrap:pretty">{{ pf.discsTxt }}</span></div>
+          <div role="group" aria-label="Horários ocupados" style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Horários ocupados</span><span style="font-size:13px;color:var(--texto-suave)">{{ pf.nLinhas }}</span></div>
+            <span style="font-size:14px;color:var(--texto-suave);text-wrap:pretty">A grade nunca marca aula deste professor dentro destes horários.</span>
+            <div data-fluid="" style="display:flex;flex-direction:column;margin:0 -8px">
+              <sc-for list="{{ ocupLinhas }}" as="l" hint-placeholder-count="1">
+                <div data-fi="" style="display:flex;flex-direction:column;gap:6px;padding:10px 8px;border-top:1px solid var(--borda-fraca)">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="flex:none;width:20px;font-size:13px;color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ l.n }}</span>
+                    <select aria-label="Dia da semana" value="{{ l.dia }}" onChange="{{ l.setDia }}" style="flex:1;min-width:0;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option></select>
+                    <button type="button" aria-label="{{ l.remLabel }}" onClick="{{ l.remover }}" style="flex:none;width:44px;height:44px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--texto-suave);cursor:pointer" style-hover="border-color:var(--aviso);color:var(--aviso)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-left:28px">
+                    <input type="time" aria-label="Início" value="{{ l.ini }}" onChange="{{ l.setIni }}" style="flex:1 1 132px;min-width:132px;max-width:160px;min-height:44px;padding:0 10px;border:1px solid {{ l.borda }};border-radius:2px;background:var(--superficie);font-size:15px;font-variant-numeric:tabular-nums" style-focus="border-color:var(--texto)">
+                    <span aria-hidden="true" style="color:var(--texto-suave)">–</span>
+                    <input type="time" aria-label="Fim" value="{{ l.fim }}" onChange="{{ l.setFim }}" style="flex:1 1 132px;min-width:132px;max-width:160px;min-height:44px;padding:0 10px;border:1px solid {{ l.borda }};border-radius:2px;background:var(--superficie);font-size:15px;font-variant-numeric:tabular-nums" style-focus="border-color:var(--texto)">
+                  </div>
+                  <div style="padding-left:28px"><input aria-label="Motivo" value="{{ l.motivo }}" onChange="{{ l.setMotivo }}" maxLength="40" placeholder="Motivo, por exemplo Outra escola" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-size:15px" style-focus="border-color:var(--texto)"></div>
+                  <span style="padding-left:28px;min-height:18px;font-size:13px;color:{{ l.notaCor }};text-wrap:pretty">{{ l.nota }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ ocupVazio }}" hint-placeholder-val="{{ false }}"><span style="padding:12px 0;border-top:1px solid var(--borda-fraca);font-size:14px;color:var(--texto-suave);text-wrap:pretty">Sem horários ocupados: o professor está livre na janela inteira da escola, de segunda a sexta, das 08:00 às 17:10.</span></sc-if>
+            <button type="button" onClick="{{ addOcup }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px dashed var(--borda);border-radius:2px;background:transparent;font-size:14px;font-weight:500;cursor:pointer;transition:transform 80ms" style-hover="border-color:var(--texto)" style-active="transform:scale(.98)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>Adicionar horário</button>
+          </div>
+          <span role="alert" style="min-height:20px;font-size:14px;color:var(--aviso);text-wrap:pretty">{{ fErro }}</span>
+          <div style="position:sticky;bottom:-32px;display:flex;flex-direction:column;gap:8px;padding:12px 0 16px;background:var(--superficie);border-top:1px solid var(--borda-fraca)">
+            <sc-if value="{{ fOk }}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size:14px;font-weight:500">{{ fOk }}</span></sc-if>
+            <div style="display:flex;gap:8px"><button type="submit" style="flex:1;min-height:44px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-family:inherit;font-weight:500;cursor:pointer;transition:transform 80ms;font-size:15px" style-active="transform:scale(.98)">Salvar horários</button><button type="button" onClick="{{ fecharPainel }}" style="min-height:44px;padding:0 16px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;cursor:pointer;font-size:15px" style-hover="border-color:var(--texto)">Fechar</button></div>
+          </div>
+        </form>
+      </sc-if>
       <sc-if value="{{ profSenha }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">{{ psp.titulo }}</span><span style="font-size:14px;color:var(--texto-suave);text-wrap:pretty">{{ psp.sub }}</span></div>
@@ -1381,6 +1467,66 @@ input,select,textarea,button{font:inherit;color:inherit}
           </div>
         </div>
       </sc-if>
+    </sc-if>
+    <sc-if value="{{ pp.ia }}" hint-placeholder-val="{{ false }}">
+      <div data-assistente-grade="" style="flex:1 0 auto;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:28px;line-height:1.1">Assistente de grade</span><span style="font-size:14px;color:var(--texto-suave);text-wrap:pretty">Sugere horários sem choque. Você confere e aplica.</span></div>
+        <sc-if value="{{ iaVazio }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Para começar</span>
+            <sc-for list="{{ iaSugestoes }}" as="g" hint-placeholder-count="3">
+              <button type="button" onClick="{{ g.usar }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;border:1px solid var(--borda);border-radius:2px;background:var(--fundo);font-family:inherit;font-size:15px;line-height:1.35;text-align:left;color:var(--texto);cursor:pointer;transition:transform 80ms" style-hover="border-color:var(--texto)" style-active="transform:scale(.99)"><span style="text-wrap:pretty">{{ g.t }}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div role="log" aria-live="polite" aria-label="Conversa com o assistente" style="display:flex;flex-direction:column">
+          <sc-for list="{{ iaLista }}" as="m" hint-placeholder-count="0">
+            <article ref="{{ iaMsgRef }}" style="display:flex;flex-direction:column;gap:8px;padding:16px 0;border-top:1px solid var(--borda-fraca)">
+              <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">{{ m.autor }}</span>
+              <sc-if value="{{ m.usuario }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-size:19px;line-height:1.35;white-space:pre-wrap;text-wrap:pretty">{{ m.texto }}</p></sc-if>
+              <sc-if value="{{ m.ia }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:15px;line-height:1.55;white-space:pre-wrap;text-wrap:pretty">{{ m.texto }}</p></sc-if>
+              <sc-if value="{{ m.temProposta }}" hint-placeholder-val="{{ false }}">
+                <div data-proposta="" style="display:flex;flex-direction:column;margin-top:4px;border:1px solid var(--borda);border-radius:2px;background:var(--fundo)">
+                  <sc-if value="{{ iaTemProp }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 14px"><span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Proposta</span><span style="font-size:13px;color:var(--texto-suave)">{{ iaPropN }}</span></div>
+                    <sc-for list="{{ iaProp }}" as="p" hint-placeholder-count="2">
+                      <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-top:1px solid var(--borda-fraca)">
+                        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 12px"><span style="font-weight:600">{{ p.nome }}</span><span style="font-size:13px;color:var(--texto-suave)">{{ p.prof }}</span></div>
+                        <span style="font-size:14px;font-variant-numeric:tabular-nums;text-wrap:pretty">{{ p.horarios }}</span>
+                        <sc-if value="{{ p.temRes }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;font-weight:500;color:{{ p.resCor }};text-wrap:pretty">{{ p.res }}</span></sc-if>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                  <sc-if value="{{ iaTemRec }}" hint-placeholder-val="{{ false }}">
+                    <div data-nao-coube="" style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-top:1px solid var(--borda-fraca);background:var(--aviso-suave)">
+                      <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--aviso)">Não coube</span>
+                      <sc-for list="{{ iaRec }}" as="r" hint-placeholder-count="1"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ r.nome }}</span><span style="font-size:14px;color:var(--aviso);text-wrap:pretty">{{ r.motivo }}</span></div></sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ iaAcoesVis }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px;border-top:1px solid var(--borda-fraca)"><button type="button" onClick="{{ aplicarIA }}" disabled="{{ iaAplicando }}" aria-busy="{{ iaAplicando }}" style="flex:1 1 160px;min-height:44px;padding:0 16px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-family:inherit;font-weight:500;cursor:pointer;transition:transform 80ms;font-size:15px;opacity:{{ iaAplicarO }}" style-active="transform:scale(.98)">{{ iaAplicarTxt }}</button><button type="button" onClick="{{ descartarIA }}" disabled="{{ iaAplicando }}" style="min-height:44px;padding:0 16px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;cursor:pointer;color:var(--texto);font-size:15px;opacity:{{ iaAplicarO }}" style-hover="border-color:var(--texto)">Descartar</button></div>
+                  </sc-if>
+                  <sc-if value="{{ iaStatusVis }}" hint-placeholder-val="{{ false }}"><span role="status" style="padding:12px 14px;border-top:1px solid var(--borda-fraca);font-size:14px;font-weight:500;text-wrap:pretty">{{ iaStatus }}</span></sc-if>
+                </div>
+              </sc-if>
+            </article>
+          </sc-for>
+          <sc-if value="{{ iaEnviando }}" hint-placeholder-val="{{ false }}">
+            <article ref="{{ iaMsgRef }}" aria-busy="true" style="display:flex;flex-direction:column;gap:8px;padding:16px 0;border-top:1px solid var(--borda-fraca)">
+              <span style="font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Assistente</span>
+              <span ref="{{ iaPulso }}" style="font-size:15px;color:var(--texto-suave)">Conferindo a grade e os horários ocupados…</span>
+            </article>
+          </sc-if>
+          <sc-if value="{{ iaTemErro }}" hint-placeholder-val="{{ false }}">
+            <div ref="{{ iaMsgRef }}" role="alert" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:8px;padding:14px 16px;border:1px solid var(--aviso);border-radius:2px;background:var(--aviso-suave);color:var(--aviso);font-size:14px;text-wrap:pretty"><span>{{ iaErro }}</span><button type="button" onClick="{{ iaTentar }}" style="min-height:36px;padding:0 12px;border:1px solid var(--aviso);border-radius:2px;background:transparent;color:var(--aviso);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer">Tentar de novo</button></div>
+          </sc-if>
+          <div ref="{{ iaFim }}" aria-hidden="true" style="height:1px"></div>
+        </div>
+        <form onSubmit="{{ enviarIA }}" style="position:sticky;bottom:-32px;margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:12px 0 16px;background:var(--superficie);border-top:1px solid var(--borda-fraca)">
+          <textarea ref="{{ iaCampo }}" aria-label="Mensagem para o assistente" rows="3" value="{{ iaTexto }}" onChange="{{ setIaTexto }}" onKeyDown="{{ iaTecla }}" disabled="{{ iaOcupado }}" placeholder="Descreva o que precisa na grade" style="width:100%;min-height:76px;max-height:160px;resize:vertical;padding:10px 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;font-size:15px;line-height:1.45;color:var(--texto);opacity:{{ iaCampoO }}" style-focus="border-color:var(--texto)"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:12px;color:var(--texto-suave)">Enter envia · Shift+Enter quebra linha</span><button type="submit" disabled="{{ iaNaoEnvia }}" style="flex:none;min-height:44px;padding:0 18px;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);font-family:inherit;font-weight:500;cursor:pointer;transition:transform 80ms;font-size:15px;opacity:{{ iaEnviarO }}" style-active="transform:scale(.98)">Enviar</button></div>
+        </form>
+      </div>
     </sc-if>
     <sc-if value="{{ pp.mais }}" hint-placeholder-val="{{ false }}">
       <div data-fluid="" style="display:flex;flex-direction:column;margin:-8px -8px 0">
@@ -1396,7 +1542,7 @@ input,select,textarea,button{font:inherit;color:inherit}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;inicio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Apresentação&quot;,&quot;Login&quot;,&quot;Primeiro acesso&quot;,&quot;Escola&quot;,&quot;Professor&quot;,&quot;Professor · sem permissão&quot;,&quot;Aluno&quot;],&quot;default&quot;:&quot;Apresentação&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;dispositivo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Desktop&quot;,&quot;Celular&quot;],&quot;default&quot;:&quot;Desktop&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Portal&quot;,&quot;Apple · SF + New York&quot;,&quot;Apple · só SF&quot;],&quot;default&quot;:&quot;Apple · SF + New York&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;movimento&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Seguir o sistema&quot;,&quot;Completo&quot;,&quot;Reduzido&quot;],&quot;default&quot;:&quot;Seguir o sistema&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Vazio&quot;,&quot;Carregando&quot;,&quot;Erro&quot;,&quot;Muitos itens&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;vista&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Protótipo&quot;,&quot;Sistema&quot;],&quot;default&quot;:&quot;Protótipo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Documentação&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;inicio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Apresentação&quot;,&quot;Login&quot;,&quot;Primeiro acesso&quot;,&quot;Escola&quot;,&quot;Professor&quot;,&quot;Professor · sem permissão&quot;,&quot;Aluno&quot;,&quot;Escola · horários do professor&quot;,&quot;Escola · assistente vazio&quot;,&quot;Escola · assistente com proposta&quot;,&quot;Escola · assistente com erro&quot;],&quot;default&quot;:&quot;Apresentação&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;dispositivo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Desktop&quot;,&quot;Celular&quot;],&quot;default&quot;:&quot;Desktop&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Portal&quot;,&quot;Apple · SF + New York&quot;,&quot;Apple · só SF&quot;],&quot;default&quot;:&quot;Apple · SF + New York&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;movimento&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Seguir o sistema&quot;,&quot;Completo&quot;,&quot;Reduzido&quot;],&quot;default&quot;:&quot;Seguir o sistema&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Vazio&quot;,&quot;Carregando&quot;,&quot;Erro&quot;,&quot;Muitos itens&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;vista&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Protótipo&quot;,&quot;Sistema&quot;],&quot;default&quot;:&quot;Protótipo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Documentação&quot;},&quot;funcoesEstilo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Tinta&quot;,&quot;Espiral&quot;],&quot;default&quot;:&quot;Tinta&quot;,&quot;tsType&quot;:&quot;'Tinta' | 'Espiral'&quot;,&quot;section&quot;:&quot;Landing&quot;},&quot;iaEstado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Conversa livre&quot;,&quot;Vazio&quot;,&quot;Enviando&quot;,&quot;Só texto&quot;,&quot;Com proposta&quot;,&quot;Com \&quot;Não coube\&quot;&quot;,&quot;Aplicando&quot;,&quot;Aplicada&quot;,&quot;Erro: não configurado&quot;,&quot;Erro: limite de uso&quot;,&quot;Erro: sem conexão&quot;],&quot;default&quot;:&quot;Conversa livre&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Assistente de grade&quot;},&quot;iaErroSimulado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nenhum&quot;,&quot;Não configurado&quot;,&quot;Limite de uso&quot;,&quot;Sem conexão&quot;],&quot;default&quot;:&quot;Nenhum&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Assistente de grade&quot;}}">
 const ALUNOS0 = [
   { id: 1, nome: 'Ana Souza', mat: '2026001', idade: 20, media: 9.0, email: 'ana@escola.com', hist: '2026.1' },
   { id: 2, nome: 'Bruno Lima', mat: '2026002', idade: 22, media: 6.0, email: 'bruno@escola.com', hist: '2026.1' },
@@ -1437,12 +1583,15 @@ const DISC0 = [
 ];
 const SEM0 = { id: 2, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null };
 const TELAS_POR = {
-  escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Agenda' }, { id: 'avisos', label: 'Avisos' }],
-  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
+  escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'disciplinas', label: 'Disciplinas' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'boletim', label: 'Matrículas' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'avisos', label: 'Avisos' }],
+  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Grade e agenda' }, { id: 'disciplinas', label: 'Minhas disciplinas' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
   aluno: []
 };
 const TELAS = TELAS_POR.escola;
-const PROFS0 = [{ id: 1, nome: 'Carlos Mendes', email: 'prof@escola.com' }, { id: 2, nome: 'Marta Ribeiro', email: 'marta@escola.com' }, { id: 3, nome: 'Paulo Antunes', email: 'paulo@escola.com' }];
+const PROFS0 = [{ id: 1, nome: 'Carlos Mendes', email: 'prof@escola.com', ocupados: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '12:00', motivo: 'Outra escola' }] }, { id: 2, nome: 'Marta Ribeiro', email: 'marta@escola.com', ocupados: [] }, { id: 3, nome: 'Paulo Antunes', email: 'paulo@escola.com', ocupados: [] }];
+const IA_SUG = ['Monte a grade das disciplinas que ainda estão sem horário.', 'O professor Carlos só pode de manhã. Reorganize as disciplinas dele.', 'Tem algum choque na grade atual?'];
+const IA_ERROS = { 'Não configurado': 'O assistente não está configurado neste servidor.', 'Limite de uso': 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.', 'Sem conexão': 'Não consegui falar com o assistente. Tente de novo.' };
+const IA_BASE = { iaMsgs: [], iaTexto: '', iaEnviando: false, iaErro: '', iaProposta: null, iaRecusados: [], iaAplicando: false, iaResultado: null, iaPropIdx: -1, iaDescartada: false, iaUltimo: '' };
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const EXTRAS = 'Gabriel Costa,Helena Martins,Igor Pereira,Julia Ramos,Kaique Santos,Larissa Melo,Mateus Freitas,Natália Cunha,Otávio Barros,Paula Teixeira,Rafael Moura,Sofia Carvalho,Tiago Nunes,Valéria Pinto,Wagner Azevedo,Yasmin Duarte,Breno Farias,Cecília Rocha,Danilo Prado,Elisa Campos,Felipe Araújo,Giovana Lopes,Heitor Vieira,Isadora Reis,João Batista,Lívia Monteiro,Marcelo Dantas,Nina Albuquerque'.split(',');
 const MOLAS = { fast: { k: 1500, z: 1 }, moderate: { k: 620, z: 0.82 }, slow: { k: 320, z: 0.78 } };
@@ -1549,7 +1698,7 @@ class Component extends DCLogic {
     ],
     q: '', idadeMin: '', mediaMin: '', ordem: 'nome', pagina: 1,
     painel: null, painelUlt: null, fNome: '', fIdade: '', fMat: '', fErro: '',
-    fEmail: '', fOk: '', fGrade: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
+    fEmail: '', fOk: '', fGrade: [], fOcup: [], ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
     cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuUser: false, menuAula: null, limpar: null, exportando: null, exportOk: null,
     semConfirm: false, semMsg: '', nsNome: '', nsInicio: '', nsFim: '', nsErro: '',
     discQ: '', selAluno: 1, selDisc: 1, matAluno: '', matMsg: null,
@@ -1574,13 +1723,15 @@ class Component extends DCLogic {
     f.addEventListener('focusin', this.onFocus);
     document.addEventListener('keydown', this.onGlobalKey);
     this.ro = new ResizeObserver(es => { const w = es[0].contentRect.width, h = es[0].contentRect.height; if (Math.abs(w - this.state.largura) > 2 || Math.abs(h - (this.state.altura || 0)) > 2) this.setState({ largura: w, altura: h, funcNaoCabe: false }); this.syncSel(); this.calcFunc(); });
-    if (this.mainRef.current) this.mainRef.current.addEventListener('scroll', this.onScrollFunc, { passive: true });
+    if (this.mainRef.current) { const mm = this.mainRef.current; mm.addEventListener('scroll', this.onScrollFunc, { passive: true }); mm.addEventListener('wheel', this.onWheelTrava, { passive: false }); mm.addEventListener('touchstart', this.onTouchIni, { passive: true }); mm.addEventListener('touchmove', this.onTouchMov, { passive: false }); mm.addEventListener('touchend', this.onTouchFim, { passive: true }); }
+    document.addEventListener('keydown', this.onKeyTrava);
     this.kickF();
     this.revelar();
+    if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') setTimeout(() => { this.entrarComo('escola'); setTimeout(() => this.iaEstadoAplicar(this.props.iaEstado), 0); }, 0);
     this.ro.observe(f);
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => this.syncSel());
   }
-  componentWillUnmount() { document.removeEventListener('keydown', this.onGlobalKey); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
+  componentWillUnmount() { document.removeEventListener('keydown', this.onGlobalKey); document.removeEventListener('keydown', this.onKeyTrava); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
   aplicarFonte() {
     const f = this.props.fonte ?? 'Apple · SF + New York', de = document.documentElement.style;
     const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -1598,9 +1749,11 @@ class Component extends DCLogic {
     de.setProperty('--mola-lenta', this.rm ? 'linear' : molaLinear(320, 0.78, 420));
   }
   componentDidUpdate(pp) {
+    if (this.funcModoTinta) this.tintaKick();
     if (pp.fonte !== this.props.fonte) this.aplicarFonte();
     if (pp.movimento !== this.props.movimento) { this.aplicarMovimento(); this.forceUpdate(); }
     if (pp.inicio !== this.props.inicio) this.aplicarInicio();
+    if (pp.iaEstado !== this.props.iaEstado && (this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') { if (!this.state.logado || this.state.papel !== 'escola') this.entrarComo('escola'); setTimeout(() => this.iaEstadoAplicar(this.props.iaEstado), 0); }
     const st = this.state;
     if (!st.logado && st.tela === 'login' && !st.mg && !this.mgPend) { this.mgPend = true; requestAnimationFrame(() => { this.mgPend = false; const s2 = this.state; if (!s2.logado && s2.tela === 'login' && !s2.mg) this.abrirMergulho(null, null, true); }); }
     requestAnimationFrame(() => { this.syncSel(); this.revelar(); this.calcFunc(); });
@@ -1611,6 +1764,7 @@ class Component extends DCLogic {
     if (i === 'Apresentação') this.setState({ logado: false, papel: null, tela: 'inicio', painel: null });
     else if (i === 'Login') this.setState({ logado: false, papel: null, tela: 'login', painel: null });
     else if (i === 'Professor') this.entrarComo('prof', 1);
+    else if (/^Escola · /.test(i)) { this.entrarComo('escola'); setTimeout(() => this.inicioEscola(i), 0); }
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof', 1); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
   }
@@ -1815,7 +1969,7 @@ class Component extends DCLogic {
     this.telaAnims = filhos.map((c, i) => c.animate([{ opacity: 0, transform: 'translateX(' + (dir * 14) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: i * 20, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
   }
   fecharPainel = () => this.setState({ painel: null, senhaProv: null, menuAula: null, confDesm: null, desmErro: null });
-  abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
+  abrirPainel(p, extra) { this.setState(Object.assign({ painel: p, painelUlt: p, fNome: '', fIdade: '', fMat: '', fEmail: '', fErro: '', fOk: '', fGrade: [], fOcup: [], fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null, alunoErro: '', cham: {}, chamErro: '', sAtual: '', sNova: '', sConf: '', senhaOk: false, menuAula: null, menuUser: false, navAberta: false }, extra)); }
   agRef = React.createRef();
   popRef = el => { if (el && el.animate && !this.rm) el.animate([{ opacity: 0, transform: 'translateY(-4px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 160, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
   fecharMenus = e => {
@@ -1870,13 +2024,15 @@ class Component extends DCLogic {
   }
   moverMes(n) { const p = this.state.agMes.split('-').map(Number); this.setState({ agMes: sD(new Date(Date.UTC(p[0], p[1] - 1 + n, 1))).slice(0, 7) }); }
   gradeNoDia(dia) { const r = []; (this.vst || this.state).discs.forEach(o => (o.grade || []).forEach(h => { if (h.dia_semana === dia) r.push({ id: o.id, nome: o.nome, ini: h.hora_inicio, fim: h.hora_fim }); })); return r.sort((a, b) => hm(a.ini) - hm(b.ini)); }
-  conflitoGrade(rows, ignorar) {
+  conflitoGrade(rows, ignorar, profId, base) {
+    const pr = profId != null ? this.state.profs.find(p => p.id === profId) : null, discs = base || this.state.discs;
     return rows.map((h, i) => {
       if (!h.hora_inicio || !h.hora_fim) return 'Preencha início e fim.';
       const a = hm(h.hora_inicio), b = hm(h.hora_fim);
       if (!(a < b)) return 'O fim precisa ser depois do início.';
       for (let j = 0; j < rows.length; j++) { if (j === i) continue; const o = rows[j]; if (o.dia_semana === h.dia_semana) return o.hora_inicio === h.hora_inicio && o.hora_fim === h.hora_fim ? 'Horário repetido.' : 'Só uma aula por dia: ' + DIA_L[h.dia_semana] + ' já está no horário ' + (j + 1) + '.'; }
-      for (const d of this.state.discs) { if (d.id === ignorar) continue; for (const o of d.grade || []) if (o.dia_semana === h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Choca com ' + d.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'; }
+      if (pr) for (const o of pr.ocupados || []) if (o.dia_semana === h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Choca com um horário ocupado de ' + pr.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + (o.motivo ? ': ' + o.motivo : '') + ').';
+      for (const d of discs) { if (d.id === ignorar) continue; for (const o of d.grade || []) if (o.dia_semana === h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return pr && d.professor_id === pr.id ? pr.nome + ' já dá ' + d.nome + ' neste horário (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').' : 'Choca com ' + d.nome + ' (' + DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'; }
       return '';
     });
   }
@@ -1896,7 +2052,7 @@ class Component extends DCLogic {
     if (st.discs.some(d => d.id !== did && d.nome.trim().toLowerCase() === nome.toLowerCase())) return erro('Já existe uma disciplina com esse nome.');
     if (isNaN(ch) || ch <= 0) return erro('A carga horária precisa ser maior que zero.');
     const grade = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim }));
-    const errs = this.conflitoGrade(grade, did), k = errs.findIndex(Boolean);
+    const errs = this.conflitoGrade(grade, did, st.fProf ? +st.fProf : null), k = errs.findIndex(Boolean);
     if (k >= 0) return erro('Horário ' + (k + 1) + ': ' + errs[k]);
     const id = did || Date.now(), de = HOJE > sem.inicio ? HOJE : sem.inicio, disc = { id, nome, carga_horaria: ch, professor_id: st.fProf ? +st.fProf : null, grade };
     const velhas = st.aulas.filter(a => a.disciplina_id === id);
@@ -1907,6 +2063,139 @@ class Component extends DCLogic {
     const n = novas.filter(a => a.status !== 'cancelada').length;
     const msg = grade.length ? n + (n === 1 ? ' aula gerada' : ' aulas geradas') + ' de ' + ddmm(de) + ' a ' + ddmm(sem.fim) + '.' : 'Salvo. Sem grade, nenhuma aula foi gerada.';
     this.setState(s => ({ discs: did ? s.discs.map(d => d.id === did ? disc : d) : s.discs.concat(disc), aulas: s.aulas.filter(a => a.disciplina_id !== id).concat(fica, novas), selDisc: id, painel: { tipo: 'disc', did: id }, painelUlt: { tipo: 'disc', did: id }, fErro: '', fOk: msg }));
+  }
+  abrirFicha(p) { this.abrirPainel({ tipo: 'prof', id: p.id }, { fOcup: (p.ocupados || []).map((o, i) => ({ k: i + 1, dia_semana: String(o.dia_semana), hora_inicio: o.hora_inicio, hora_fim: o.hora_fim, motivo: o.motivo || '' })) }); }
+  addOcup() { this.setState(s => { const g = s.fOcup, u = g[g.length - 1]; return { fOcup: g.concat({ k: Date.now(), dia_semana: u ? String(Math.min(5, +u.dia_semana + 1)) : '1', hora_inicio: u ? u.hora_inicio : '08:00', hora_fim: u ? u.hora_fim : '12:00', motivo: '' }), fErro: '', fOk: '' }; }); }
+  setOcup(k, campo, v) { this.setState(s => ({ fOcup: s.fOcup.map(r => r.k === k ? Object.assign({}, r, { [campo]: v }) : r), fErro: '', fOk: '' })); }
+  remOcup(k) { this.setState(s => ({ fOcup: s.fOcup.filter(r => r.k !== k), fErro: '', fOk: '' })); }
+  errosOcup(rows) {
+    return rows.map((h, i) => {
+      if (!h.hora_inicio || !h.hora_fim) return 'Preencha início e fim.';
+      const a = hm(h.hora_inicio), b = hm(h.hora_fim); if (!(a < b)) return 'O fim precisa ser depois do início.';
+      for (let j = 0; j < rows.length; j++) { if (j === i) continue; const o = rows[j]; if (+o.dia_semana === +h.dia_semana && a < hm(o.hora_fim) && hm(o.hora_inicio) < b) return 'Sobrepõe o horário ' + (j + 1) + ' (' + DIA_L[+o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim + ').'; }
+      return '';
+    });
+  }
+  salvarOcup(e) {
+    e.preventDefault();
+    const st = this.state, id = (st.painel || {}).id, errs = this.errosOcup(st.fOcup), k = errs.findIndex(Boolean);
+    if (k >= 0) return this.setState({ fErro: 'Horário ' + (k + 1) + ': ' + errs[k], fOk: '' });
+    const ocupados = st.fOcup.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim, motivo: (r.motivo || '').trim() })).sort((x, y) => x.dia_semana - y.dia_semana || hm(x.hora_inicio) - hm(y.hora_inicio));
+    const n = ocupados.length;
+    this.setState(s => ({ profs: s.profs.map(p => p.id === id ? Object.assign({}, p, { ocupados }) : p), fErro: '', fOk: n ? 'Horários salvos. A grade passa a respeitar ' + (n === 1 ? 'este horário.' : 'estes ' + n + ' horários.') : 'Salvo. O professor fica livre na janela inteira da escola.' }));
+  }
+  iaCampo = React.createRef(); iaFim = React.createRef();
+  iaMsgRef = el => { if (el && el.animate) el.animate(this.rm ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: this.rm ? 120 : 240, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
+  iaPulso = el => { if (el && el.animate && !this.rm) el.animate([{ opacity: 0.45 }, { opacity: 1 }, { opacity: 0.45 }], { duration: 1400, iterations: Infinity }); };
+  iaRolar() { requestAnimationFrame(() => { const fm = this.iaFim.current; if (!fm) return; let p = fm.parentElement; while (p && !(p.scrollHeight > p.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(p).overflowY))) p = p.parentElement; if (p) p.scrollTo({ top: p.scrollHeight, behavior: this.rm ? 'auto' : 'smooth' }); }); }
+  iaFocar() { setTimeout(() => { const c = this.iaCampo.current; if (c && !c.disabled) c.focus({ preventScroll: true }); }, 60); }
+  abrirIA(extra) { this.abrirPainel({ tipo: 'ia' }, extra); this.iaFocar(); this.iaRolar(); }
+  enviarIA(txt) {
+    const st = this.state, t = (txt != null ? txt : st.iaTexto).trim(); if (!t || st.iaEnviando || st.iaAplicando) return;
+    this.setState(s => ({ iaMsgs: s.iaMsgs.concat({ papel: 'usuario', texto: t }), iaTexto: '', iaEnviando: true, iaErro: '', iaUltimo: t }), () => this.iaRolar());
+    this.iaResp(t);
+  }
+  iaResp(t) {
+    clearTimeout(this.iaT);
+    this.iaT = setTimeout(() => {
+      const er = IA_ERROS[this.props.iaErroSimulado ?? 'Nenhum'];
+      if (er) return this.setState({ iaEnviando: false, iaErro: er }, () => { this.iaRolar(); this.iaFocar(); });
+      const r = this.iaResponder(t), temP = (r.proposta && r.proposta.length) || (r.recusados && r.recusados.length);
+      this.setState(s => Object.assign({ iaEnviando: false, iaMsgs: s.iaMsgs.concat({ papel: 'ia', texto: r.resposta }) }, temP ? { iaProposta: r.proposta || [], iaRecusados: r.recusados || [], iaPropIdx: s.iaMsgs.length, iaResultado: null, iaDescartada: false } : {}), () => { this.iaRolar(); this.iaFocar(); });
+    }, this.rm ? 600 : 1100);
+  }
+  iaTentar() { const t = this.state.iaUltimo; if (!t || this.state.iaEnviando) return; this.setState({ iaErro: '', iaEnviando: true }, () => this.iaRolar()); this.iaResp(t); }
+  iaChoques() {
+    const st = this.state, r = [], faixa = o => DIA_L[o.dia_semana] + ', ' + o.hora_inicio + '–' + o.hora_fim;
+    st.discs.forEach(d => { const pr = st.profs.find(p => p.id === d.professor_id); if (!pr) return;
+      (d.grade || []).forEach(o => (pr.ocupados || []).forEach(x => { if (x.dia_semana === o.dia_semana && hm(o.hora_inicio) < hm(x.hora_fim) && hm(x.hora_inicio) < hm(o.hora_fim)) r.push({ d, t: d.nome + ' (' + faixa(o) + ') cai num horário ocupado de ' + pr.nome + (x.motivo ? ': ' + x.motivo : '') + '.' }); })); });
+    st.discs.forEach((d, i) => st.discs.slice(i + 1).forEach(e => (d.grade || []).forEach(o => (e.grade || []).forEach(q => { if (o.dia_semana === q.dia_semana && hm(o.hora_inicio) < hm(q.hora_fim) && hm(q.hora_inicio) < hm(o.hora_fim)) r.push({ d: e, t: d.nome + ' e ' + e.nome + ' estão no mesmo horário (' + faixa(o) + ').' }); }))));
+    return r;
+  }
+  iaPlanejar(alvos, soManha) {
+    const st = this.state, SL = soManha ? [['08:00', '09:40'], ['10:00', '11:40']] : [['08:00', '09:40'], ['10:00', '11:40'], ['13:30', '15:10'], ['15:30', '17:10']];
+    const ids = alvos.map(d => d.id), usados = [], proposta = [], recusados = [];
+    st.discs.filter(d => !ids.includes(d.id)).forEach(d => (d.grade || []).forEach(o => usados.push({ dia: o.dia_semana, a: hm(o.hora_inicio), b: hm(o.hora_fim) })));
+    alvos.forEach(d => {
+      const pr = st.profs.find(p => p.id === d.professor_id);
+      if (!pr) return recusados.push({ disciplina_id: d.id, disciplina_nome: d.nome, motivo: 'Está sem professor. Escolha um professor na disciplina antes de montar a grade.' });
+      const oc = pr.ocupados || [], k = Math.max(2, (d.grade || []).length), itens = [];
+      const livre = (dia, i0, f0) => { const a = hm(i0), b = hm(f0); return !usados.some(u => u.dia === dia && a < u.b && u.a < b) && !oc.some(o => o.dia_semana === dia && a < hm(o.hora_fim) && hm(o.hora_inicio) < b); };
+      (d.grade || []).forEach(o => { if (itens.length < k && SL.some(x => x[0] === o.hora_inicio && x[1] === o.hora_fim) && !itens.some(x => x.dia_semana === o.dia_semana) && livre(o.dia_semana, o.hora_inicio, o.hora_fim)) itens.push({ dia_semana: o.dia_semana, hora_inicio: o.hora_inicio, hora_fim: o.hora_fim }); });
+      for (const x of SL) for (let dia = 1; dia <= 5 && itens.length < k; dia++) { if (!itens.some(y => y.dia_semana === dia) && livre(dia, x[0], x[1])) itens.push({ dia_semana: dia, hora_inicio: x[0], hora_fim: x[1] }); }
+      if (itens.length < k) return recusados.push({ disciplina_id: d.id, disciplina_nome: d.nome, motivo: oc.length ? 'Choca com um horário ocupado de ' + pr.nome + '.' : 'Não há horário livre na janela da escola' + (soManha ? ' de manhã.' : '.') });
+      itens.sort((x, y) => x.dia_semana - y.dia_semana || hm(x.hora_inicio) - hm(y.hora_inicio));
+      itens.forEach(x => usados.push({ dia: x.dia_semana, a: hm(x.hora_inicio), b: hm(x.hora_fim) }));
+      proposta.push({ disciplina_id: d.id, disciplina_nome: d.nome, professor_nome: pr.nome, itens });
+    });
+    return { proposta, recusados };
+  }
+  iaResponder(texto) {
+    const st = this.state, t = texto.toLowerCase(), lista = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1];
+    const pm = st.profs.find(p => t.includes(p.nome.split(' ')[0].toLowerCase()));
+    const fala = (r, intro) => { const pt = []; if (r.proposta.length) pt.push(intro(lista(r.proposta.map(p => p.disciplina_nome)))); if (r.recusados.length) pt.push(lista(r.recusados.map(p => p.disciplina_nome)) + (r.recusados.length === 1 ? ' não coube.' : ' não couberam.')); return pt.join(' ') + (r.proposta.length ? ' Confira e aplique.' : ''); };
+    if (/choque|conflit/.test(t) && !/resolv|reorganiz|mont|corrij/.test(t)) {
+      const c = this.iaChoques();
+      if (!c.length) return { resposta: 'Não encontrei choques. Nenhuma aula cai em horário ocupado de professor, e nenhum horário tem duas disciplinas ao mesmo tempo.' };
+      return { resposta: 'Encontrei ' + c.length + (c.length === 1 ? ' choque' : ' choques') + ':\n' + c.map(x => '· ' + x.t).join('\n') + '\n\nSe quiser, peça "Resolva os choques" e eu monto uma proposta.' };
+    }
+    if (pm && /manh/.test(t)) {
+      const alvos = st.discs.filter(d => d.professor_id === pm.id); if (!alvos.length) return { resposta: pm.nome + ' não tem disciplinas neste semestre.' };
+      const r = this.iaPlanejar(alvos, true);
+      return Object.assign({ resposta: fala(r, n => 'Reorganizei ' + n + ' só de manhã, fora dos horários ocupados de ' + pm.nome + ' e sem choque com as outras disciplinas.') }, r);
+    }
+    if (/sem hor|mont|resolv|reorganiz|corrij/.test(t)) {
+      const sem = st.discs.filter(d => !(d.grade || []).length), ch = /resolv|choque|corrij|reorganiz/.test(t) ? this.iaChoques().map(x => x.d) : [];
+      const alvos = sem.concat(ch.filter((d, i, a) => a.indexOf(d) === i && !sem.includes(d)));
+      if (!alvos.length) return { resposta: 'Todas as disciplinas já têm horário e não há choques. Nada a mudar.' };
+      const r = this.iaPlanejar(alvos, false);
+      return Object.assign({ resposta: fala(r, n => 'Encaixei ' + n + ' sem choque com a grade atual nem com os horários ocupados dos professores.') }, r);
+    }
+    return { resposta: 'Posso montar a grade das disciplinas sem horário, reorganizar as disciplinas de um professor (por exemplo, só de manhã) ou procurar choques na grade atual. Diga qual.' };
+  }
+  gerarParaDisc(d, grade, sem, aulas) {
+    const id = d.id, de = HOJE > sem.inicio ? HOJE : sem.inicio, disc = Object.assign({}, d, { grade });
+    const velhas = aulas.filter(a => a.disciplina_id === id);
+    const fica = velhas.filter(a => a.origem === 'extra' || a.chamada || a.data < de || a.remarcada_de);
+    const canc = velhas.filter(a => a.status === 'cancelada' && a.origem === 'grade' && !a.remarcada_de).map(a => a.data + a.hora_inicio);
+    const novas = gerarAulas(disc, de, sem.fim).filter(a => !fica.some(x => (x.origem === 'grade' && x.data === a.data && x.hora_inicio === a.hora_inicio) || x.remarcada_de === a.data));
+    novas.forEach(a => { if (canc.includes(a.data + a.hora_inicio)) a.status = 'cancelada'; });
+    return { disc, aulas: aulas.filter(a => a.disciplina_id !== id).concat(fica, novas), n: novas.filter(a => a.status !== 'cancelada').length };
+  }
+  aplicarIA(imediato) {
+    const st = this.state; if (!st.iaProposta || !st.iaProposta.length || st.iaAplicando || st.iaResultado) return;
+    const fazer = () => {
+      const S = this.state, sem = this.ativo();
+      if (!sem) return this.setState({ iaAplicando: false, iaResultado: S.iaProposta.map(p => ({ disciplina_id: p.disciplina_id, ok: false, texto: 'Semestre encerrado: somente leitura.' })) });
+      let discs = S.discs, aulas = S.aulas; const res = [];
+      S.iaProposta.forEach(p => {
+        const d = discs.find(x => x.id === p.disciplina_id); if (!d) return res.push({ disciplina_id: p.disciplina_id, ok: false, texto: p.disciplina_nome + ': a disciplina não existe mais.' });
+        const errs = this.conflitoGrade(p.itens, d.id, d.professor_id, discs), k = errs.findIndex(Boolean);
+        if (k >= 0) return res.push({ disciplina_id: d.id, ok: false, texto: p.disciplina_nome + ': ' + errs[k] });
+        const r = this.gerarParaDisc(d, p.itens.map(x => Object.assign({}, x)), sem, aulas); discs = discs.map(x => x.id === d.id ? r.disc : x); aulas = r.aulas;
+        res.push({ disciplina_id: d.id, ok: true, texto: p.disciplina_nome + ': ' + r.n + (r.n === 1 ? ' aula gerada' : ' aulas geradas') });
+      });
+      this.setState({ discs, aulas, iaAplicando: false, iaResultado: res }, () => this.iaRolar());
+    };
+    if (imediato === true) return fazer();
+    this.setState({ iaAplicando: true }); clearTimeout(this.iaT2); this.iaT2 = setTimeout(fazer, this.rm ? 500 : 900);
+  }
+  iaEstadoAplicar(nome) {
+    clearTimeout(this.iaT); clearTimeout(this.iaT2);
+    const Q = 'Monte a grade das disciplinas que ainda estão sem horário e resolva os choques.';
+    const conv = q => { const r = this.iaResponder(q); return { iaMsgs: [{ papel: 'usuario', texto: q }, { papel: 'ia', texto: r.resposta }], iaProposta: r.proposta || [], iaRecusados: r.recusados || [], iaPropIdx: 1, iaUltimo: q }; };
+    const so = q => ({ iaMsgs: [{ papel: 'usuario', texto: q }], iaUltimo: q });
+    const E = { 'Vazio': {}, 'Enviando': Object.assign(so(Q), { iaEnviando: true }),
+      'Só texto': (() => { const q = IA_SUG[2]; return { iaMsgs: [{ papel: 'usuario', texto: q }, { papel: 'ia', texto: this.iaResponder(q).resposta }], iaUltimo: q }; })(),
+      'Com proposta': conv(IA_SUG[1]), 'Com "Não coube"': conv(Q), 'Aplicando': Object.assign(conv(Q), { iaAplicando: true }), 'Aplicada': conv(Q),
+      'Erro: não configurado': Object.assign(so(Q), { iaErro: IA_ERROS['Não configurado'] }), 'Erro: limite de uso': Object.assign(so(Q), { iaErro: IA_ERROS['Limite de uso'] }), 'Erro: sem conexão': Object.assign(so(Q), { iaErro: IA_ERROS['Sem conexão'] }) }[nome] || {};
+    this.setState({ tela: 'disciplinas' });
+    this.abrirIA(Object.assign({}, IA_BASE, E));
+    if (nome === 'Aplicada') setTimeout(() => this.aplicarIA(true), 0);
+  }
+  inicioEscola(i) {
+    if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); return this.abrirFicha(this.state.profs[0]); }
+    this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com "Não coube"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i] || 'Vazio');
   }
   excluirDisc(id) { this.setState(s => ({ discs: s.discs.filter(x => x.id !== id), aulas: s.aulas.filter(a => a.disciplina_id !== id), matMsg: null })); }
   desmatricular(aid, did) {
@@ -2313,7 +2602,97 @@ class Component extends DCLogic {
     const ini = mk.offsetTop - 72, fim = sec.offsetTop + sec.offsetHeight - 56 - sk.offsetHeight - 72;
     return { m, sec, ini, fim: Math.max(ini + 1, fim) };
   }
-  onScrollFunc = () => { if (this._fsp) return; this._fsp = true; requestAnimationFrame(() => { this._fsp = false; this.calcFunc(); }); };
+  tintaMarca = React.createRef(); tintaStick = React.createRef(); tq = { c: null, last: null, raf: 0 };
+  tintaAlvo() {
+    const m = this.mainRef.current, sec = this.funcSecRef.current; if (!m || !sec || !sec.querySelector('[data-tinta]')) return null;
+    if (!this.funcSticky) return { modo: 'lista', m };
+    const mk = this.tintaMarca.current, sk = this.tintaStick.current; if (!mk || !sk) return null;
+    const ini = mk.offsetTop - 72, fim = Math.max(ini + 1, sec.offsetTop + sec.offsetHeight - 56 - sk.offsetHeight - 72);
+    return { modo: 'stick', m, ini, fim, p: Math.max(0, Math.min(1, (m.scrollTop - ini) / (fim - ini))) * FUNCOES.length };
+  }
+  tintaKick() { if (!this.tq.raf) this.tq.raf = requestAnimationFrame(this.tintaTick); }
+  tintaTick = now => {
+    const o = this.tq; o.raf = 0; const g = this.tintaAlvo(); if (!g) return;
+    const sec = this.funcSecRef.current, pags = sec.querySelectorAll('[data-tp]'), N = FUNCOES.length, PRONTO = 0.86;
+    const dt = o.last == null ? 0.016 : Math.min(0.05, (now - o.last) / 1000); o.tt = o.tt || [];
+    let vivo = false;
+    const andar = (i, alvo) => { let t = o.tt[i] || 0; if (this.rm) t = alvo; else if (t < alvo) t = Math.min(alvo, t + dt * (t < PRONTO ? 0.6 : 0.5)); else if (t > alvo) t = Math.max(alvo, t - dt * 0.5); o.tt[i] = t; if (t !== alvo) vivo = true; return t; };
+    if (g.modo === 'lista') {
+      const mr = g.m.getBoundingClientRect(), vh = g.m.clientHeight;
+      pags.forEach(pg => { const i = +pg.dataset.tp, r = pg.getBoundingClientRect(); if (r.top < mr.top + vh * 0.8) o.vista = Object.assign(o.vista || {}, { [i]: true });
+        this.pintarTinta(pg, andar(i, o.vista && o.vista[i] ? PRONTO : 0), true, true); });
+    } else {
+      const seg = Math.min(N - 1, Math.floor(g.p));
+      pags.forEach(pg => { const i = +pg.dataset.tp;
+        if (i > seg) { o.tt[i] = 0; this.pintarTinta(pg, 0, false, false); return; }
+        if (i < seg && (o.tt[i] || 0) < PRONTO) o.tt[i] = PRONTO;
+        const t = andar(i, i < seg ? 1 : PRONTO); this.pintarTinta(pg, t, i === N - 1, i === seg || t < 1); });
+      sec.querySelectorAll('[data-si]').forEach(btn => { const i = +btn.dataset.si, on = i === seg, r = btn.querySelector('[data-sr]'), t = o.tt[i] || 0;
+        btn.style.color = on ? 'var(--texto)' : ''; btn.setAttribute('aria-current', on ? 'step' : 'false');
+        if (r) r.style.transform = 'scaleX(' + (i < seg ? 1 : on ? Math.max(0, Math.min(1, (t - 0.74) / 0.1)) : 0).toFixed(3) + ')'; });
+    }
+    if (vivo) { o.last = now; this.tintaKick(); } else o.last = null;
+  };
+  pintarTinta(pg, t, ultima, vis) {
+    const R = (a, b) => Math.max(0, Math.min(1, (t - a) / (b - a))), eo = x => 1 - Math.pow(1 - x, 3), back = x => 1 + 2.9 * Math.pow(x - 1, 3) + 1.9 * Math.pow(x - 1, 2), f3 = v => v.toFixed(3);
+    pg.style.visibility = vis ? 'visible' : 'hidden'; if (!vis) return;
+    const sai = ultima ? 0 : eo(R(0.88, 1));
+    pg.style.opacity = f3(1 - sai); pg.style.transform = sai ? 'translateY(' + f3(-56 * sai) + 'px)' : '';
+    const nl = pg.querySelector('[data-nl]'); if (nl) nl.style.opacity = f3(R(0, 0.05));
+    const ls = pg.querySelectorAll('[data-l]'), L = ls.length, tw = R(0.03, 0.4) * (L + 1.5);
+    ls.forEach((el, j) => { const u = Math.max(0, Math.min(1, (tw - j) / 1.5)), e = eo(u);
+      el.style.opacity = f3(u); el.style.transform = u >= 1 ? '' : 'translateY(' + f3((1 - e) * 0.16) + 'em) scale(' + f3(1.14 - 0.14 * e) + ')'; el.style.filter = u > 0 && u < 1 ? 'blur(' + f3((1 - e) * 3) + 'px)' : ''; });
+    const pena = pg.querySelector('[data-pena]');
+    if (pena && L) { const k = Math.max(0, Math.min(L - 1, Math.floor(tw))), el = ls[k], fr = Math.max(0, Math.min(1, tw - k)), on = tw > 0 && tw < L + 1.2;
+      pena.style.opacity = on ? '1' : '0'; pena.style.height = (el.offsetHeight * 0.78) + 'px';
+      pena.style.transform = 'translate(' + (el.offsetLeft + el.offsetWidth * fr + 2).toFixed(1) + 'px,' + (el.offsetTop + el.offsetHeight * 0.1).toFixed(1) + 'px) rotate(16deg)'; }
+    const sub = pg.querySelector('[data-sub]'); if (sub) sub.style.transform = 'scaleX(' + f3(eo(R(0.36, 0.5))) + ')';
+    const ws = pg.querySelectorAll('[data-w]'), K = ws.length, tt = R(0.42, 0.64) * (K + 1);
+    ws.forEach((el, k) => { const u = Math.max(0, Math.min(1, tt - k)), e = eo(u); el.style.opacity = f3(u); el.style.transform = u >= 1 ? '' : 'translateY(' + f3((1 - e) * 10) + 'px)'; el.style.filter = u > 0 && u < 1 ? 'blur(' + f3((1 - e) * 2) + 'px)' : ''; });
+    const pv = pg.querySelector('[data-pvw]');
+    if (pv) { const u = R(0.54, 0.72), e = eo(u), th = Math.sin(Math.PI * R(0.77, 0.83)) * 0.012;
+      pv.style.opacity = f3(u); pv.style.transform = 'translateY(' + f3((1 - e) * 36) + 'px) rotate(' + f3((1 - e) * 3) + 'deg) scale(' + f3(0.96 + 0.04 * e - th) + ')'; }
+    const stp = pg.querySelector('[data-st]');
+    if (stp) { const u = R(0.72, 0.78); stp.style.opacity = f3(u > 0 ? Math.min(1, u * 3) : 0); stp.style.transform = 'rotate(-9deg) scale(' + f3(u > 0 ? 2.4 - 1.4 * back(u) : 2.4) + ')'; }
+    const ring = pg.querySelector('[data-ring]');
+    if (ring) { const u = R(0.76, 0.9); ring.style.opacity = f3(u > 0 && u < 1 ? (1 - u) * 0.45 : 0); ring.style.transform = 'scale(' + f3(0.5 + 1.5 * eo(u)) + ')'; }
+  }
+  tintaIr(i) {
+    const g = this.tintaAlvo(); if (!g) return;
+    if (g.modo === 'stick') g.m.scrollTo({ top: g.ini + (i + 0.3) / FUNCOES.length * (g.fim - g.ini), behavior: this.rm ? 'auto' : 'smooth' });
+  }
+  travaCalc(dir, delta) {
+    if (!this.funcModoTinta || !this.funcSticky || this.state.logado) return null;
+    const g = this.tintaAlvo(); if (!g || g.modo !== 'stick') return null;
+    const st = g.m.scrollTop, N = FUNCOES.length, dentro = st >= g.ini - 4 && st <= g.fim + 4, pos = k => g.ini + (k + 0.3) / N * (g.fim - g.ini);
+    const segA = Math.min(N - 1, Math.max(0, Math.floor(g.p))), tt = (this.tq.tt || [])[segA] || 0;
+    if (dentro && (performance.now() < (this.travaAte || 0) || tt < 0.859)) return { acao: 'segura' };
+    if (!dentro) {
+      if (dir > 0 && st < g.ini && st + delta > g.ini) return { acao: 'ir', top: pos(0) };
+      if (dir < 0 && st > g.fim && st + delta < g.fim) return { acao: 'ir', top: pos(N - 1) };
+      return null;
+    }
+    const k = Math.min(N - 1, Math.max(0, Math.floor(g.p))) + dir;
+    return k < 0 || k > N - 1 ? null : { acao: 'ir', top: pos(k), m: g.m };
+  }
+  travaIr(r) { const m = this.mainRef.current; this.travaAte = performance.now() + (this.rm ? 0 : 450); if (m) m.scrollTo({ top: r.top, behavior: this.rm ? 'auto' : 'smooth' }); }
+  onWheelTrava = e => {
+    if (e.ctrlKey || Math.abs(e.deltaY) < 1 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    const r = this.travaCalc(e.deltaY > 0 ? 1 : -1, e.deltaY * (e.deltaMode === 1 ? 32 : 1)); if (!r) return;
+    e.preventDefault();
+    if (r.acao === 'ir') this.travaIr(r);
+  };
+  onKeyTrava = e => {
+    const tg = e.target, tn = tg && tg.tagName; if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || /INPUT|TEXTAREA|SELECT|BUTTON/.test(tn || '') || (tg && tg.isContentEditable)) return;
+    const d = e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey) ? 1 : e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey) ? -1 : 0; if (!d) return;
+    const r = this.travaCalc(d, d * 120); if (!r) return; e.preventDefault(); if (r.acao === 'ir') this.travaIr(r);
+  };
+  onTouchIni = e => { this.toq = e.touches[0] ? e.touches[0].clientY : null; };
+  onTouchMov = e => { if (this.toq == null || !e.touches[0]) return; const dy = this.toq - e.touches[0].clientY; if (Math.abs(dy) < 4) return; if (this.travaCalc(dy > 0 ? 1 : -1, dy)) e.preventDefault(); };
+  onTouchFim = e => { if (this.toq == null) return; const t = e.changedTouches[0], dy = t ? this.toq - t.clientY : 0; this.toq = null; if (Math.abs(dy) < 30) return; const r = this.travaCalc(dy > 0 ? 1 : -1, dy); if (r && r.acao === 'ir') this.travaIr(r); };
+  onScrollFunc = () => {
+    const mm = this.mainRef.current; if (mm) { const tv = mm.scrollTop > mm.clientHeight * 0.9; if (tv !== !!this.state.topoVis) this.setState({ topoVis: tv }); }
+    if (this.funcModoTinta) return this.tintaKick(); if (this._fsp) return; this._fsp = true; requestAnimationFrame(() => { this._fsp = false; this.calcFunc(); }); };
   calcFunc() {
     const g = this.funcGeo(); if (!g) return;
     this.fp.ap = null; this.kickF();
@@ -2415,6 +2794,7 @@ class Component extends DCLogic {
   escolherFuncao(i) { this.fp.pt = i; this.fp.wt = 0; this.kickF(); }
   landingVals(peso, reais) {
     const st = this.state, pr = st.papelEscolhido !== 'aluno', esc = st.papelEscolhido === 'escola';
+    const tinta = this.funcModoTinta = (this.props.funcoesEstilo ?? 'Tinta') !== 'Espiral';
     this.funcSticky = !this.rm && (this.props.dispositivo ?? 'Desktop') !== 'Celular' && st.largura >= 1060 && (st.altura || 800) >= 600 && !st.funcNaoCabe;
     const escolher = p => this.setState({ papelEscolhido: p, loginErro: '' });
     const irLogin = (p, e) => this.abrirMergulho(p, e);
@@ -2467,9 +2847,12 @@ class Component extends DCLogic {
       ledgerFim: pr ? 'Responder "professor, qual foi minha nota?"' : 'Descobrir a reprovação por falta', ledgerFimV: pr ? '∞' : 'tarde demais',
       recursosRotulo: pr ? 'Para o professor' : 'Para o aluno',
       verDemo: () => this.irSecao('demo'), funcRef: this.funcRef, funcSecRef: this.funcSecRef, funcMarca: this.funcMarca, funcStick: this.funcStick, funcN: String(FUNCOES.length).padStart(2, '0'),
-      funcPos: this.funcSticky ? 'sticky' : 'relative', funcSecH: this.funcSticky ? 'calc(100vh + ' + (FUNCOES.length - 1) * 62 + 'vh)' : 'auto',
-      funcDica: this.funcSticky ? 'Continue descendo: o mostrador gira e cada tela se abre em espiral sobre a anterior. Também dá para arrastar o mostrador ou clicar numa função.' : 'Arraste o mostrador ou toque numa função: a tela dela se abre em espiral sobre a anterior.', funcTotal: FUNCOES.length + ' no portal',
-      funcoes: FUNCOES.map((f, i) => { const on = i === (st.funcSel || 0); return { n: String(i + 1).padStart(2, '0'), nome: f.nome, curto: f.curto, on, peso: peso(on), cor: on ? 'var(--fundo)' : TI, i, ir: () => this.irFuncao(i) }; }),
+      funcPos: this.funcSticky ? 'sticky' : 'relative', funcSecH: this.funcSticky ? 'calc(100vh + ' + (tinta ? (FUNCOES.length - 1) * 45 : (FUNCOES.length - 1) * 62) + 'vh)' : 'auto',
+      tintaModo: tinta, espiralModo: !tinta, tintaMarca: this.tintaMarca, tintaStick: this.tintaStick, tintaH: this.funcSticky ? 'min(780px,calc(100vh - 104px))' : 'auto',
+      tintaSumVis: this.funcSticky, tintaPilha: this.funcSticky ? 'grid' : 'flex', tintaPagBorda: this.funcSticky ? '0' : '1px solid var(--borda-fraca)', tintaVis0: this.funcSticky ? 'hidden' : 'visible', tintaOp0: this.rm ? 1 : 0,
+      tintaPags: FUNCOES.map((f, i) => ({ i, n: String(i + 1).padStart(2, '0'), nome: f.nome, nomeW: f.nome.split(' ').map(w => ({ ls: Array.from(w).map(c => ({ c })) })), tituloW: f.titulo.split(' ').map(t => ({ t })) })),
+      funcDica: tinta ? (this.funcSticky ? 'Continue descendo: cada função se escreve inteira na página e ganha o carimbo. O sumário risca o que já foi. Clique nele para pular.' : 'Desça a página: cada função se escreve quando aparece na tela.') : this.funcSticky ? 'Continue descendo: o mostrador gira e cada tela se abre em espiral sobre a anterior. Também dá para arrastar o mostrador ou clicar numa função.' : 'Arraste o mostrador ou toque numa função: a tela dela se abre em espiral sobre a anterior.', funcTotal: FUNCOES.length + ' no portal',
+      funcoes: FUNCOES.map((f, i) => { const on = i === (st.funcSel || 0); return { n: String(i + 1).padStart(2, '0'), nome: f.nome, curto: f.curto, on, peso: peso(on), cor: on ? 'var(--fundo)' : TI, i, ir: () => this.irFuncao(i), tinta: () => this.tintaIr(i) }; }),
       funcRoda: this.funcRoda, funcDown: this.funcDown, funcKey: this.funcKey, rodaMinH: st.largura < 900 ? '150px' : '520px',
       fs: (() => { const i = Math.max(0, Math.min(FUNCOES.length - 1, st.funcSel | 0)), f = FUNCOES[i], r = { n: String(i + 1).padStart(2, '0'), nome: f.nome, titulo: f.titulo, desc: f.desc, prof: f.prof, aluno: f.aluno, passos: f.passos.map((t, j) => ({ n: String(j + 1), j: String(j), t })) }; for (let k = 0; k < FUNCOES.length; k++) r['m' + k] = k === i; return r; })(),
       recursos: (pr ? recP : recA).map(([tag, titulo, desc], i) => ({ n: String(i + 1).padStart(3, '0'), tag, titulo, desc })),
@@ -2497,7 +2880,7 @@ class Component extends DCLogic {
     const v = {
       sistema, landing: !sistema && !st.logado && tela !== 'primeiro-acesso', primeiro: !sistema && !st.logado && tela === 'primeiro-acesso', semestre: !sistema && st.logado && tela === 'semestre', login: false, painel: !sistema && st.logado && tela === 'painel', alunos: !sistema && st.logado && tela === 'alunos',
       disciplinas: !sistema && st.logado && tela === 'disciplinas', seletor: !sistema && st.logado && tela === 'boletim',
-      boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia',
+      boletim: tela === 'boletim', frequencia: !sistema && st.logado && tela === 'frequencia', grade: !sistema && st.logado && tela === 'grade',
       avisos: !sistema && st.logado && tela === 'avisos', professores: !sistema && st.logado && ehEscola && tela === 'professores', meu: !sistema && st.logado && tela === 'meu-painel'
     };
     const peso = on => on ? 600 : 500;
@@ -2704,7 +3087,8 @@ class Component extends DCLogic {
         mgT: mg ? mg.T + 'px' : '0px', mgL: mg ? mg.L + 'px' : '0px', mgW: mg ? mg.W + 'px' : '100%', mgH: mg ? mg.H + 'px' : '100%', mgZ: mg ? 5 : 0,
         mgClip: mg ? 'inset(' + mg.clip.map(n => Math.round(n) + 'px').join(' ') + ')' : 'none',
         mgTr: 'none',
-        mgOp: mg && mg.op === 0 ? 0 : 1, mgOverflow: mg ? 'visible' : 'hidden', navLO: mg ? 0 : 1, navLPE: mg ? 'none' : 'auto', mainOverflow: mg ? 'hidden' : 'auto',
+        mgOp: mg && mg.op === 0 ? 0 : 1, mgOverflow: mg ? 'visible' : 'hidden', navLO: mg ? 0 : 1, navLPE: mg ? 'none' : 'auto', topoO: this.state.topoVis && !this.state.logado ? 1 : 0, topoT: this.state.topoVis && !this.state.logado ? 'none' : 'translateY(12px)', topoPE: this.state.topoVis && !this.state.logado ? 'auto' : 'none', irTopo: () => { const m = this.mainRef.current; this.travaAte = 0; if (m) m.scrollTo({ top: 0, behavior: this.rm ? 'auto' : 'smooth' }); },
+      mainOverflow: mg ? 'hidden' : 'auto',
         loginVis: !!mg, cardO: ab ? 1 : 0, cardPE: ab ? 'auto' : 'none', cardT: 'none' }; })(), heroH: celular ? '844px' : '100vh', ringH: compact ? '440px' : 'auto', ringRef: this.setRing,
       heroStats: [['Turma 2026', 'left'], ['Alunos: ' + reais.length, 'center'], ['Disciplinas: ' + st.discs.length, 'right'], ['Avisos: ' + st.avisos.length, 'left'], ['Média: ' + (mediaT == null ? '—' : fmt(mediaT)), 'center'], ['Em risco: ' + risco.length, 'right']].map(([t, al]) => ({ t, al })),
       navL: (compact ? [['Funções', 'recursos'], ['Perguntas', 'perguntas'], ['Entrar', null]] : [['Sem o portal', 'sem-portal'], ['Funções', 'recursos'], ['Em uso', 'demo'], ['Perguntas', 'perguntas'], ['Entrar', null]]).map(([label, id]) => ({ label, ir: () => id ? this.irSecao(id) : this.setState({ tela: 'login' }) })),
@@ -2854,6 +3238,7 @@ class Component extends DCLogic {
 
       // agenda
       agRef: this.agRef, agenda, agOk: !agendaEstado, agendaEstado,
+      gradePerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno', agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
       agFiltroVis: ehEscola, agProfF: st.agProfF, agDiscF: st.agDiscF, setAgProfF: e => this.setState({ agProfF: e.target.value }), setAgDiscF: e => this.setState({ agDiscF: e.target.value }),
       agFiltrado: !!(st.agProfF || st.agDiscF), limparAgFiltro: () => this.setState({ agProfF: '', agDiscF: '' }), temAgErro: !!st.agErro, agErro: st.agErro, fecharAgErro: () => this.setState({ agErro: '' }),
       temRotaAviso: !!st.rotaAviso, rotaAviso: st.rotaAviso, fecharRotaAviso: () => this.setState({ rotaAviso: '' }),
@@ -2897,21 +3282,53 @@ class Component extends DCLogic {
       meAvisos: st.avisos.filter(a => !a.disciplina_id || (me && st.mats[me.id + '-' + a.disciplina_id])).sort((x, y) => y.data.localeCompare(x.data)).map(a => Object.assign({}, a, { dataBR: br(a.data), escopo: a.disciplina_id ? discNome(a.disciplina_id) : 'Geral', autor: a.autor_nome || 'Secretaria' })),
 
       // painel lateral
-      pp: { aluno: pu.tipo === 'aluno' && !!paAl, novoAluno: pu.tipo === 'novoAluno', disc: pu.tipo === 'disc', chamada: pu.tipo === 'chamada' && !!chAu, remarcar: pu.tipo === 'remarcar' && !!rmAu, extra: pu.tipo === 'extra', aviso: pu.tipo === 'aviso', senha: pu.tipo === 'senha', mais: pu.tipo === 'mais', prof: pu.tipo === 'prof' },
-      painelTitulo: { aluno: 'Aluno', novoAluno: 'Cadastro', disc: 'Disciplina', chamada: 'Chamada', remarcar: 'Remarcar aula', extra: 'Aula extra', aviso: 'Aviso', senha: 'Conta', mais: 'Mais telas', prof: 'Professor' }[pu.tipo] || 'Painel',
-      profForm: !st.senhaProv, profSenha: !!st.senhaProv,
+      pp: { aluno: pu.tipo === 'aluno' && !!paAl, novoAluno: pu.tipo === 'novoAluno', disc: pu.tipo === 'disc', chamada: pu.tipo === 'chamada' && !!chAu, remarcar: pu.tipo === 'remarcar' && !!rmAu, extra: pu.tipo === 'extra', aviso: pu.tipo === 'aviso', senha: pu.tipo === 'senha', mais: pu.tipo === 'mais', prof: pu.tipo === 'prof', ia: pu.tipo === 'ia' },
+      painelTitulo: { aluno: 'Aluno', novoAluno: 'Cadastro', disc: 'Disciplina', chamada: 'Chamada', remarcar: 'Remarcar aula', extra: 'Aula extra', aviso: 'Aviso', senha: 'Conta', mais: 'Mais telas', prof: 'Professor', ia: 'Assistente' }[pu.tipo] || 'Painel',
+      profForm: !st.senhaProv && !pu.id, profSenha: !!st.senhaProv, profFicha: !st.senhaProv && pu.tipo === 'prof' && !!pu.id,
+      ...(() => {
+        const pfP = pu.tipo === 'prof' && pu.id ? st.profs.find(p => p.id === pu.id) : null;
+        if (!pfP) return { pf: {}, ocupLinhas: [], ocupVazio: false };
+        const ds = st.discs.filter(d => d.professor_id === pfP.id), errs = this.errosOcup(st.fOcup), n = st.fOcup.length;
+        return { pf: { nome: pfP.nome, email: pfP.email, discsTxt: ds.length ? 'Dá ' + ds.map(d => d.nome).join(', ') + '.' : 'Sem disciplina neste semestre.', nLinhas: n ? n + (n === 1 ? ' horário' : ' horários') : '' },
+          ocupVazio: !n, salvarOcup: e => this.salvarOcup(e), addOcup: () => this.addOcup(),
+          ocupLinhas: st.fOcup.map((r, i) => { const er = errs[i], a = hm(r.hora_inicio), b = hm(r.hora_fim);
+            const aula = !er && ds.map(d => ({ d, o: (d.grade || []).find(o => o.dia_semana === +r.dia_semana && hm(o.hora_inicio) < b && a < hm(o.hora_fim)) })).find(x => x.o);
+            return { n: String(i + 1), dia: String(r.dia_semana), ini: r.hora_inicio, fim: r.hora_fim, motivo: r.motivo, borda: er ? AVISO : 'var(--borda)', notaCor: er || aula ? AVISO : 'var(--texto-suave)',
+              nota: er || (aula ? aula.d.nome + ' já tem aula neste horário (' + DIA_L[aula.o.dia_semana] + ', ' + aula.o.hora_inicio + '–' + aula.o.hora_fim + '). Ajuste a grade da disciplina.' : ''),
+              setDia: e => this.setOcup(r.k, 'dia_semana', e.target.value), setIni: e => this.setOcup(r.k, 'hora_inicio', e.target.value), setFim: e => this.setOcup(r.k, 'hora_fim', e.target.value), setMotivo: e => this.setOcup(r.k, 'motivo', e.target.value),
+              remover: () => this.remOcup(r.k), remLabel: 'Remover horário ocupado ' + (i + 1) }; }) };
+      })(),
+      ...(() => {
+        const busy = st.iaEnviando || st.iaAplicando, prop = st.iaProposta || [], res = st.iaResultado;
+        return { abrirIA: () => this.abrirIA(), iaCampo: this.iaCampo, iaFim: this.iaFim, iaMsgRef: this.iaMsgRef, iaPulso: this.iaPulso,
+          iaVazio: !st.iaMsgs.length && !st.iaEnviando, iaSugestoes: IA_SUG.map(t => ({ t, usar: () => this.enviarIA(t) })),
+          iaLista: st.iaMsgs.map((m, i) => ({ autor: m.papel === 'usuario' ? 'Escola' : 'Assistente', usuario: m.papel === 'usuario', ia: m.papel === 'ia', texto: m.texto, temProposta: i === st.iaPropIdx && !!st.iaProposta })),
+          iaTemProp: prop.length > 0, iaPropN: prop.length + (prop.length === 1 ? ' disciplina' : ' disciplinas'),
+          iaProp: prop.map(p => { const r = res && res.find(x => x.disciplina_id === p.disciplina_id); return { nome: p.disciplina_nome, prof: p.professor_nome, horarios: p.itens.map(x => DIA_C[x.dia_semana] + ' ' + x.hora_inicio + '–' + x.hora_fim).join(' · '), temRes: !!r, res: r ? r.texto : '', resCor: r && !r.ok ? AVISO : TINTA }; }),
+          iaTemRec: (st.iaRecusados || []).length > 0, iaRec: (st.iaRecusados || []).map(r => ({ nome: r.disciplina_nome, motivo: r.motivo })),
+          iaAcoesVis: prop.length > 0 && !res && !st.iaDescartada, iaAplicando: st.iaAplicando, iaAplicarTxt: st.iaAplicando ? 'Aplicando…' : 'Aplicar proposta', iaAplicarO: st.iaAplicando ? 0.6 : 1,
+          iaStatusVis: !!res || (st.iaDescartada && prop.length > 0), iaStatus: res ? (() => { const ok = res.filter(x => x.ok).length; return ok === res.length ? 'Proposta aplicada. As aulas já estão na agenda.' : 'Aplicada em ' + ok + ' de ' + res.length + ' disciplinas. Veja o erro acima.'; })() : 'Proposta descartada. A grade não mudou.',
+          aplicarIA: () => this.aplicarIA(), descartarIA: () => this.setState({ iaDescartada: true }),
+          iaEnviando: st.iaEnviando, iaTemErro: !!st.iaErro, iaErro: st.iaErro, iaTentar: () => this.iaTentar(),
+          iaTexto: st.iaTexto, setIaTexto: e => this.setState({ iaTexto: e.target.value }), iaOcupado: busy, iaCampoO: busy ? 0.6 : 1,
+          iaTecla: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent && e.nativeEvent.isComposing)) { e.preventDefault(); this.enviarIA(); } },
+          enviarIA: e => { e.preventDefault(); this.enviarIA(); }, iaNaoEnvia: busy || !st.iaTexto.trim(), iaEnviarO: busy || !st.iaTexto.trim() ? 0.4 : 1 };
+      })(),
       psp: st.senhaProv ? { titulo: st.senhaProv.redef ? 'Nova senha de ' + st.senhaProv.redef : st.senhaProv.criado + ' cadastrado.', sub: st.senhaProv.redef ? 'A senha anterior deixou de valer. No próximo acesso o professor cria a própria senha.' : 'Entregue a senha ao professor. No primeiro acesso ele cria a própria senha.' } : {},
       cadastrarProf: e => this.cadastrarProf(e), abrirNovoProf: () => this.abrirPainel({ tipo: 'prof' }),
       profsTotalTxt: st.profs.length + (st.profs.length === 1 ? ' professor' : ' professores') + ' · semestre ' + semNome,
-      profsLista: st.profs.map(p => { const ds = st.discs.filter(d => d.professor_id === p.id); return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, redefinir: () => this.abrirPainel({ tipo: 'prof', id: p.id }, { profs: st.profs.map(x => x.id === p.id ? Object.assign({}, x, { provisoria: true }) : x), senhaProv: { email: p.email, senha: this.senhaNova(), copiado: false, redef: p.nome } }),
-        discs: ds.map(d => ({ nome: d.nome, ir: () => { this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
+      profsLista: st.profs.map(p => { const ds = st.discs.filter(d => d.professor_id === p.id); const oc = (p.ocupados || []).slice().sort((x, y) => x.dia_semana - y.dia_semana || hm(x.hora_inicio) - hm(y.hora_inicio));
+        return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, abrir: () => this.abrirFicha(p), abrirLabel: 'Abrir ficha de ' + p.nome, tecla: e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); this.abrirFicha(p); } },
+          ocupTxt: oc.length ? 'Ocupado: ' + oc.map(o => DIA_C[o.dia_semana] + ' ' + o.hora_inicio + '–' + o.hora_fim).join(' · ') : 'Sem horários ocupados', ocupCor: oc.length ? TINTA : 'var(--texto-suave)',
+          redefinir: e => { if (e) e.stopPropagation(); this.abrirPainel({ tipo: 'prof', id: p.id }, { profs: st.profs.map(x => x.id === p.id ? Object.assign({}, x, { provisoria: true }) : x), senhaProv: { email: p.email, senha: this.senhaNova(), copiado: false, redef: p.nome } }); },
+        discs: ds.map(d => ({ nome: d.nome, ir: e => { if (e) e.stopPropagation(); this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
       df: (() => {
         const dsc = st.discs.find(d => d.id === pu.did), de = ativo ? (HOJE > ativo.inicio ? HOJE : ativo.inicio) : null;
         return { semSem: !ativo, ok: !!ativo, titulo: dsc ? 'Editar ' + dsc.nome : 'Nova disciplina', botao: dsc ? 'Salvar' : 'Criar disciplina', fechar: st.fOk ? 'Fechar' : 'Cancelar',
           sub: ativo ? 'Semestre ' + ativo.nome + '. Ao salvar, a grade gera as aulas de ' + ddmm(de) + ' até ' + ddmm(ativo.fim) + '. Só as aulas futuras sem chamada são refeitas; o que já aconteceu não muda.' : '', nLinhas: st.fGrade.length + (st.fGrade.length === 1 ? ' horário' : ' horários') };
       })(),
       dfLinhas: (() => {
-        const rows = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim })), errs = this.conflitoGrade(rows, pu.did || null);
+        const rows = st.fGrade.map(r => ({ dia_semana: +r.dia_semana, hora_inicio: r.hora_inicio, hora_fim: r.hora_fim })), errs = this.conflitoGrade(rows, pu.did || null, st.fProf ? +st.fProf : null);
         return st.fGrade.map((r, i) => {
           const outros = this.gradeNoDia(+r.dia_semana).filter(o => o.id !== pu.did), er = errs[i];
           return { n: String(i + 1), dia: String(r.dia_semana), ini: r.hora_inicio, fim: r.hora_fim, borda: er ? AVISO : 'var(--borda)', notaCor: er ? AVISO : 'var(--texto-suave)',
