@@ -10,6 +10,15 @@ export const pedidoAPI = (p: any) => ({ disciplina_id: Number(p.disc), ...horari
 export const eventoAPI = (e: any) => ({ tipo: e.tipo, titulo: e.titulo, data: e.data, fim: e.fim || null, hora_inicio: e.hi || null, hora_fim: e.hf || null,
   todas_turmas: e.turmas === 'todas', turma_ids: e.turmas === 'todas' ? [] : e.turmas.map(Number), disciplina_id: e.disc ? Number(e.disc) : null, descricao: e.desc });
 
+// Formatos que o Portal publica na loja para a GradeAgenda.
+export const alunosLoja = (alunos: any[]) => alunos.map((a: any) => ({ id: a.id, nome: a.nome, turma: a.turma ?? null }));
+export const matriculasDe = (mats: Record<string, boolean>) => Object.keys(mats || {}).filter(k => mats[k]).map(k => {
+  const [aluno, disciplina] = k.split('-').map(Number);
+  return { aluno_id: aluno, disciplina_id: disciplina };
+});
+// Turma do próprio aluno (texto); vazio nos outros perfis e para aluno sem turma.
+export const turmaDoAluno = (usuario: any, alunos: any[]) => usuario?.aluno_id == null ? '' : alunos.find((a: any) => a.id === usuario.aluno_id)?.turma ?? '';
+
 const semestre = (s: any) => s == null ? null : ({
   id: s.id, nome: s.nome, inicio: s.inicio, fim: s.fim,
   encerrado_em: s.encerrado_em == null ? null : s.encerrado_em.slice(0, 10),

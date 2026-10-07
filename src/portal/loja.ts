@@ -1,7 +1,9 @@
 // Estado da API publicado pelo Portal e atualizado após as gravações.
-// alunos: lista do estado, já recortada pelo servidor; turmaAluno: turma do próprio aluno (vazio nos outros perfis).
+// alunos: lista do estado, já recortada pelo servidor; turmaAluno: turma do próprio aluno (vazio nos outros perfis);
+// matriculas: pares aluno/disciplina do estado; carga: situação da busca de /portal/estado.
 export type AlunoLoja = { id: number; nome: string; turma: string | null };
-let dados: any = { perfil: null, usuario: null, semestre: null, disciplinas: [], professores: [], aulas: [], turmas: [], salas: [], eventos: [], pedidos: [], alunos: [] as AlunoLoja[], turmaAluno: '' };
+export type MatriculaLoja = { aluno_id: number; disciplina_id: number };
+let dados: any = { perfil: null, usuario: null, semestre: null, disciplinas: [], professores: [], aulas: [], turmas: [], salas: [], eventos: [], pedidos: [], alunos: [] as AlunoLoja[], matriculas: [] as MatriculaLoja[], turmaAluno: '', carga: 'ok' as 'ok' | 'carregando' | 'erro' };
 const ouvintes = new Set<() => void>();
 let recarga: () => Promise<void>;
 export const lerLoja = () => dados;
