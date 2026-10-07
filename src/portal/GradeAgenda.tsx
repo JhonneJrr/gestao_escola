@@ -94,8 +94,15 @@ class GradeAgenda extends DCLogic {
       sigla: d.sigla || d.nome.split(' ').map(p => p[0]).join('').slice(0, 3).toUpperCase(), grade: d.grade || [] })), profs: s.professores };
   }
   receberLoja = () => {
-    const s = lerLoja();
-    this.setState({ ...this.dadosLoja(), ...(!this.demo() || !this.recebeu ? { eventos: s.eventos, pedidos: s.pedidos } : {}) });
+    const s = lerLoja(), demo = this.demo();
+    // Na demonstração o canvas só refaz disciplinas e professores quando eles mudam (sincBase); senão apagaria o estado aplicado.
+    let primeira = false;
+    if (demo) {
+      const k = JSON.stringify(s.disciplinas) + JSON.stringify((s.professores || []).map(p => p.ocupados));
+      if (k === this.chaveDemo) return;
+      primeira = !this.chaveDemo; this.chaveDemo = k;
+    }
+    this.setState({ ...this.dadosLoja(), ...(!demo ? { eventos: s.eventos, pedidos: s.pedidos } : primeira ? { eventos: s.eventos, pedidos: s.pedidos, chamadas: {}, remarc: [] } : {}) });
     this.recebeu = true;
     if (this.editorPendente) this.iniciarEditor();
   };
@@ -134,7 +141,7 @@ class GradeAgenda extends DCLogic {
     const sp = this.scrollPai(), r = this.raiz.current; if (!sp || !r) return null;
     if (!this._sp) { this._spOv = sp.style.overflow; sp.style.overflow = 'hidden'; this._sp = sp; }
     const a = sp.getBoundingClientRect(), b = r.getBoundingClientRect();
-    return { top: Math.max(0, a.top - b.top), h: sp.clientHeight, left: a.left - b.left, right: b.right - (a.left + sp.clientWidth) };
+    return { top: a.top - b.top, h: sp.clientHeight, left: a.left - b.left, right: b.right - (a.left + sp.clientWidth) };
   }
   setState(u, cb) {
     const msg = this.state?.msg;
@@ -267,7 +274,8 @@ class GradeAgenda extends DCLogic {
     return st.eventos.filter(e => !minhas || e.turmas === 'todas' || e.turmas.some(t => minhas.includes(t)));
   }
   // Arrasta só aula de grade de hoje ou futura, sem chamada feita, sem feriado, nem cancelada, com o semestre aberto.
-  podeArrastar(i) { return this.perfil() === 'escola' && i.tipo === 'grade' && i.idx != null && !i.feriado && !i.cancelada && !i.feita && i.data >= this.agora().data && this.semAtivo() && !this.state.pend; }
+  // Na demonstração (DEV) vale a regra do canvas, que não olha a data nem a chamada.
+  podeArrastar(i) { if (this.demo()) return this.perfil() === 'escola' && i.tipo === 'grade' && !i.feriado && !this.state.pend; return this.perfil() === 'escola' && i.tipo === 'grade' && i.idx != null && !i.feriado && !i.cancelada && !i.feita && i.data >= this.agora().data && this.semAtivo() && !this.state.pend; }
   abrirAula(i) { this.setState({ painel: { tipo: 'aula', key: i.key, tkey: i.tkey, disc: i.disc.id, data: i.data, ini: i.ini, fim: i.fim, sala: i.sala, itipo: i.tipo, pendente: !!i.pendente, remarcada: !!i.remarcada, feriado: i.feriado, cancelada: !!i.cancelada, pedido: i.pedido ? i.pedido.id : null } }); }
   // Chamada já feita da aula (presenças por aluno), lida das aulas do store; o estado local só existe na demonstração (DEV).
   chamadaAtual(pn) { const au = this.aulaDe(pn.disc, pn.data, pn.ini); if (au) return au.chamada || null; return (import.meta.env.DEV && this.state.chamadas[pn.key]) || null; }
@@ -282,7 +290,7 @@ class GradeAgenda extends DCLogic {
   }
   // Lista da chamada: matriculados na disciplina (mais quem já tem presença nesta aula). Na demonstração, a lista do canvas.
   alunosChamada(d, pn) {
-    if (import.meta.env.DEV && this.demo() && this.demoMod) return this.demoMod.alunosDaTurma(d.turma);
+    if (import.meta.env.DEV && this.demo()) return (lerLoja().alunos || []).filter(a => d.turma && a.turma === d.turma).map(a => ({ id: a.id, nome: a.nome }));
     return alunosDaChamada(lerLoja().alunos || [], this.matriculasLoja(), d.id, this.chamadaAtual(pn));
   }
   cargaAtual() { const st = this.state; if (st.carga !== 'ok') return st.carga; if (st.recarregando) return 'carregando'; return lerLoja().carga || 'ok'; }
@@ -740,7 +748,7 @@ class GradeAgenda extends DCLogic {
       const pend = st.pedidos.filter(p => p.status === 'pendente'), hist = st.pedidos.filter(p => p.status !== 'pendente');
       return { pedEsc: true, pedProf: false, pendTitulo: pend.length ? pend.length + (pend.length === 1 ? ' pedido aguardando análise' : ' pedidos aguardando análise') : 'Nenhum pedido aguardando análise',
         pendLista: pend.map(p => { const ck = st.pedErros?.[p.id] || this.pedCheck(p, p, st), rec = st.recusando === p.id, sug = st.sugerindo === p.id;
-          return Object.assign(fmtP(p, p), { ok: !ck, ck: ck ? 'Choque: ' + ck : 'Sem choque com professor, turma e sala.', ckCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', aprovarOff: !!ck || !!st.salvando, aprovarO: ck ? 0.4 : 1,
+          return Object.assign(fmtP(p, p), { ok: !ck, ck: ck ? 'Choque: ' + ck : 'Sem choque com professor, turma e sala.', ckCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', aprovarOff: !!ck, aprovarO: ck ? 0.4 : 1,
             normal: !rec && !sug, rec, sug, recMotivo: st.recMotivo, recErro: st.recErro, sugF: st.sug, sugErro: st.sugErro,
             apTxt: this.sv('ap-' + p.id, 'Aprovar'), recTxt: this.sv('rec-' + p.id, 'Recusar pedido'), sugTxt: this.sv('sug-' + p.id, 'Enviar sugestão'), ocupado: !!st.salvando, gravErro: st.erroG['ap-' + p.id] || st.erroG['rec-' + p.id] || st.erroG['sug-' + p.id] || '', temGravErro: !!(st.erroG['ap-' + p.id] || st.erroG['rec-' + p.id] || st.erroG['sug-' + p.id]),
             aprovar: () => {
@@ -831,7 +839,8 @@ class GradeAgenda extends DCLogic {
     if (pn.tipo === 'chamada') {
       const d = st.discs.find(x => x.id === pn.disc); if (!d) return base;
       const lista = this.alunosChamada(d, pn), m = st.chamF || {}, atual = this.chamadaAtual(pn), feita = !!atual, ci = this.chamadaInfo(pn, st, now, P), ed = !ci.off;
-      const al = lista.map(a0 => { const nome = a0.nome, id = a0.id, v = m[id], p = v === true, fl = v === false;
+      // Na demonstração (DEV) o canvas também lê as marcações pelo índice ('i0', 'i1'...).
+      const al = lista.map((a0, k) => { const nome = a0.nome, id = a0.id, v = m[id] != null ? m[id] : import.meta.env.DEV && this.demo() ? m['i' + k] : undefined, p = v === true, fl = v === false;
         return { nome, iniciais: nome.split(' ').map(x => x[0]).slice(0, 2).join(''), p, f: fl, pBg: p ? 'var(--texto)' : 'transparent', pCor: p ? 'var(--fundo)' : 'var(--texto)', fBg: fl ? 'var(--texto)' : 'transparent', fCor: fl ? 'var(--fundo)' : 'var(--texto)', pPeso: p ? 600 : 500, fPeso: fl ? 600 : 500, cursor: ed ? 'pointer' : 'default',
           marcarP: () => { if (ed) this.setState(s => ({ chamF: Object.assign({}, s.chamF, { [id]: true }), chamErro: '' })); }, marcarF: () => { if (ed) this.setState(s => ({ chamF: Object.assign({}, s.chamF, { [id]: false }), chamErro: '' })); } }; });
       const pres = al.filter(x => x.p).length, semMarca = al.filter(x => !x.p && !x.f).length;

@@ -198,12 +198,6 @@ const TURMAS = [{ id: '1A', nome: '1º A' }, { id: '2A', nome: '2º A' }, { id: 
 const SALAS = [{ id: '101', nome: 'Sala 101' }, { id: '102', nome: 'Sala 102' }, { id: 'lab', nome: 'Lab. de Informática' }, { id: 'aud', nome: 'Auditório' }];
 const nomeTurma = id => (TURMAS.find(t => t.id === id) || {}).nome || id;
 const nomeSala = id => (SALAS.find(t => t.id === id) || {}).nome || id || '—';
-const PROFS_GRADE = [
-  { id: 1, nome: 'Carlos Mendes', ocupados: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '12:00', motivo: 'Outra escola' }] },
-  { id: 2, nome: 'Marta Ribeiro', ocupados: [] },
-  { id: 3, nome: 'Paulo Antunes', ocupados: [{ dia_semana: 5, hora_inicio: '13:30', hora_fim: '17:10', motivo: 'Mestrado' }] },
-  { id: 4, nome: 'Juliana Prado', ocupados: [] }
-];
 const gr = (dia, i, sala) => ({ dia_semana: dia, hora_inicio: SLOTS[i][0], hora_fim: SLOTS[i][1], sala });
 const DISCS_GRADE = [
   { id: 1, nome: 'Python', sigla: 'PY', turma: '1A', prof: 1, sala: 'lab', carga: 60, grade: [gr(2, 0, 'lab'), gr(4, 0, 'lab')] },
@@ -256,9 +250,16 @@ const PED0 = [
 ];
 
 
-export function estadoGradeDemo() {
+// Estado da Grade e agenda na demonstração. As disciplinas e os professores do store são os do Portal (o canvas passa o `base` do
+// Portal à GradeAgenda); os dados próprios da GradeAgenda (discsGrade, pedidosGrade) só entram nos estados `estado` do canvas.
+// Eventos e pedidos seguem o sincBase do canvas: os ids de disciplina da GradeAgenda viram os do Portal pelo nome (ou null).
+export function estadoGradeDemo(discsPortal = []) {
+  const mapa = {};
+  DISCS_GRADE.forEach(g => { const p = discsPortal.find(d => d.nome.trim().toLowerCase() === g.nome.trim().toLowerCase()); mapa[g.id] = p ? p.id : null; });
   return { semestre: SEM_GRADE, ano: ANO_GRADE, profDemo: PROF_DEMO, turmaDemo: TURMA_DEMO,
-    professores: PROFS_GRADE, disciplinas: DISCS_GRADE.map(d => ({ ...d, professor_id: d.prof, carga_horaria: d.carga })),
-    aulas: [], turmas: TURMAS, salas: SALAS, eventos: EV0, pedidos: PED0.map(p => ({ ...p, aula_id: null })),
+    discsGrade: DISCS_GRADE, pedidosGrade: PED0.map(p => ({ ...p, aula_id: null })),
+    aulas: [], turmas: TURMAS, salas: SALAS,
+    eventos: EV0.map(e => e.disc == null ? e : { ...e, disc: mapa[e.disc] }),
+    pedidos: PED0.filter(p => mapa[p.disc] != null).map(p => ({ ...p, aula_id: null, disc: mapa[p.disc], prof: (discsPortal.find(d => d.id === mapa[p.disc]) || {}).professor_id || p.prof })),
     iaSugGrade: 'O professor Carlos só pode de manhã. Reorganize as aulas dele.' };
 }

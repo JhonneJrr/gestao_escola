@@ -14,12 +14,8 @@ const SLOTS = [['08:00', '09:40'], ['10:00', '11:40'], ['13:30', '15:10'], ['15:
 const nomeTurma = id => !id ? 'Sem turma' : (lerLoja().turmas.find(t => t.id === id) || {}).nome || id;
 const MSG_GRAV = 'Não consegui salvar. Confira a conexão e tente de novo.';
 
-export const ALUNOS_T = { '1A': ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Rocha', 'Elisa Nunes', 'Fabio Neri'], '2A': ['Gabriel Costa', 'Helena Martins', 'Igor Pereira', 'Julia Ramos', 'Kaique Santos'], '3A': ['Larissa Melo', 'Mateus Freitas', 'Natália Cunha', 'Otávio Barros', 'Paula Teixeira', 'Rafael Moura'] };
 export const CHAM0 = { '3-0-2026-10-05': { i0: true, i1: true, i2: false, i3: true, i4: true, i5: true }, '4-0-2026-10-05': { i0: true, i1: true, i2: true, i3: false, i4: true } };
 const IA_ERROS = { 'Não configurado': 'O assistente não está configurado neste servidor.', 'Limite de uso': 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.', 'Sem conexão': 'Não consegui falar com o assistente. Tente de novo.' };
-
-// Lista de alunos da chamada na demonstração (ids 'i0', 'i1'... iguais às chaves de CHAM0).
-export const alunosDaTurma = turma => (ALUNOS_T[turma] || []).map((nome, k) => ({ id: 'i' + k, nome }));
 
 // Respostas do assistente da demonstração (o canvas planeja localmente; em produção quem responde é o servidor).
 function iaPlanejar(c, alvos, soManha) {
@@ -68,7 +64,7 @@ function iaResponder(c, t0) {
 export function aplicarEstado(c, nome) {
   clearTimeout(c.iaT); clearTimeout(c.cT);
   const prof = /^Professor/.test(nome), TER = '2026-10-06T10:20', W = '2026-10-05';
-  const DISC0 = c.dadosLoja().discs, PED0 = lerLoja().pedidos;
+  const DISC0 = lerLoja().discsGrade, PED0 = lerLoja().pedidosGrade;
   const gr = (dia, i, sala) => ({ dia_semana: dia, hora_inicio: SLOTS[i][0], hora_fim: SLOTS[i][1], sala });
   const reset = { perfilF: prof ? 'Professor' : 'Escola', relF: null, carga: 'ok', recarregando: false, salvando: null, erroG: {}, painel: null, pend: null, msg: null, reverter: false, semEnc: false, canceladas: {}, discs: DISC0, pedidos: PED0, remarc: [], chamadas: CHAM0, chamF: {}, chamErro: '',
     iaAberto: false, iaMsgs: [], iaTexto: '', iaEnv: false, iaProp: null, iaFeito: null, iaErro: '', aba: 'quadro', eixo: 'dias', semana: null, fTurma: '', fProf: '', fDisc: '', fSala: '', soChoques: false, nomeF: '', nomeErro: '', msgDisc: '' };

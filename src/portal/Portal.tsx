@@ -199,6 +199,9 @@ class Component extends DCLogic {
     if (!st.logado && st.tela === 'login' && !st.mg && !this.mgPend) { this.mgPend = true; requestAnimationFrame(() => { this.mgPend = false; const s2 = this.state; if (!s2.logado && s2.tela === 'login' && !s2.mg) this.abrirMergulho(null, null, true); }); }
     requestAnimationFrame(() => { this.syncSel(); this.revelar(); this.calcFunc(); });
   }
+  // Só DEV: no desktop o canvas mede a aba do Painel antes de trocar de tela (e deixa essa medida no indicador, que
+  // some sem aba selecionada); no celular a troca vem antes do primeiro quadro e nada é medido.
+  esperarQuadro() { return window.innerWidth >= 768 ? new Promise(resolve => this.setState({}, () => requestAnimationFrame(resolve))) : Promise.resolve(); }
   async aplicarInicio() {
     if (!import.meta.env.DEV || this.props.inicio === undefined) return;
     const i = this.props.inicio ?? 'Apresentação';
@@ -211,10 +214,12 @@ class Component extends DCLogic {
         geoLogin = this.geoMergulho();
         left.style.boxSizing = box;
       }
-      const { estadoDemo, estadoGradeDemo } = await import('./demo-canvas');
-      this.demoGrade = estadoGradeDemo();
+      // Guardado para o estado do assistente entrar na mesma volta de `entrarComo`, sem esperar outro import.
+      this.demoCanvas = await import('./demo-canvas');
+      const { estadoDemo, estadoGradeDemo } = this.demoCanvas;
       const papel = i === 'Aluno' ? 'aluno' : i.startsWith('Professor') ? 'prof' : 'escola';
       const dados = estadoDemo(papel);
+      this.demoGrade = estadoGradeDemo(dados.discs);
       if (['Apresentação', 'Login', 'Primeiro acesso'].includes(i)) Object.assign(dados, { usuario: null, profId: null });
       if (i === 'Primeiro acesso') dados.primeiroEmail = dados.alunos[0].email;
       await new Promise(resolve => this.setState(dados, resolve));
@@ -226,9 +231,10 @@ class Component extends DCLogic {
     else if (/ \/ /.test(i)) {
       const pf = /^Professor/.test(i) ? 'prof' : 'escola', ed = i === 'Escola / Disciplinas / Editor da Grade e agenda';
       this.entrarComo(pf, pf === 'prof' ? 1 : undefined);
+      if (ed) await this.esperarQuadro();
       setTimeout(() => this.setState({ tela: ed ? 'disciplinas' : 'frequencia', gradeEstado: ed ? 'Normal' : i, gaEd: ed ? (this.state.discs[0] || {}).id || 'novo' : null }), 0);
     }
-    else if (/^Escola · /.test(i)) { this.entrarComo('escola'); if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); this.abrirFicha(this.state.profs[0]); } else await this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com \"Não coube\"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i]); }
+    else if (/^Escola · /.test(i)) { this.entrarComo('escola'); await this.esperarQuadro(); if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); this.abrirFicha(this.state.profs[0]); } else await this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com \"Não coube\"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i]); }
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
     if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') await this.iaEstadoAplicar(this.props.iaEstado);
@@ -688,7 +694,7 @@ class Component extends DCLogic {
   }
   async iaEstadoAplicar(nome) {
     if (import.meta.env.DEV) {
-      const { aplicarIADemo } = await import('./demo-canvas');
+      const { aplicarIADemo } = this.demoCanvas || await import('./demo-canvas');
       aplicarIADemo(this, nome);
     }
   }
