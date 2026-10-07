@@ -13,7 +13,7 @@ const opcao = (nome: string, padrao: string, options: string[]) => {
 
 createRoot(document.getElementById('dc-root')!).render(
   <Portal
-    inicio={opcao('inicio', 'Apresentação', ['Apresentação', 'Login', 'Primeiro acesso', 'Escola', 'Professor', 'Professor · sem permissão', 'Aluno'])}
+    inicio={query.has('inicio') ? opcao('inicio', 'Apresentação', ['Apresentação', 'Login', 'Primeiro acesso', 'Escola', 'Professor', 'Professor · sem permissão', 'Aluno']) : undefined}
     dispositivo={opcao('dispositivo', 'Desktop', ['Desktop', 'Celular'])}
     estado="Normal"
     vista="Protótipo"

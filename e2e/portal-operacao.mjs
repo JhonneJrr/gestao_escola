@@ -36,6 +36,7 @@ try {
   browser = await chromium.launch({ channel: 'msedge' });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
   page.setDefaultTimeout(10000);
+  await page.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, route => route.abort());
   const respostas = [], erros = [];
   page.on('pageerror', e => erros.push(e.message));
   page.on('response', r => {
@@ -54,7 +55,7 @@ try {
   }
   const visivel = texto => page.getByText(texto, { exact: true }).filter({ visible: true });
   async function entrar(email) {
-    await page.goto(FRONT + '/portal.html?inicio=Login');
+    await page.goto(FRONT + '/login');
     const form = page.locator('form').filter({ visible: true });
     await form.getByLabel('E-mail', { exact: true }).fill(email);
     await form.getByLabel('Senha', { exact: true }).fill('escola123');

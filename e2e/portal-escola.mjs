@@ -84,7 +84,7 @@ try {
   }
 
   await conferir('login da escola e recarregamento conserva seleções e interface', async () => {
-    await page.goto(FRONT + '/portal.html?inicio=Login');
+    await page.goto(FRONT + '/login');
     await form().getByLabel('E-mail', { exact: true }).fill('escola@escola.com');
     await form().getByLabel('Senha', { exact: true }).fill('escola123');
     assert.equal((await resposta('/auth/login', 'POST', () => form().getByRole('button', { name: 'Entrar', exact: true }).click())).status, 200);

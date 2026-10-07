@@ -27,7 +27,7 @@ try {
   page.on('pageerror', e => erros.push(e.message));
   const visivel = texto => page.getByText(texto, { exact: true }).filter({ visible: true });
   async function login(email, senha) {
-    await page.goto(FRONT + '/portal.html?inicio=Login');
+    await page.goto(FRONT + '/login');
     const form = page.locator('form').filter({ has: page.locator('input[type=email]') });
     await form.getByLabel('E-mail', { exact: true }).fill(email);
     await form.getByLabel('Senha', { exact: true }).fill(senha);
@@ -38,7 +38,8 @@ try {
   async function entrou() { await page.getByRole('button', { name: 'Menu do usuário' }).waitFor({ state: 'visible' }); }
   async function saiu() {
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
-    await page.locator('input[type=email]').waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: 'Entrar no portal', exact: true }).first().waitFor({ state: 'visible' });
+    assert.equal(new URL(page.url()).pathname, '/');
     assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), null);
   }
   async function identidade(email, nome) {
@@ -92,7 +93,7 @@ try {
       await page.getByRole('button', { name: 'Menu do usuário' }).click();
     });
     await conferir(conta.email + ': sair e recarregar volta ao início', async () => {
-      await saiu(); await page.goto(FRONT + '/portal.html');
+      await saiu(); await page.goto(FRONT + '/');
       await page.getByRole('button', { name: 'Entrar no portal', exact: true }).first().waitFor({ state: 'visible' });
       assert.equal(await page.getByRole('button', { name: 'Menu do usuário' }).count(), 0);
     });
@@ -215,7 +216,7 @@ try {
   await conferir('token inválido ao recarregar é apagado e fica no início', async () => {
     await page.evaluate(() => localStorage.setItem('portal.token', 'invalido'));
     const resposta = page.waitForResponse(r => r.url() === API + '/auth/me');
-    await page.goto(FRONT + '/portal.html');
+    await page.goto(FRONT + '/');
     assert.equal((await resposta).status(), 401);
     await page.getByRole('button', { name: 'Entrar no portal', exact: true }).first().waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), null);

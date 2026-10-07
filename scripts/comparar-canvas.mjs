@@ -116,7 +116,7 @@ try {
     let pronto = false;
     for (let i = 0; i < 100; i++) {
       if (vite.exitCode !== null) throw new Error('Vite encerrou antes de servir o portal:\n' + log);
-      try { pronto = (await fetch('http://localhost:5173/portal.html')).ok; } catch {}
+      try { pronto = (await fetch('http://localhost:5173/')).ok; } catch {}
       if (pronto) break;
       await esperar(100);
     }
@@ -147,7 +147,7 @@ try {
       const urlReferencia = 'http://127.0.0.1:' + servidor.address().port + '/Portal%20Escolar.dc.html';
       await Promise.all([
         referencia.goto(urlReferencia, { waitUntil: 'load' }),
-        porte.goto('http://localhost:5173/portal.html?' + new URLSearchParams({ inicio, movimento: 'Reduzido' }), { waitUntil: 'load' }),
+        porte.goto('http://localhost:5173/?' + new URLSearchParams({ inicio, movimento: 'Reduzido' }), { waitUntil: 'load' }),
       ]);
       if (externas.size) throw new Error('URL externa não prevista pelo plano; comparação interrompida:\n' + [...externas].join('\n'));
       if (erros.length) throw new Error('Erro de execução do canvas/porte:\n' + erros.join('\n'));

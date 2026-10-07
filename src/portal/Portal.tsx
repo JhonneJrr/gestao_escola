@@ -40,6 +40,7 @@ const TELAS_POR = {
   aluno: []
 };
 const TELAS = TELAS_POR.escola;
+const CAMINHOS = { inicio: '/', login: '/login', 'primeiro-acesso': '/primeiro-acesso', painel: '/painel', semestre: '/semestre', disciplinas: '/disciplinas', professores: '/professores', alunos: '/alunos', boletim: '/matriculas', frequencia: '/agenda', avisos: '/avisos', 'meu-painel': '/meu-painel' };
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const EXTRAS = 'Gabriel Costa,Helena Martins,Igor Pereira,Julia Ramos,Kaique Santos,Larissa Melo,Mateus Freitas,Natália Cunha,Otávio Barros,Paula Teixeira,Rafael Moura,Sofia Carvalho,Tiago Nunes,Valéria Pinto,Wagner Azevedo,Yasmin Duarte,Breno Farias,Cecília Rocha,Danilo Prado,Elisa Campos,Felipe Araújo,Giovana Lopes,Heitor Vieira,Isadora Reis,João Batista,Lívia Monteiro,Marcelo Dantas,Nina Albuquerque'.split(',');
 const MOLAS = { fast: { k: 1500, z: 1 }, moderate: { k: 620, z: 0.82 }, slow: { k: 320, z: 0.78 } };
@@ -125,9 +126,11 @@ class Component extends DCLogic {
   componentDidMount() {
     this.aplicarMovimento();
     this.aplicarFonte();
-    this.aplicarInicio();
-    aoExpirar(() => this.sair());
+    if (this.props.inicio !== undefined) this.aplicarInicio();
+    aoExpirar(() => this.sair('login'));
     if (lerToken()) this.restaurarSessao();
+    else if (this.props.inicio === undefined) this.aplicarRota();
+    window.addEventListener('popstate', this.aplicarRota);
     this.anims = new Map();
     const f = this.frameRef.current;
     f.addEventListener('pointermove', this.onMove);
@@ -145,7 +148,7 @@ class Component extends DCLogic {
     this.ro.observe(f);
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => this.syncSel());
   }
-  componentWillUnmount() { aoExpirar(null); document.removeEventListener('keydown', this.onGlobalKey); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
+  componentWillUnmount() { aoExpirar(null); window.removeEventListener('popstate', this.aplicarRota); document.removeEventListener('keydown', this.onGlobalKey); this.ro && this.ro.disconnect(); this.selRO && this.selRO.disconnect(); window.removeEventListener('resize', this.resync); }
   aplicarFonte() {
     const f = this.props.fonte ?? 'Apple · SF + New York', de = document.documentElement.style;
     const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -199,6 +202,7 @@ class Component extends DCLogic {
   }
   primeiroAcesso(usuario) {
     this.limparMg();
+    this.atualizarURL('primeiro-acesso');
     this.setState({ mg: null, saindo: false, logado: false, tela: 'primeiro-acesso', primeiroEmail: usuario.email, primeiroPapel: this.state.papel, sNova: '', sConf: '', fErro: '', loginErro: '' });
   }
   falhaLogin(erro) {
@@ -219,18 +223,20 @@ class Component extends DCLogic {
     } catch (erro) { this.falhaLogin(erro); }
   }
   async restaurarSessao() {
+    const tela = Object.keys(CAMINHOS).find(t => CAMINHOS[t] === location.pathname) || 'inicio';
     try {
       const usuario = await me();
       await this.carregarEstado(usuario);
       if (usuario.senha_provisoria) return this.primeiroAcesso(usuario);
-      this.entrarComo(this.state.papel);
+      this.entrarComo(this.state.papel, null, true);
     } catch (erro) {
-      if (erro.status === 401) this.sair('inicio');
+      if (erro.status === 401) this.sair(['inicio', 'login', 'primeiro-acesso'].includes(tela) ? tela : 'login');
       else this.setState({ carregando: false, loginErro: erro.detalhe });
     }
   }
-  sair(tela = 'login') {
+  sair(tela = 'inicio') {
     apagarToken(); this.limparMg();
+    this.atualizarURL(tela);
     this.setState(Object.assign({}, VISITANTE, { logado: false, papel: null, tela, painel: null, painelUlt: null, loginSenha: '', menuUser: false, navAberta: false, carregando: false, saindo: false, mg: null, primeiroEmail: '', primeiroPapel: null, sAtual: '', sNova: '', sConf: '', fErro: '', senhaOk: false, senhaProv: null, gnDraft: {} }));
   }
   preCarregar(papel) {
@@ -277,7 +283,7 @@ class Component extends DCLogic {
     });
   }
   veuRef = React.createRef();
-  entrarComo(papel, profId) { this.limparMg(); this.setState({ mg: null, logado: true, papel, profId: papel === 'prof' ? (profId || this.state.profId || null) : null, semPerm: null, rotaAviso: '', subAba: 'alunos', selDisc: papel === 'prof' ? ((this.state.discs.find(d => d.professor_id === (profId || this.state.profId || null)) || {}).id || this.state.selDisc) : this.state.selDisc, tela: papel === 'aluno' ? 'meu-painel' : 'painel', loginErro: '', painel: null }); }
+  entrarComo(papel, profId, restaurando = false) { this.limparMg(); this.setState({ mg: null, logado: true, papel, profId: papel === 'prof' ? (profId || this.state.profId || null) : null, semPerm: null, rotaAviso: '', subAba: 'alunos', selDisc: papel === 'prof' ? ((this.state.discs.find(d => d.professor_id === (profId || this.state.profId || null)) || {}).id || this.state.selDisc) : this.state.selDisc, tela: papel === 'aluno' ? 'meu-painel' : 'painel', loginErro: '', painel: null }, () => { if (restaurando && this.props.inicio === undefined) this.aplicarRota(); else this.atualizarURL(this.state.tela); }); }
 
   // ---------- Fluid engine ----------
   anim(g, kind) {
@@ -405,10 +411,23 @@ class Component extends DCLogic {
 
   // ---------- domínio ----------
   telaRef = React.createRef();
-  ir(tela) {
+  atualizarURL(tela, substituir = false) {
+    if (this.props.inicio !== undefined || location.pathname === CAMINHOS[tela]) return;
+    history[substituir ? 'replaceState' : 'pushState'](null, '', CAMINHOS[tela]);
+  }
+  aplicarRota = () => {
+    if (this.props.inicio !== undefined) return;
+    let tela = Object.keys(CAMINHOS).find(t => CAMINHOS[t] === location.pathname) || 'inicio';
+    if (this.state.logado && ['inicio', 'login', 'primeiro-acesso'].includes(tela)) tela = this.state.papel === 'aluno' ? 'meu-painel' : this.telas()[0].id;
+    this.ir(tela, true);
+  };
+  ir(tela, substituir = false) {
     const S = this.state;
-    if (S.logado && S.papel && S.papel !== 'aluno' && !this.telas().some(t => t.id === tela)) { this.setState({ rotaAviso: 'Essa tela não faz parte do perfil ' + (S.papel === 'prof' ? 'Professor' : 'Escola') + '. Você voltou ao início.' }); tela = this.telas()[0].id; }
+    if (!S.logado && !['inicio', 'login', 'primeiro-acesso'].includes(tela)) tela = 'login';
+    if (S.logado && S.papel && !(S.papel === 'aluno' ? tela === 'meu-painel' : this.telas().some(t => t.id === tela))) { this.setState({ rotaAviso: 'Essa tela não faz parte do perfil ' + (S.papel === 'prof' ? 'Professor' : S.papel === 'aluno' ? 'Aluno' : 'Escola') + '. Você voltou ao início.' }); tela = S.papel === 'aluno' ? 'meu-painel' : this.telas()[0].id; }
     else if (S.rotaAviso) this.setState({ rotaAviso: '' });
+    this.atualizarURL(tela, substituir);
+    if (!S.logado && tela === 'inicio' && S.mg) return this.fecharMergulho(substituir);
     if (S.semPerm) this.setState({ semPerm: null });
     const el = this.telaRef.current, m = this.mainRef.current, de = this.state.tela;
     if (tela === de) return this.setState({ navAberta: false, painel: null });
@@ -929,6 +948,7 @@ class Component extends DCLogic {
     d.animate(entrar ? [fora, dentro] : [dentro, fora], entrar ? { duration: 560, easing } : { duration: 140, easing: 'linear', fill: 'forwards' });
   }
   abrirMergulho(p, ev, instant) {
+    this.atualizarURL('login');
     const papel = p || this.state.papelEscolhido;
     const ctl = this.ringCtl, m = this.mainRef.current;
     if (!ctl || !m || !this.ringEl) return this.setState({ tela: 'login', papelEscolhido: papel, loginErro: '' });
@@ -979,7 +999,8 @@ class Component extends DCLogic {
       if (t >= 1) { ctl.dive = null; fim && fim(); }
     } };
   }
-  fecharMergulho() {
+  fecharMergulho(substituir = false) {
+    this.atualizarURL('inicio', substituir);
     const mg = this.state.mg, ctl = this.ringCtl;
     this.limparMg();
     const fim = () => this.setState({ mg: null, tela: 'inicio', loginErro: '' }, () => { (this.mgAnims || []).forEach(a => a.cancel()); this.mgAnims = []; const c = this.ringCtl; if (this.ringEl) { const wr = this.ringEl.parentElement, left = wr.parentElement.previousElementSibling; wr.style.clipPath = ''; if (left) Object.assign(left.style, { transform: '', opacity: '', transformOrigin: '', willChange: '' }); } if (c) { Object.assign(c, { tcx: null, tcy: null, tz: 1, k: 6, snap: true, vivo: false, pausa: false }); c.redraw(); } });
@@ -1393,7 +1414,7 @@ class Component extends DCLogic {
         mgOp: mg && mg.op === 0 ? 0 : 1, mgOverflow: mg ? 'visible' : 'hidden', navLO: mg ? 0 : 1, navLPE: mg ? 'none' : 'auto', mainOverflow: mg ? 'hidden' : 'auto',
         loginVis: !!mg, cardO: ab ? 1 : 0, cardPE: ab ? 'auto' : 'none', cardT: 'none' }; })(), heroH: celular ? '844px' : '100vh', ringH: compact ? '440px' : 'auto', ringRef: this.setRing,
       heroStats: [['Turma 2026', 'left'], ['Alunos: ' + reais.length, 'center'], ['Disciplinas: ' + st.discs.length, 'right'], ['Avisos: ' + st.avisos.length, 'left'], ['Média: ' + (mediaT == null ? '—' : fmt(mediaT)), 'center'], ['Em risco: ' + risco.length, 'right']].map(([t, al]) => ({ t, al })),
-      navL: (compact ? [['Funções', 'recursos'], ['Perguntas', 'perguntas'], ['Entrar', null]] : [['Sem o portal', 'sem-portal'], ['Funções', 'recursos'], ['Em uso', 'demo'], ['Perguntas', 'perguntas'], ['Entrar', null]]).map(([label, id]) => ({ label, ir: () => id ? this.irSecao(id) : this.setState({ tela: 'login' }) })),
+      navL: (compact ? [['Funções', 'recursos'], ['Perguntas', 'perguntas'], ['Entrar', null]] : [['Sem o portal', 'sem-portal'], ['Funções', 'recursos'], ['Em uso', 'demo'], ['Perguntas', 'perguntas'], ['Entrar', null]]).map(([label, id]) => ({ label, ir: () => id ? this.irSecao(id) : this.ir('login') })),
       saibaMais: () => this.irSecao('sem-portal'),
 
       // login

@@ -1,122 +1,94 @@
 # Portal de Gestão Escolar — Frontend
 
-Frontend do sistema de **gestão escolar**, em **React + TypeScript** (Vite).
-Consome o mesmo contrato de dados da API de gestão escolar (FastAPI +
-PostgreSQL) desenvolvida em
-**[JhonneJrr/gestao-alunos](https://github.com/JhonneJrr/gestao-alunos)** —
-hoje com dados mockados em `src/mock.ts`, prontos para virar `fetch` direto
-na API real.
+Portal em React e TypeScript, servido pelo Vite, para escola, professores e alunos.
+Faz login real e consulta e grava dados na API de gestão escolar (FastAPI).
+A interface vem do canvas e tem URLs por tela, sessão restaurada e navegação pelo histórico do navegador.
 
-![Home do Portal de Gestão Escolar](docs/tela.png)
+## Desenvolvimento
 
-## O que tem
-
-- **Tela de entrada** e **Home** com navegação simples entre funções (sem
-  biblioteca de rotas — só estado do React).
-- **Gestão de Alunos**: lista com busca por nome, filtros por idade e média
-  mínimas (combináveis), cadastro controlado com validações, exclusão e
-  tratamento de matrícula duplicada.
-- **Disciplinas**: listagem das disciplinas do portal.
-- **Matrículas**: consulta das disciplinas de um aluno e vínculo de um aluno
-  a uma disciplina.
-- **Painel**: indicadores da turma (total de alunos, média geral, disciplinas,
-  carga horária) e a proporção de aprovados/reprovados.
-- Tema próprio (vidro/glassmorphism, paleta violeta/âmbar), responsivo e com
-  estados de carregando/erro/vazio em toda tela que busca dados.
-- Alunos, Disciplinas e Avisos com paginação e busca no servidor; painel com indicadores, alunos em risco, ranking e avaliações pendentes.
-- Barra superior que expande por permanência do mouse, clique no nome ou Alt+M, com contadores, setas e Alt+1…7; no celular, abas embaixo e folha Mais; Ctrl+K abre a busca global de alunos, disciplinas e avisos para professores.
-
-## Início rápido
-
-Com o Node.js 20.19+ instalado:
+Requer Node.js 20.19+ ou 22.12+ e a API em execução.
 
 ```bash
-npm install     # baixa as dependências (uma vez)
-npm run dev     # sobe o servidor de desenvolvimento
+npm install
 ```
 
-Abra o endereço mostrado (ex.: <http://localhost:5173>).
+Crie `.env.development` na raiz com a URL da API:
+
+```dotenv
+VITE_API_URL=http://localhost:8000
+```
 
 ```bash
-npm run build   # confere tipos (tsc) e gera a versão de produção
-```
-
-## Rodando com a API
-
-No ambiente local, com o Postgres portátil já configurado em
-`$env:USERPROFILE\.pg16`, suba o banco na porta 55432. No repositório
-`gestao-alunos`, com as dependências do backend disponíveis, aplique o seed
-de demonstração (apaga os dados locais) e inicie a API na porta 8000:
-
-```powershell
-pg_ctl -D "$env:USERPROFILE\.pg16\data" -o "-p 55432" start
-cd C:\Users\Administrator\Documents\gestao-alunos
-python seed.py --apagar-tudo
-uvicorn main:app --port 8000
-```
-
-Em outro terminal, inicie o front:
-
-```powershell
-cd C:\Users\Administrator\Documents\gestao-alunos-frontend
 npm run dev
 ```
 
-Abra <http://localhost:5173>. Os acessos de demonstração são
-`prof@escola.com` (professor) e `ana@escola.com` (aluno), ambos com a senha
-`escola123`.
+Abra `http://localhost:5173`. Sem configuração, a API usa `http://localhost:8000`.
 
-Com a API e o front no ar e o Microsoft Edge instalado, rode o teste de
-fumaça em um terceiro terminal, na pasta do front:
+## Contas de demonstração
 
-```powershell
-npm run smoke
+O seed da API usa o semestre 2026.2. A senha de todas as contas abaixo é `escola123`.
+
+| Conta | Perfil | O que vê |
+| --- | --- | --- |
+| `escola@escola.com` | Escola | Painel, semestre, disciplinas, professores, alunos, matrículas, agenda e avisos de toda a escola. |
+| `prof@escola.com` | Prof. Carlos | Painel, agenda, Python e Banco de Dados, seus alunos e avisos. |
+| `marta@escola.com` | Profa. Marta | Painel, agenda, Algoritmos, seus alunos e avisos. |
+| `ana@escola.com` | Ana Souza | Meu painel, com suas notas, frequência, próximas aulas e avisos, para leitura. |
+
+Visitantes veem a apresentação em `/` e o login em `/login`. Após entrar, escola e professores vão para `/painel`; alunos vão para `/meu-painel`. As demais telas usam `/semestre`, `/disciplinas`, `/professores`, `/alunos`, `/matriculas`, `/agenda` e `/avisos`. A troca de senha provisória usa `/primeiro-acesso`. Rotas fora do perfil mostram o aviso do portal e voltam à primeira tela permitida.
+
+## Canvas e conferência
+
+O canvas original fica em `design/canvas/`. O conversor gera `src/portal/template.tsx`, os componentes e estilos; esses arquivos gerados não devem ser editados manualmente. A lógica de navegação e integração com a API fica em `Portal.tsx`, `rede.ts` e `adaptador.ts`.
+
+```bash
+npm run converter
+npm run comparar
 ```
 
-O smoke usa `http://localhost:5173` e `http://localhost:8000` por padrão.
-Para outros endereços, defina as variáveis de ambiente antes de rodar:
+O comparador usa Microsoft Edge via Playwright e compara o DOM do portal com o canvas em desktop e celular. Os parâmetros de diagnóstico como `?inicio=Professor` só funcionam em desenvolvimento.
 
-```powershell
-$env:FRONT_URL = "http://localhost:5173"
-$env:API_URL = "http://localhost:8000"
-npm run smoke
+Com API em `http://localhost:8000`, front em `http://localhost:5173` e Microsoft Edge instalado:
+
+```bash
+npx tsc -b
+npm run build
+node --test e2e/adaptador.test.mjs e2e/converter-canvas.test.mjs
+node e2e/portal-integracao.mjs
+node e2e/portal-escola.mjs
+node e2e/portal-operacao.mjs
+node e2e/portal-rotas.mjs
+npm run comparar
 ```
 
-O resultado esperado é `SMOKE OK`; as capturas ficam em `e2e/saida/`.
+Os testes unitários conferem o adaptador e o conversor. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, grade e matrículas; operação verifica notas, chamadas, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil. O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste; professores de teste permanecem. As escritas de semestre são simuladas no teste de escola.
 
-Link de produção: a definir na Fase 4.
+Para conferir o build, rode `npx vite preview --port 4173` em outro terminal e aponte o teste de rotas para ele:
+
+```powershell
+$env:FRONT_URL = 'http://localhost:4173'
+node e2e/portal-rotas.mjs
+```
+
+## Produção
+
+Link de produção: A PREENCHER
+
+Na Vercel, configure `VITE_API_URL` com a URL pública da API antes do build. O comando padrão é `npm run build`, a saída é `dist` e `vercel.json` redireciona os caminhos para `/index.html`, permitindo abrir e recarregar as URLs da SPA.
 
 ## Estrutura
 
+```text
+index.html                 Entrada única do portal
+src/portal/main.tsx         Montagem e opções de diagnóstico
+src/portal/Portal.tsx       Lógica da interface e navegação
+src/portal/rede.ts          Acesso à API e token de sessão
+src/portal/adaptador.ts     Dados da API para o estado do portal
+src/portal/template.tsx     Template gerado do canvas
+src/portal/componentes/     Componentes gerados
+src/portal/ds/              Estilos do sistema de design
+design/canvas/             Canvas original
+scripts/                   Conversor e comparador
+e2e/                       Testes unitários e de navegador
+docs/superpowers/plans/     Planos de implementação
 ```
-.
-├── index.html
-├── src/
-│   ├── main.tsx
-│   ├── App.tsx              # dono da navegação entre telas
-│   ├── types.ts             # interfaces dos dados (espelham o contrato da API)
-│   ├── mock.ts               # dados de mentira
-│   ├── api.ts                # fronteira com o backend (hoje mock, no futuro fetch)
-│   ├── index.css
-│   └── components/
-│       ├── TelaEntry.tsx · TelaHome.tsx · CardFuncao.tsx · BotaoVoltar.tsx
-│       ├── Cabecalho.tsx · PainelAlunos.tsx · Filtros.tsx · FormAluno.tsx
-│       ├── ListaAlunos.tsx · AlunoCard.tsx
-│       ├── TelaDisciplinas.tsx · DisciplinaCard.tsx
-│       ├── TelaMatriculas.tsx
-│       └── TelaDashboard.tsx
-└── docs/
-    ├── CONTRATO_API.md      # o formato dos dados
-    └── DESAFIOS.md          # enunciado original do trabalho
-```
-
-**A arquitetura em uma frase:** os componentes chamam o `api.ts`; **só** o
-`api.ts` conhece a origem dos dados — trocar o mock por `fetch` não muda
-nenhum componente.
-
-## Tecnologias
-
-- [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- [Vite](https://vite.dev/)
-- CSS puro (sem framework)
-- Ícones [Lucide](https://lucide.dev/)
