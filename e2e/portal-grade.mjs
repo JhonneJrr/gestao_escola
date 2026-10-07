@@ -82,6 +82,8 @@ try {
     assert.ok(nomes.some(n => n.startsWith('Python · ')));
     assert.equal(await grade().locator('select').filter({ has: page.locator('option', { hasText: new RegExp('^' + turmaReal.nome + '$') }) }).first().locator('option', { hasText: new RegExp('^' + turmaReal.nome + '$') }).first().textContent(), turmaReal.nome);
     assert.equal(await grade().locator('select').filter({ has: page.locator('option', { hasText: new RegExp('^' + salaReal.nome + '$') }) }).first().locator('option', { hasText: new RegExp('^' + salaReal.nome + '$') }).first().textContent(), salaReal.nome);
+    // A escola abre o Quadro em "Dias × horários"; as ocupações dos professores ficam no eixo "Professores".
+    await grade().getByRole('group', { name: 'Organizar por', exact: true }).getByRole('button', { name: 'Professores', exact: true }).click();
     const quadro = grade().locator('[data-quadro-professores]');
     await quadro.getByText(carlos.nome, { exact: true }).waitFor({ state: 'visible' });
     await quadro.locator('[title]').filter({ hasText: '' }).evaluateAll((els, esperado) => {
@@ -99,7 +101,8 @@ try {
     await abrirGrade();
     await grade().getByRole('tab', { name: 'Disciplinas', exact: true }).click();
     await grade().getByText('Sem turma', { exact: true }).waitFor({ state: 'visible' });
-    await grade().getByText(nomeDisciplina, { exact: true }).click();
+    // Na att 3 o cartão da disciplina abre a página dela; o editor abre pelo botão "Editar grade" do cartão.
+    await grade().getByText(nomeDisciplina, { exact: true }).locator('xpath=ancestor::*[.//button[normalize-space(.)="Editar grade"]][1]').getByRole('button', { name: 'Editar grade', exact: true }).click();
     const f = grade().getByRole('dialog');
     await f.getByRole('button', { name: 'Salvar disciplina', exact: true }).waitFor({ state: 'visible' });
     assert.equal(await f.locator('input').first().inputValue(), nomeDisciplina);
@@ -115,7 +118,7 @@ try {
     await f.getByPlaceholder('P2 de Python').fill(tituloEvento);
     await f.locator('input[type=date]').first().fill('2026-09-07');
     if (outraTurma) {
-      await f.getByRole('button', { name: 'Turmas específicas', exact: true }).click();
+      await f.getByRole('radio', { name: 'Turmas específicas', exact: true }).click();
       await f.getByRole('button', { name: outraTurma.nome, exact: true }).click();
     }
     const resp = page.waitForResponse(r => r.url() === API + '/eventos' && r.request().method() === 'POST');
@@ -179,6 +182,8 @@ try {
   });
   await conferir('assistente envia conversa inteira ao servidor e mantém o resultado na tela', async () => {
     await page.goto(FRONT + '/disciplinas');
+    // Espera os dados carregarem: a recarga inicial refaz o estado e apagaria a mensagem digitada no assistente.
+    await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).getByText('Python', { exact: true }).first().waitFor({ state: 'visible' });
     await page.getByRole('button', { name: 'Assistente de grade', exact: true }).click();
     const painel = page.locator('[data-assistente-grade]');
     const mensagem = 'Tem algum choque na grade atual?';
