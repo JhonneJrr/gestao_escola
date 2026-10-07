@@ -62,9 +62,13 @@ try {
     await form.getByRole('button', { name: 'Entrar', exact: true }).click();
     await page.getByRole('button', { name: 'Menu do usuário' }).waitFor({ state: 'visible' });
   }
-  async function agir(caminho, metodo, codigo, arg, status = 204) {
+  // Executa a ação (por lógica ou por cliques) e confere: uma escrita só, recarga só no sucesso e coleções iguais ao servidor.
+  async function observar(caminho, metodo, status, executar) {
     const inicio = respostas.length;
-    await logic(codigo, arg);
+    const escrita = page.waitForResponse(r => r.url() === API + caminho && r.request().method() === metodo);
+    const recarga = status < 300 ? page.waitForResponse(r => r.url() === API + '/portal/estado' && r.request().method() === 'GET') : null;
+    escrita.catch(() => {}); recarga?.catch(() => {}); // se a ação falhar antes, a espera pendente não pode derrubar o processo
+    await executar(); await escrita; if (recarga) await recarga;
     const novas = respostas.slice(inicio), escritas = novas.filter(r => r.caminho === caminho && r.metodo === metodo);
     assert.equal(escritas.length, 1, 'a ação precisa escrever na API: ' + metodo + ' ' + caminho);
     assert.equal(escritas[0].status, status);
@@ -73,14 +77,20 @@ try {
     if (status < 300) {
       const credencial = await page.evaluate(() => localStorage.getItem('portal.token'));
       const dados = await api('/portal/estado', 'GET', undefined, credencial); assert.equal(dados.status, 200);
-      assert.equal(await logic(`
+      const confere = () => logic(`
         const url = performance.getEntriesByType('resource').find(r => new URL(r.name).pathname === '/src/portal/adaptador.ts').name;
         const { montarEstado } = await import(url), recebido = montarEstado(logic.state.usuario, arg);
         return ['alunos', 'discs', 'mats', 'avals', 'notas', 'aulas', 'avisos', 'profs', 'semestre', 'historico'].every(k => JSON.stringify(logic.state[k]) === JSON.stringify(recebido[k]));
-      `, dados.corpo), true, 'coleções precisam corresponder ao estado do servidor');
+      `, dados.corpo);
+      // Na ação por clique a tela aplica a recarga logo depois que a resposta chega: espera o estado convergir.
+      let igual = await confere();
+      for (let i = 0; i < 30 && !igual; i++) { await page.waitForTimeout(100); igual = await confere(); }
+      assert.equal(igual, true, 'coleções precisam corresponder ao estado do servidor');
     }
     return escritas[0];
   }
+  const agir = (caminho, metodo, codigo, arg, status = 204) => observar(caminho, metodo, status, () => logic(codigo, arg));
+  const agirUI = (caminho, metodo, fazer, status = 204) => observar(caminho, metodo, status, fazer);
   const preparar = codigo => logic(codigo, { disc, aluno, colega });
   async function boletim() {
     const r = await api(`/alunos/${aluno.id}/boletim`); assert.equal(r.status, 200);
@@ -157,49 +167,61 @@ try {
     assert.equal((await api(`/alunos/${aluno.id}/matricular/${disc.id}`, 'POST')).status, 201);
     await logic('await logic.recarregar(); logic.setState({ gnDraft: {} });');
   });
-  // chamada: sem acesso no design novo
-  /*
-  await conferir('aulas extras, cancelar/reativar, chamada completa e erro 409 de cancelamento', async () => {
+  // Chamada pela interface nova: página da disciplina (sub-aba Chamada), gravando em PUT /disciplinas/{id}/chamada.
+  // A escola não tem botão de aula extra direto (o professor pede e a escola aprova), nem de cancelar e reativar: a aula nasce pela API.
+  const painelChamada = () => page.getByRole('dialog', { name: 'Chamada', exact: true });
+  const marcarChamada = (nome, rotulo) => painelChamada().getByRole('radiogroup', { name: nome, exact: true }).getByRole('radio', { name: new RegExp('^' + rotulo) });
+  const porAluno = presencas => presencas.slice().sort((a, b) => a.aluno_id - b.aluno_id);
+  async function abrirChamadas() {
+    await page.goto(FRONT + '/disciplinas');
+    await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).getByText(disc.nome, { exact: true }).first().click();
+    await page.getByRole('tab', { name: /^Chamada/ }).click();
+  }
+  let segundoDia;
+  await conferir('aula extra (criada pela API) e chamada completa pela página da disciplina', async () => {
     const sem = (await api('/semestres/atual')).corpo;
     dia = sem.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
-    await logic('logic.setState({ tela: "frequencia", agDiscF: String(arg.disc.id), agDia: arg.dia }); logic.abrirExtra(); logic.setState({ fDisc: String(arg.disc.id), fData: arg.dia, fIni: "08:00", fFim: "09:40" });', { disc, dia });
-    const r = await agir(`/disciplinas/${disc.id}/aulas`, 'POST', 'await logic.salvarExtra({ preventDefault() {} });', undefined, 201);
-    assert.deepEqual(r.pedido, { data: dia, hora_inicio: '08:00', hora_fim: '09:40' });
-    aula = (await api(`/disciplinas/${disc.id}/aulas`)).corpo.find(a => a.data === dia); assert.ok(aula);
-    await agir('/aulas/' + aula.id, 'PATCH', 'await logic.setStatus(arg, "cancelada");', aula.id, 200);
-    assert.equal((await api('/agenda?data=' + dia)).corpo.find(a => a.aula_id === aula.id).status, 'cancelada');
-    await agir('/aulas/' + aula.id, 'PATCH', 'await logic.setStatus(arg, "agendada");', aula.id, 200);
-    await logic('logic.abrirChamada(logic.state.aulas.find(a => a.aula_id === arg.aula.id)); logic.setState({ cham: { [arg.aluno.id]: true, [arg.colega.id]: false } });', { aula, aluno, colega });
-    const ch = await agir(`/disciplinas/${disc.id}/chamada`, 'PUT', 'await logic.salvarChamada();');
-    assert.deepEqual(ch.pedido, { data: dia, presencas: [{ aluno_id: aluno.id, presente: true }, { aluno_id: colega.id, presente: false }] });
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/chamada?data=${dia}`)).corpo, ch.pedido.presencas);
-    await agir('/aulas/' + aula.id, 'PATCH', 'await logic.setStatus(arg, "cancelada");', aula.id, 409);
-    await visivel('Aula já tem presenças').waitFor({ state: 'visible' });
-    assert.equal(await logic('return logic.state.agErro;'), 'Aula já tem presenças');
-    assert.equal((await api('/agenda?data=' + dia)).corpo.find(a => a.aula_id === aula.id).status, 'agendada');
+    segundoDia = new Date(Date.parse(dia) + 86400000).toISOString().slice(0, 10);
+    assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: dia, hora_inicio: '08:00', hora_fim: '09:40' })).status, 201);
+    assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: segundoDia, hora_inicio: '10:00', hora_fim: '11:40' })).status, 201);
+    const aulas = (await api(`/disciplinas/${disc.id}/aulas`)).corpo;
+    aula = aulas.find(a => a.data === dia); outra = aulas.find(a => a.data === segundoDia); assert.ok(aula && outra);
+    await logic('await logic.recarregar();');
+    await abrirChamadas();
+    await page.getByRole('button', { name: 'Fazer chamada', exact: true }).first().click();
+    await painelChamada().waitFor({ state: 'visible' });
+    await marcarChamada(aluno.nome, 'Presente').click(); await marcarChamada(colega.nome, 'Ausente').click();
+    const ch = await agirUI(`/disciplinas/${disc.id}/chamada`, 'PUT', () => painelChamada().getByRole('button', { name: 'Salvar chamada', exact: true }).click());
+    assert.deepEqual({ data: ch.pedido.data, presencas: porAluno(ch.pedido.presencas) }, { data: dia, presencas: porAluno([{ aluno_id: aluno.id, presente: true }, { aluno_id: colega.id, presente: false }]) });
+    assert.deepEqual(porAluno((await api(`/disciplinas/${disc.id}/chamada?data=${dia}`)).corpo), porAluno(ch.pedido.presencas));
+    await visivel('Chamada feita (1/2)').waitFor({ state: 'visible' });
   });
-  await conferir('chamada recusa aula cancelada pelo servidor e remarcação usa remarcada_de real', async () => {
-    const segundoDia = new Date(Date.parse(dia) + 86400000).toISOString().slice(0, 10);
-    await logic('logic.abrirExtra(); logic.setState({ fDisc: String(arg.disc.id), fData: arg.dia, fIni: "10:00", fFim: "11:40" });', { disc, dia: segundoDia });
-    await agir(`/disciplinas/${disc.id}/aulas`, 'POST', 'await logic.salvarExtra({ preventDefault() {} });', undefined, 201);
-    outra = (await api(`/disciplinas/${disc.id}/aulas`)).corpo.find(a => a.data === segundoDia); assert.ok(outra);
-    await logic('logic.abrirChamada(logic.state.aulas.find(a => a.aula_id === arg)); logic.renderVals().ch.todos();', outra.id);
-    // Cancelamento concorrente: a pré-checagem local ainda vê a aula agendada.
+  await conferir('chamada recusa aula cancelada pelo servidor (409) e preserva a chamada anterior', async () => {
+    await page.getByRole('button', { name: 'Fazer chamada', exact: true }).first().click();
+    await painelChamada().getByRole('button', { name: 'Todos presentes', exact: true }).click();
+    // Cancelamento concorrente: a tela ainda vê a aula agendada.
     assert.equal((await api('/aulas/' + outra.id, 'PATCH', { status: 'cancelada' })).status, 200);
-    await agir(`/disciplinas/${disc.id}/chamada`, 'PUT', 'await logic.salvarChamada();', undefined, 409);
-    await visivel('Aula cancelada').waitFor({ state: 'visible' });
-    assert.equal(await logic('return logic.state.chamErro;'), 'Aula cancelada');
+    await agirUI(`/disciplinas/${disc.id}/chamada`, 'PUT', () => painelChamada().getByRole('button', { name: 'Salvar chamada', exact: true }).click(), 409);
+    await painelChamada().getByText('Aula cancelada', { exact: true }).waitFor({ state: 'visible' });
     assert.deepEqual((await api(`/disciplinas/${disc.id}/chamada?data=${segundoDia}`)).corpo, []);
     assert.equal((await api(`/disciplinas/${disc.id}/chamada?data=${dia}`)).corpo.length, 2);
-    await logic('await logic.recarregar(); logic.abrirRemarcar(logic.state.aulas.find(a => a.aula_id === arg.id)); logic.setState({ fData: arg.data, fIni: "12:00", fFim: "13:40" });', { id: outra.id, data: novoDia });
-    const r = await agir('/aulas/' + outra.id, 'PATCH', 'await logic.salvarRemarcar({ preventDefault() {} });', undefined, 200);
-    assert.deepEqual(r.pedido, { data: novoDia, hora_inicio: '12:00', hora_fim: '13:40', status: 'agendada' });
-    const estado = (await api('/portal/estado')).corpo, au = estado.aulas.find(a => a.id === outra.id);
-    assert.equal(au.remarcada_de, segundoDia); assert.equal(au.data, novoDia);
-    await visivel('Remarcada de ' + segundoDia.slice(8) + '/' + segundoDia.slice(5, 7)).waitFor({ state: 'visible' });
-    assert.equal(await logic('return logic.state.agDia;'), novoDia);
+    await page.keyboard.press('Escape'); await painelChamada().waitFor({ state: 'hidden' });
   });
-  */
+  // Cancelar, reativar e remarcar aula não têm botão na página da disciplina nem na escola: a tela só diz que isso fica na Agenda.
+  // O equivalente real é a regra do servidor, conferida pela API ao lado da âncora positiva (a chamada feita continua visível).
+  await conferir('sem botão de cancelar/reativar na tela; servidor recusa cancelar aula com presenças e remarca com remarcada_de', async () => {
+    await page.getByRole('button', { name: 'Ver chamada', exact: true }).first().waitFor({ state: 'visible' });
+    await visivel('Cancelar, remarcar e aula extra ficam na Agenda.').waitFor({ state: 'visible' });
+    assert.equal(await page.getByRole('button', { name: /Cancelar aula|Reativar/ }).count(), 0);
+    const r = await api('/aulas/' + aula.id, 'PATCH', { status: 'cancelada' });
+    assert.equal(r.status, 409); assert.equal(r.corpo.detail, 'Aula já tem presenças');
+    assert.equal((await api('/agenda?data=' + dia)).corpo.find(a => a.aula_id === aula.id).status, 'agendada');
+    assert.equal((await api('/aulas/' + outra.id, 'PATCH', { status: 'agendada' })).status, 200);
+    const re = await api('/aulas/' + outra.id, 'PATCH', { data: novoDia, hora_inicio: '12:00', hora_fim: '13:40', status: 'agendada' });
+    assert.equal(re.status, 200);
+    const au = (await api('/portal/estado')).corpo.aulas.find(a => a.id === outra.id);
+    assert.equal(au.remarcada_de, segundoDia); assert.equal(au.data, novoDia);
+  });
   const semAvisos = (await api('/semestres/atual')).corpo;
   dia = semAvisos.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
   await conferir('publica geral e de disciplina, edita e exclui avisos reais', async () => {
@@ -221,10 +243,11 @@ try {
     }
   });
   await conferir('exclui avaliações sem notas pelos dois caminhos e conserva a outra como âncora', async () => {
-    await preparar("logic.setState({ tela: 'disciplinas', subAba: 'notas' });");
+    // A página foi recarregada nos passos de chamada: reaponta a seleção para a disciplina própria.
+    await preparar("logic.setState({ tela: 'disciplinas', selDisc: arg.disc.id, notaDisc: arg.disc.id, subAba: 'notas' });");
     await agir('/avaliacoes/' + p1.id, 'DELETE', 'await logic.renderVals().avsSel.find(a => a.nome === "P1 F3b").excluir();');
     assert.deepEqual((await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo.map(a => a.id), [p2.id]);
-    await preparar("logic.setState({ tela: 'boletim' });");
+    await preparar("logic.setState({ tela: 'boletim', selDisc: arg.disc.id, notaDisc: arg.disc.id });");
     await agir('/avaliacoes/' + p2.id, 'DELETE', 'await logic.renderVals().avalLista.find(a => a.nome === "P2 F3b").excluir();');
     assert.deepEqual((await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo, []);
   });
@@ -235,12 +258,12 @@ try {
     await logic('logic.setState({ gnDraft: { [arg]: "9" } });', aluno.id + '-' + v.corpo.id);
     await agir(`/avaliacoes/${v.corpo.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, "Aluno", "Professor F3b");', aluno.id + '-' + v.corpo.id);
     assert.equal((await boletim()).notas[0].valor, 9);
-    // chamada: sem acesso no design novo
-    /*
-    await logic('logic.setState({ tela: "frequencia", agDia: arg.dia, agDiscF: String(arg.disc.id) }); logic.abrirChamada(logic.state.aulas.find(a => a.aula_id === arg.aula.id)); logic.renderVals().ch.todos();', { dia, disc, aula });
-    await agir(`/disciplinas/${disc.id}/chamada`, 'PUT', 'await logic.salvarChamada();');
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/chamada?data=${dia}`)).corpo, [{ aluno_id: aluno.id, presente: true }, { aluno_id: colega.id, presente: true }]);
-    */
+    // Chamada pela interface do professor, na página da disciplina: revisa a chamada da escola marcando todos presentes.
+    await abrirChamadas();
+    await page.getByRole('button', { name: 'Ver chamada', exact: true }).first().click();
+    await painelChamada().getByRole('button', { name: 'Todos presentes', exact: true }).click();
+    await agirUI(`/disciplinas/${disc.id}/chamada`, 'PUT', () => painelChamada().getByRole('button', { name: 'Salvar alterações', exact: true }).click());
+    assert.deepEqual(porAluno((await api(`/disciplinas/${disc.id}/chamada?data=${dia}`)).corpo), porAluno([{ aluno_id: aluno.id, presente: true }, { aluno_id: colega.id, presente: true }]));
     const dados = (await api('/portal/estado')).corpo;
     const marta = dados.professores.find(p => p.email === 'marta@escola.com'); assert.ok(marta);
     const daMarta = dados.disciplinas.find(d => d.professor_id === marta.id); assert.ok(daMarta);
