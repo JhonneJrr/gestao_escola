@@ -180,8 +180,9 @@ try {
   let segundoDia;
   await conferir('aula extra (criada pela API) e chamada completa pela página da disciplina', async () => {
     const sem = (await api('/semestres/atual')).corpo;
-    dia = sem.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
-    segundoDia = new Date(Date.parse(dia) + 86400000).toISOString().slice(0, 10);
+    // O seed começa o semestre em hoje - 63 dias, que pode cair em qualquer dia da semana: só vale segunda a sexta.
+    const diaUtil = (base, desloc) => { let d = new Date(Date.parse(base) + desloc * 86400000); while ([0, 6].includes(d.getUTCDay())) d = new Date(d.getTime() + 86400000); return d.toISOString().slice(0, 10); };
+    dia = diaUtil(sem.inicio, 0); segundoDia = diaUtil(dia, 1); novoDia = diaUtil(segundoDia, 1);
     assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: dia, hora_inicio: '15:30', hora_fim: '17:10' })).status, 201);
     assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: segundoDia, hora_inicio: '13:30', hora_fim: '15:10' })).status, 201);
     const aulas = (await api(`/disciplinas/${disc.id}/aulas`)).corpo;

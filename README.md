@@ -60,10 +60,13 @@ node e2e/portal-operacao.mjs
 node e2e/portal-rotas.mjs
 node e2e/portal-grade.mjs
 node e2e/portal-turmas.mjs
+node e2e/portal-agenda.mjs
+node e2e/portal-quadro.mjs
+node e2e/portal-assistente-erro.mjs
 npm run comparar
 ```
 
-Os testes unitários conferem o adaptador, o conversor e as regras da Grade e agenda. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, editor de disciplina e matrícula pela disciplina; operação verifica notas, chamada pela página da disciplina, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil; grade verifica quadro, calendário, pedidos de aula extra e assistente; turmas verifica o hub por turma, a matrícula automática pela turma do aluno, a troca de turma e a chamada. O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste; professores e a turma de teste permanecem (o reseed da API limpa). As escritas de semestre são simuladas no teste de escola.
+Os testes unitários conferem o adaptador, o conversor e as regras da Grade e agenda. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, editor de disciplina e matrícula pela disciplina; operação verifica notas, chamada pela página da disciplina, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil; grade verifica quadro, calendário, pedidos de aula extra e assistente; turmas verifica o hub por turma, a matrícula automática pela turma do aluno, a troca de turma e a chamada. agenda verifica a aprovação do pedido de aula extra pela tela e como o quadro mostra a aula cancelada, reativada e remarcada (essas escritas vão pela API, porque a Agenda do dia com os botões não está na tela, ver docs/brief-ui-pendencias.md); quadro faz o arraste real com o mouse no Quadro semanal (remarcar, choque, erro da API e aulas que não arrastam); assistente-erro simula 429, 503 e queda de rede no assistente de grade (sem chamar o Gemini). O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste (agenda, quadro e assistente-erro não deixam nada no banco); professores e a turma de teste permanecem (o reseed da API limpa). As escritas de semestre são simuladas no teste de escola.
 
 Para conferir o build, rode `npx vite preview --port 4173` em outro terminal e aponte o teste de rotas para ele:
 
