@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const API = 'http://localhost:8000', FRONT = 'http://localhost:5173';
+const API = process.env.API_URL || 'http://localhost:8000', FRONT = process.env.FRONT_URL || 'http://localhost:5173';
 const sufixo = Date.now(), emailProf = `portal-e2e-${sufixo}@escola.com`;
 let browser, token, professorCriado;
 const alunos = new Set(), disciplinas = new Set(), matriculas = new Set();

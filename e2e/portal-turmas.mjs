@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const API = 'http://localhost:8000', FRONT = 'http://localhost:5173', sufixo = Date.now();
+const API = process.env.API_URL || 'http://localhost:8000', FRONT = process.env.FRONT_URL || 'http://localhost:5173', sufixo = Date.now();
 let browser, token, inicial, turmaNova, disciplinaId, notaDoAluno;
 const alunos = new Set();
 async function api(caminho, method = 'GET', corpo) {
@@ -46,6 +46,11 @@ try {
   const visivel = texto => page.getByText(texto, { exact: true }).filter({ visible: true });
   const botao = nome => page.getByRole('button', { name: nome, exact: true }).filter({ visible: true });
   const form = () => page.locator('form').filter({ visible: true });
+  // Hub da turma (update 4): cada disciplina tem um painel "Gerenciar" com uma caixa por aluno; quem está fora aparece como chip "Matricular X em Y".
+  const caixa = nome => page.getByRole('checkbox', { name: nome, exact: true }).filter({ visible: true });
+  const linhaDisc = nome => page.locator('[data-matriculas-turma] > div').filter({ has: page.getByRole('button', { name: nome, exact: true }) });
+  async function gerenciar(disciplina) { const b = linhaDisc(disciplina).getByRole('button', { name: 'Gerenciar', exact: true }); if (await b.count()) await b.click(); }
+  async function gerenciarTodas() { const b = page.locator('[data-matriculas-turma]').getByRole('button', { name: 'Gerenciar', exact: true }); while (await b.count()) await b.first().click(); }
   async function resposta(caminho, method, agir) {
     const espera = page.waitForResponse(r => r.url() === API + caminho && r.request().method() === method);
     const [r] = await Promise.all([espera, agir()]);
@@ -103,14 +108,15 @@ try {
     // Abre a turma 1º A: disciplinas, matriz de matrículas do seed e lista só com os alunos dela.
     await cartao('1º A').click();
     await botao('Turmas').waitFor({ state: 'visible' });
-    await visivel('Disciplinas da turma').waitFor({ state: 'visible' });
+    await page.locator('[data-matriculas-turma]').waitFor({ state: 'visible' });
+    await gerenciarTodas();
     const daTurma = inicial.alunos.filter(a => a.turma_id === t1.id), foraDaTurma = inicial.alunos.filter(a => a.turma_id !== t1.id);
     for (const a of daTurma) for (const d of discsDa(t1)) {
       assert.ok(inicial.matriculas.some(m => m.aluno_id === a.id && m.disciplina_id === d.id), 'o seed matricula pela regra da turma');
-      await botao(`Desmatricular ${a.nome} de ${d.nome}`).waitFor({ state: 'visible' });
+      await caixa(`Desmatricular ${a.nome} de ${d.nome}`).waitFor({ state: 'visible' });
     }
     assert.equal(await page.locator('[role=button][data-fi]').count(), daTurma.length);
-    for (const a of foraDaTurma) assert.equal(await botao(`Desmatricular ${a.nome} de Python`).count(), 0);
+    for (const a of foraDaTurma) assert.equal(await caixa(`Desmatricular ${a.nome} de Python`).count(), 0);
   });
 
   await conferir('Nova turma cria a turma pela tela (POST /turmas) e o cartão aparece vazio', async () => {
@@ -136,8 +142,9 @@ try {
     assert.ok(!matriculasDe(st, alunoA.id).includes(algoritmos.id) && !matriculasDe(st, alunoA.id).includes(redes.id));
     await cartao('1º A', inicial.alunos.filter(a => a.turma_id === t1.id).length + 1).waitFor({ state: 'visible' });
     await abrirTurma('1º A');
-    await botao(`Desmatricular ${nomeA} de Python`).waitFor({ state: 'visible' });
-    await botao(`Desmatricular ${nomeA} de Banco de Dados`).waitFor({ state: 'visible' });
+    await gerenciarTodas();
+    await caixa(`Desmatricular ${nomeA} de Python`).waitFor({ state: 'visible' });
+    await caixa(`Desmatricular ${nomeA} de Banco de Dados`).waitFor({ state: 'visible' });
     const b = await criarAluno(nomeB, mat + 1, '3º A'); alunoB = b.corpo;
     assert.equal(b.pedido.turma_id, t3.id); assert.equal(alunoB.turma_nome, '3º A');
     assert.deepEqual(matriculasDe(await estado(), alunoB.id), ids(redes));
@@ -177,7 +184,8 @@ try {
     await abrirTurma('2º A');
     const caminho = `/alunos/${alunoB.id}/matricular/${algoritmos.id}`;
     const antes = escritas.length;
-    const del = await resposta(caminho, 'DELETE', () => botao(`Desmatricular ${nomeB} de Algoritmos`).click());
+    await gerenciar('Algoritmos');
+    const del = await resposta(caminho, 'DELETE', () => caixa(`Desmatricular ${nomeB} de Algoritmos`).click());
     assert.equal(del.status, 204);
     await visivel(`${nomeB} desmatriculado de Algoritmos.`).waitFor({ state: 'visible' });
     assert.deepEqual(matriculasDe(await estado(), alunoB.id), []);
@@ -190,7 +198,8 @@ try {
     assert.equal(escritas.length - antes, 2);
     await abrirTurma('1º A');
     const antesBloqueio = escritas.length;
-    await botao(`Desmatricular ${ana.nome} de Python`).click();
+    await gerenciar('Python');
+    await caixa(`Desmatricular ${ana.nome} de Python`).click();
     await visivel(`${ana.nome} já tem notas ou frequência em Python: não dá para desmatricular.`).waitFor({ state: 'visible' });
     assert.equal(escritas.length, antesBloqueio, 'o bloqueio local não escreve na API');
     assert.ok(matriculasDe(await estado(), ana.id).includes(python.id));

@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const FRONT = 'http://localhost:5173';
-const API = 'http://localhost:8000';
+const FRONT = process.env.FRONT_URL || 'http://localhost:5173';
+const API = process.env.API_URL || 'http://localhost:8000';
 async function api(caminho, corpo, token) {
   const resposta = await fetch(API + caminho, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },

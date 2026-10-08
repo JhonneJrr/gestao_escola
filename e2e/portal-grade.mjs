@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const API = 'http://localhost:8000', FRONT = 'http://localhost:5173';
+const API = process.env.API_URL || 'http://localhost:8000', FRONT = process.env.FRONT_URL || 'http://localhost:5173';
 let browser, token, carlos, originais, eventoId, pedidoId, disciplinaId;
 const tituloEvento = 'Conferência F5b ' + Date.now();
 const nomeDisciplina = 'Conferência F5c sem turma ' + Date.now();

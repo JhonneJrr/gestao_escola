@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
 const FRONT = process.env.FRONT_URL || 'http://localhost:5173';
-const API = 'http://localhost:8000';
+const API = process.env.API_URL || 'http://localhost:8000';
 async function conferir(nome, fn) {
   try { await fn(); console.log('OK ' + nome); }
   catch (erro) { console.error('FALHOU ' + nome + '\n' + erro.stack); throw erro; }
@@ -170,9 +170,9 @@ try {
     assert.equal(await nav().getByRole('button', { name: /^Acadêmico(?:\s|$)/ }).count(), 1);
     assert.equal(await nav().getByRole('button', { name: /^Professores(?:\s|$)/ }).count(), 0);
   });
-  await conferir('Carlos tem quatro telas (Painel, Acadêmico, Meus alunos, Avisos) e recarrega /agenda', async () => {
+  await conferir('Carlos tem quatro telas (Painel, Acadêmico, Minhas turmas, Avisos) e recarrega /agenda', async () => {
     assert.equal(await nav().getByRole('button').count(), 4);
-    for (const rotulo of ['Painel', 'Acadêmico', 'Meus alunos', 'Avisos']) assert.equal(await nav().getByRole('button', { name: new RegExp('^' + rotulo + '(?:\\s|$)') }).count(), 1, rotulo);
+    for (const rotulo of ['Painel', 'Acadêmico', 'Minhas turmas', 'Avisos']) assert.equal(await nav().getByRole('button', { name: new RegExp('^' + rotulo + '(?:\\s|$)') }).count(), 1, rotulo);
     await menu('Acadêmico', '/agenda'); await page.reload(); await telaMenu('Acadêmico', '/agenda');
     const abas = page.locator('[data-sc-name="GradeAgenda"]').getByRole('tablist', { name: 'Seções', exact: true });
     for (const aba of ['Minha semana', 'Ano letivo', 'Disciplinas', 'Aulas extras']) await abas.getByRole('tab', { name: aba, exact: true }).waitFor({ state: 'visible' });
