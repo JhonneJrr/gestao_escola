@@ -83,8 +83,9 @@ export const apagarDisciplina = (id: number) => pedir<void>(`/disciplinas/${id}`
 export const matricular = (aluno: number, disciplina: number) => pedir<{ mensagem: string }>(`/alunos/${aluno}/matricular/${disciplina}`, undefined, 'POST');
 export const desmatricular = (aluno: number, disciplina: number) => pedir<void>(`/alunos/${aluno}/matricular/${disciplina}`, undefined, 'DELETE');
 
-type AvaliacaoEntrada = { nome: string; peso: number };
-type AvaliacaoSaida = AvaliacaoEntrada & { id: number; disciplina_id: number };
+// Atividade extra: o peso vem da regra da escola.
+type AvaliacaoEntrada = { nome: string; periodo_id: string };
+type AvaliacaoSaida = AvaliacaoEntrada & { id: number; disciplina_id: number; peso: number; tipo: string; publicada: boolean; prazo: string | null };
 type Presenca = { aluno_id: number; presente: boolean };
 type AulaEntrada = { data: string; hora_inicio?: string | null; hora_fim?: string | null };
 type AulaAtualizacao = Partial<AulaEntrada> & { status?: 'agendada' | 'cancelada' };
@@ -113,9 +114,9 @@ type RecusadaIA = { disciplina_id: number; disciplina_nome: string; motivo: stri
 export const pedirGradeIA = (mensagens: MensagemIA[]) => pedir<{ resposta: string; proposta: PropostaIA[]; recusados: RecusadaIA[] }>('/ia/grade', { mensagens });
 export const erroGradeIA = (erro: { status?: number; detalhe?: string }) => erro.status === 0 ? 'Não consegui falar com o assistente. Tente de novo.' : erro.detalhe || (erro.status === 503 ? 'O assistente não está configurado neste servidor.' : erro.status === 429 ? 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.' : 'Não consegui falar com o assistente. Tente de novo.');
 
-// Recursos do update 4 que o servidor ainda não guarda (regra de avaliação, publicar e prazo de nota, conselho de classe).
-// Não gravam nada: dizem na tela que o servidor não tem a rota, em vez de fingir que salvaram.
-const semRota = (): never => { throw { status: 501, detalhe: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' }; };
-export const salvarMetaAvaliacao = async (_avaliacao: number | string, _meta: { publicada?: boolean; prazo?: string }): Promise<void> => semRota();
-export const salvarConselho = async (_aluno: number, _disciplina: number, _aprovado: boolean): Promise<void> => semRota();
-export const salvarRegra = async (_regra: object): Promise<void> => semRota();
+// Regra de avaliação, publicação e prazo de nota, conselho de classe.
+export const salvarRegra = (regra: object) => pedir<object>('/regra-avaliacao', regra, 'PUT');
+export const atualizarAvaliacao = (id: number, corpo: { publicada?: boolean; prazo?: string | null; nome?: string }) => pedir<AvaliacaoSaida>(`/avaliacoes/${id}`, corpo, 'PATCH');
+export const publicarAvaliacoes = (disciplina: number, periodo?: string) => pedir<{ publicadas: number }>(`/disciplinas/${disciplina}/avaliacoes/publicar`, periodo ? { periodo_id: periodo } : {});
+export const aprovarConselho = (disciplina: number, aluno: number) => pedir<void>(`/disciplinas/${disciplina}/conselho/${aluno}`, undefined, 'POST');
+export const removerConselho = (disciplina: number, aluno: number) => pedir<void>(`/disciplinas/${disciplina}/conselho/${aluno}`, undefined, 'DELETE');
