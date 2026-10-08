@@ -1,4 +1,7 @@
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Em produção a URL vem do build (VITE_API_URL); o localhost só vale no modo de desenvolvimento.
+const baseURL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '')).replace(/\/+$/, '');
+// A Render pode levar de 30 a 60 s para acordar o servidor depois de um tempo parado.
+const LIMITE_MS = 60000;
 let expirou: (() => void) | null = null;
 export function aoExpirar(callback: (() => void) | null) { expirou = callback; }
 export function guardarToken(token: string) { localStorage.setItem('portal.token', token); }
@@ -7,7 +10,10 @@ export function apagarToken() { localStorage.removeItem('portal.token'); }
 
 async function pedir<T = any>(caminho: string, corpo?: object, metodo = corpo ? 'POST' : 'GET'): Promise<T> {
   const token = lerToken();
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), LIMITE_MS);
   let resposta: Response;
+  let dados: any = null;
   try {
     resposta = await fetch(baseURL + caminho, {
       method: metodo,
@@ -16,17 +22,23 @@ async function pedir<T = any>(caminho: string, corpo?: object, metodo = corpo ? 
         ...(caminho !== '/auth/login' && token ? { Authorization: 'Bearer ' + token } : {}),
       },
       ...(corpo ? { body: JSON.stringify(corpo) } : {}),
+      signal: controle.signal,
     });
-  } catch { throw { status: 0, detalhe: 'Não foi possível falar com o servidor.' }; }
-  if (resposta.status === 204) return undefined as T;
-  const dados = await resposta.json();
+    // Resposta vazia ou HTML (proxy, servidor acordando) não é JSON: vira null em vez de estourar.
+    if (resposta.status !== 204) dados = await resposta.json().catch(() => null);
+    if (controle.signal.aborted) throw new Error('tempo esgotado');
+  } catch {
+    throw { status: 0, detalhe: controle.signal.aborted ? 'O servidor demorou para responder. Tente de novo.' : 'Não foi possível falar com o servidor.' };
+  } finally { clearTimeout(relogio); }
   if (!resposta.ok) {
     if (resposta.status === 401 && caminho !== '/auth/login' && caminho !== '/auth/trocar-senha') {
       apagarToken(); expirou?.();
     }
-    throw { status: resposta.status, detalhe: Array.isArray(dados.detail) ? dados.detail.map((e: { msg: string }) => e.msg).join('; ') : dados.detail };
+    const detail = dados?.detail;
+    const detalhe = Array.isArray(detail) ? detail.map((e: { msg: string }) => e.msg).join('; ') : detail;
+    throw { status: resposta.status, detalhe: typeof detalhe === 'string' && detalhe ? detalhe : `Servidor indisponível (HTTP ${resposta.status}).` };
   }
-  return dados;
+  return (dados ?? undefined) as T;
 }
 
 export const login = (email: string, senha: string) => pedir('/auth/login', { email, senha });
