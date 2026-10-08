@@ -16,10 +16,10 @@ Object.assign(atributos, {
   inputmode: 'inputMode', inputMode: 'inputMode', autocomplete: 'autoComplete',
   maxLength: 'maxLength', maxlength: 'maxLength', viewBox: 'viewBox', 'stroke-width': 'strokeWidth', 'stroke-linejoin': 'strokeLinejoin', checked: 'checked',
 });
-for (const evento of ['Click', 'Change', 'Submit', 'KeyDown', 'PointerDown', 'MouseEnter', 'MouseLeave', 'Blur']) {
+for (const evento of ['Click', 'Change', 'Submit', 'KeyDown', 'PointerDown', 'MouseEnter', 'MouseLeave', 'Blur', 'Focus']) {
   atributos['on' + evento] = atributos[('on' + evento).toLowerCase()] = 'on' + evento;
 }
-const tags = new Set('article aside b br button canvas circle div form h1 h2 h3 header input kbd label li main nav option p path rect section select span strong svg textarea ul img hr'.split(' '));
+const tags = new Set('article aside b br button canvas circle div form h1 h2 h3 header input kbd label li main nav option p path rect section select span strong svg textarea ul ol img hr'.split(' '));
 const voids = new Set(['input', 'br', 'img', 'hr']);
 const posicao = new Set(['position', 'left', 'right', 'top', 'bottom', 'inset', 'width', 'height', 'z-index', 'transform']);
 

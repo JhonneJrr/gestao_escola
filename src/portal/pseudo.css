@@ -11,13 +11,17 @@
 .scp9:active{transform:scale(.98) !important}
 .scpa:hover{background:var(--aviso-suave) !important}
 .scpb:hover{background:var(--sunken) !important}
-.scpc:hover{border-color:var(--aviso) !important;color:var(--aviso) !important}
-.scpd:hover{color:var(--aviso) !important}
-.scpe:hover{border-color:var(--borda) !important}
-.scpf:hover{text-decoration:underline !important;text-underline-offset:3px !important}
-.scpg:hover{border-color:var(--borda) !important;color:var(--texto) !important}
-.scph:hover{background:var(--texto) !important;color:var(--fundo) !important}
-.scpi:active{transform:scale(.94) !important}
-.scpj:active{transform:scale(.99) !important}
-.scpk:hover{text-decoration:underline !important}
-.scpl:hover{border-color:var(--texto-suave) !important}
+.scpc:hover{background:var(--fundo) !important}
+.scpd:hover{opacity:1 !important;color:var(--aviso) !important}
+.scpe:hover{text-decoration-color:var(--texto) !important}
+.scpf:hover{border-color:var(--texto) !important;border-style:solid !important}
+.scpg:hover{border-color:var(--aviso) !important;color:var(--aviso) !important}
+.scph:hover{color:var(--aviso) !important}
+.scpi:hover{text-decoration:underline !important;text-underline-offset:3px !important}
+.scpj:hover{border-color:var(--borda) !important}
+.scpk:hover{border-color:var(--borda) !important;color:var(--texto) !important}
+.scpl:hover{background:var(--texto) !important;color:var(--fundo) !important}
+.scpm:active{transform:scale(.94) !important}
+.scpn:active{transform:scale(.99) !important}
+.scpo:hover{text-decoration:underline !important}
+.scpp:hover{border-color:var(--texto-suave) !important}
