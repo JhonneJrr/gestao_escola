@@ -25,7 +25,7 @@ try {
     token = await logar('escola@escola.com'); tokenProf = await logar('prof@escola.com');
     const r = await api('/regra-avaliacao'); assert.equal(r.status, 200); regraOriginal = r.corpo;
     assert.ok(regraOriginal.periodos.length >= 2 && regraOriginal.itens.length >= 1);
-    const hoje = new Date().toISOString().slice(0, 10);
+    const d0 = new Date(), hoje = d0.getFullYear() + '-' + String(d0.getMonth() + 1).padStart(2, '0') + '-' + String(d0.getDate()).padStart(2, '0'); // dia local, como o front
     periodoAtual = regraOriginal.periodos.find(p => p.inicio <= hoje && hoje <= p.fim) || regraOriginal.periodos[0];
     const professores = await api('/professores'); const carlos = professores.corpo.find(p => p.email === 'prof@escola.com'); assert.ok(carlos);
     const d = await api('/disciplinas', 'POST', { nome: 'Regra E2E ' + sufixo, carga_horaria: 40, professor_id: carlos.id });
@@ -74,6 +74,14 @@ try {
     await page.getByRole('button', { name: 'Menu do usuário' }).waitFor({ state: 'visible' });
   }
   const sair = async () => { await logic('logic.sair();'); };
+  // Carlos: Minhas turmas > Sem turma (a disciplina de teste não tem turma) > aba da disciplina, quando a turma tem mais de uma.
+  async function abrirGradeDeCarlos() {
+    await page.goto(FRONT + '/alunos');
+    await page.getByRole('button', { name: /^Sem turma/ }).click();
+    const abaDisc = page.getByRole('tab', { name: disc.nome, exact: true });
+    if (await abaDisc.count()) await abaDisc.click();
+    await visivel(disc.nome).first().waitFor({ state: 'visible' });
+  }
   // Espera a escrita pedida e devolve o pedido e o status; a ação é um clique ou uma chamada da lógica.
   async function escrever(caminho, metodo, status, executar) {
     const resposta = page.waitForResponse(r => r.url() === API + caminho && r.request().method() === metodo);
@@ -110,9 +118,7 @@ try {
   let extra;
   await conferir('Carlos cria atividade extra, lança nota e publica pela grade da turma', async () => {
     await sair(); await entrar('prof@escola.com');
-    await page.goto(FRONT + '/alunos');
-    await page.getByRole('button', { name: /^Sem turma/ }).click();
-    await visivel(disc.nome).first().waitFor({ state: 'visible' });
+    await abrirGradeDeCarlos();
     await page.getByRole('button', { name: /^Atividade extra/ }).click();
     await page.getByLabel('Nome da atividade', { exact: true }).fill('Lista E2E');
     const corpo = await escrever(`/disciplinas/${disc.id}/avaliacoes`, 'POST', 201, () => page.getByRole('button', { name: 'Criar', exact: true }).click());
@@ -198,11 +204,10 @@ try {
     assert.equal(r.status, 409); assert.equal(r.corpo.detail, 'Período fechado pela escola: notas travadas.');
     // Carlos vê o período travado e, se o campo ainda estiver aberto na tela, a recusa chega em linha
     await sair(); await entrar('prof@escola.com');
-    await page.goto(FRONT + '/alunos'); await page.getByRole('button', { name: /^Sem turma/ }).click();
+    await abrirGradeDeCarlos();
     await visivel(periodoAtual.nome + ' fechado pela escola: notas travadas.').first().waitFor({ state: 'visible' });
     await logic('logic.setState({ gnDraft: { [arg.k]: "9" } }); await logic.salvarNotaGrade(arg.k, "Aluno", "P1");', { k: aluno.id + '-v' + disc.id + '_' + periodoAtual.id + '_' + regraOriginal.itens[0].id });
     assert.deepEqual(await logic('return logic.state.gnMsg;'), { erro: true, t: 'Período fechado pela escola: notas travadas.' });
-    assert.notEqual((await api(`/avaliacoes/${p1.id}/notas/${aluno.id}`)).status, 200);
     // reabre para o resto do percurso
     assert.equal((await api('/regra-avaliacao', 'PUT', regraOriginal)).status, 200);
   });

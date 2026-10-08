@@ -99,7 +99,7 @@ try {
   // valores das duas atividades extras de teste, na ordem p1, p2 (a regra do update 4 cria várias avaliações por disciplina)
   const notasDe = async () => { const b = await boletim(); const m = Object.fromEntries(b.notas.map(n => [n.avaliacao.id, n.valor])); return [m[p1.id] ?? null, m[p2.id] ?? null]; };
   const extrasDe = async () => (await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo.filter(a => a.tipo === 'extra');
-  const periodoAtual = async () => { const r = (await api('/regra-avaliacao')).corpo, hoje = new Date().toISOString().slice(0, 10); return (r.periodos.find(p => p.inicio <= hoje && hoje <= p.fim) || r.periodos[0]).id; };
+  const periodoAtual = async () => { const r = (await api('/regra-avaliacao')).corpo, d0 = new Date(), hoje = d0.getFullYear() + '-' + String(d0.getMonth() + 1).padStart(2, '0') + '-' + String(d0.getDate()).padStart(2, '0'); return (r.periodos.find(p => p.inicio <= hoje && hoje <= p.fim) || r.periodos[0]).id; };
   let p1, p2, aula, outra, dia, novoDia;
   await conferir('escola cria atividades extras pela grade da disciplina e pelo formulário do boletim', async () => {
     await entrar('escola@escola.com');
