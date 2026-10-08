@@ -88,7 +88,7 @@ try {
     resposta.catch(() => {});
     await executar();
     const r = await resposta;
-    assert.equal(r.status(), status, metodo + ' ' + caminho + ' ' + (await r.text()).slice(0, 200));
+    if (r.status() !== status) assert.fail(metodo + ' ' + caminho + ' respondeu ' + r.status() + ' em vez de ' + status + ': ' + (await r.text().catch(() => '')).slice(0, 200));
     return r.request().postDataJSON();
   }
   const aba = nome => page.locator('[data-sc-name="GradeAgenda"]').getByRole('tab', { name: nome, exact: true });
