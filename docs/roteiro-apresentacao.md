@@ -32,14 +32,14 @@ Fala: "O Portal de Gestão Escolar organiza o semestre da escola com três tipos
 
 | Camada | Tecnologia | Por que escolhi |
 |---|---|---|
-| Front | React 19 + Vite 8 + TypeScript | React monta a tela em pedaços reutilizáveis. O Vite sobe rápido e gera arquivos estáticos. O TypeScript aponta erro de tipo antes de rodar, e o build já roda a checagem. |
+| Front | React 19 + Vite 8 + TypeScript | O React monta a tela em pedaços reutilizáveis e atualiza só o que muda, sem recarregar a página. O Vite compila o projeto para produção. O TypeScript aponta erro de tipo antes de rodar. |
 | Interface | Desenho no Claude Design (canvas em `design/canvas/`), conversor próprio (`scripts/converter-canvas.mjs`) e comparador (`npm run comparar`) | Eu desenhei a tela no canvas. O conversor gera o código das telas. O comparador confere o DOM do portal contra o canvas, em desktop e celular. |
 | Back | Python 3.13 + FastAPI (com uvicorn) | FastAPI já traz a documentação interativa (`/docs`) e valida os dados que chegam. |
 | Banco | PostgreSQL 16 + psycopg2, com SQL puro (sem ORM) | É um banco de verdade: chave única, ligação entre tabelas e exclusão em cascata. As tabelas são criadas sozinhas quando a API sobe. |
 | Autenticação | Senha com bcrypt + token JWT no cabeçalho `Authorization: Bearer` | A senha fica só como hash (coluna `senha_hash`). Cada chamada leva o token, e a API confere o perfil (escola, professor, aluno). |
 | Assistente de grade | Gemini, chamado pelo servidor (urllib, sem SDK) | Propõe a grade e a API confere os horários. Se um modelo responde 503 ou demora, tenta o próximo da lista. A chave fica só no servidor. |
 | Testes | pytest (back); `node --test` e scripts de navegador com Playwright e Microsoft Edge (front) | O pytest usa um PostgreSQL só de teste. Os testes de navegador abrem o Edge de verdade contra a API real. |
-| Deploy | Cloudflare Workers (front, arquivos estáticos); Render (API e PostgreSQL, pelo `render.yaml`); Docker (rodar tudo na própria máquina) | O front estático é leve e rápido. A Render cria API e banco de uma vez pelo blueprint. O Docker deixa a pilha igual na minha máquina. |
+| Produção | Cloudflare (front); Render (API e PostgreSQL, pelo `render.yaml`); Docker (rodar tudo na própria máquina) | Tudo está no ar: o front React é entregue pela Cloudflare e roda no navegador de quem acessa; a API e o banco rodam na Render. A Render cria API e banco de uma vez pelo blueprint. O Docker deixa a pilha igual na minha máquina. |
 
 Diagrama do fluxo:
 
@@ -47,7 +47,7 @@ Diagrama do fluxo:
  Navegador
      |  (1) abre o site
      v
- Front (Cloudflare, arquivos estáticos)
+ Front React (entregue pela Cloudflare, roda no navegador)
      |  (2) chamadas HTTP com "Authorization: Bearer <token>"
      v
  API FastAPI (Render) ----(3) SQL----> PostgreSQL (Render)
@@ -60,7 +60,7 @@ Fala: "A IA fica ao lado da API. O navegador nunca fala com o Gemini, e a conver
 Se perguntarem por que:
 - Por que PostgreSQL e não arquivo: várias pessoas gravam ao mesmo tempo, e o banco garante as regras (chave única, ligação entre tabelas) e guarda os dados mesmo que o servidor reinicie.
 - Por que token Bearer: o servidor não guarda sessão. Cada chamada leva o token, e a API decide o que aquela pessoa pode ver.
-- Por que o front é estático: é só HTML, CSS e JavaScript prontos. Hospedar na Cloudflare é simples e rápido, e quem manda nos dados é a API.
+- Por que o front é separado da API: o front só mostra as telas e pede os dados; as regras da escola e o acesso ao banco ficam na API. Assim eu publico, troco ou testo cada lado sozinho, e o navegador nunca chega ao banco.
 
 ## 3. Swagger: a documentação da API (2 min)
 
