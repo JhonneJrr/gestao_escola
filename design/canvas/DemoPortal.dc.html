@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="_ds/portal-de-gest-o-escolar-9964de34-4c01-4886-b63b-a07a9e9516b0/styles.css"></helmet>
+<div ref="{{ rootRef }}" style="display:flex;flex-direction:column;gap:14px;width:min(100%,880px,calc((100vh - 260px) * 1.6));margin:0 auto">
+  <div ref="{{ boxRef }}" aria-hidden="true" style="position:relative;width:100%;aspect-ratio:960/600;overflow:hidden;background:var(--fundo);border:1px solid var(--borda);border-radius:2px;user-select:none">
+    <div style="position:absolute;left:0;top:0;width:960px;height:600px;transform-origin:0 0;transform:scale({{ esc }});font-size:14px;line-height:1.4;color:var(--texto);pointer-events:none;overflow:hidden">
+      <div ref="{{ camRef }}" style="position:absolute;left:0;top:0;width:960px;height:600px;transform-origin:0 0;will-change:transform">
+
+      <div style="position:absolute;left:0;top:0;right:0;height:48px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--borda-fraca);background:var(--fundo);z-index:3">
+        <span style="width:28px;height:28px;flex:none;display:grid;place-items:center;border:1.5px solid var(--texto);border-radius:2px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 9l10-5 10 5-10 5z"></path><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"></path><path d="M22 9v6"></path></svg></span>
+        <span style="position:relative;display:flex;height:48px;margin-left:12px">
+          <sc-for list="{{ abas }}" as="a" hint-placeholder-count="6"><span style="width:110px;display:grid;place-items:center;font-size:13px;font-weight:{{ a.peso }};white-space:nowrap">{{ a.label }}</span></sc-for>
+          <span style="position:absolute;left:0;bottom:-1px;width:110px;height:2px;background:var(--texto);transform:translateX({{ barraX }}px)"></span>
+        </span>
+        <span style="flex:1"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;white-space:nowrap;border:1px solid var(--borda);border-radius:2px;font-size:12px;font-weight:500"><span style="width:5px;height:5px;border-radius:50%;background:var(--texto)"></span>Semestre 2026.2</span>
+        <span style="width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--borda);border-radius:50%;font-size:11px;font-weight:600;color:var(--texto-suave)">PR</span>
+      </div>
+
+      <div style="position:absolute;left:0;top:48px;width:960px;height:552px;opacity:{{ oA }};transform:translateX({{ xA }}px)">
+        <span style="position:absolute;left:32px;top:22px;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Acadêmico · semestre 2026.2</span>
+        <span style="position:absolute;left:32px;top:40px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:34px;line-height:1">Minha semana</span>
+        <div style="position:absolute;left:32px;top:92px;width:896px;height:68px;display:flex;align-items:center;gap:24px;padding:0 16px;box-sizing:border-box;background:var(--superficie);border:1px solid var(--borda-fraca)">
+          <span style="display:flex;flex-direction:column"><span style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)"><span style="width:6px;height:6px;border-radius:50%;background:var(--texto)"></span>Ao vivo</span><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:30px;font-weight:500;line-height:1">10:20</span></span>
+          <span style="flex:0 0 300px;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid var(--texto);border-radius:2px;background:var(--fundo)"><span style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:600">Você</span><span style="padding:1px 5px;background:var(--texto);color:var(--fundo);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Em aula</span></span><span style="font-size:11px;color:var(--texto-suave)">Banco de Dados · 2º A · Lab. · até 11:40</span><span style="height:3px;background:var(--borda-fraca)"><span style="display:block;width:20%;height:100%;background:var(--texto)"></span></span></span>
+          <span style="font-size:12px;color:var(--texto-suave)">2º horário · {{ comCh }} de 2 chamadas de hoje feitas</span>
+        </div>
+        <div style="position:absolute;left:32px;top:176px;width:896px;height:304px;background:var(--superficie);border:1px solid var(--borda-fraca);box-sizing:border-box"></div>
+        <span style="position:absolute;left:80px;right:32px;top:328.0px;height:24.0px;background:var(--fundo)"></span>
+        <span style="position:absolute;left:80.0px;top:176px;width:169.6px;height:32px;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;border-left:1px solid var(--borda-fraca);background:transparent;font-size:12px;font-weight:600">Seg 05</span><span style="position:absolute;left:80.0px;top:208px;width:1px;height:264.0px;background:var(--borda-fraca)"></span><span style="position:absolute;left:249.6px;top:176px;width:169.6px;height:32px;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;border-left:1px solid var(--borda-fraca);background:var(--sunken);font-size:12px;font-weight:700">Ter 06</span><span style="position:absolute;left:249.6px;top:208px;width:1px;height:264.0px;background:var(--borda-fraca)"></span><span style="position:absolute;left:419.2px;top:176px;width:169.6px;height:32px;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;border-left:1px solid var(--borda-fraca);background:transparent;font-size:12px;font-weight:600">Qua 07</span><span style="position:absolute;left:419.2px;top:208px;width:1px;height:264.0px;background:var(--borda-fraca)"></span><span style="position:absolute;left:588.8px;top:176px;width:169.6px;height:32px;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;border-left:1px solid var(--borda-fraca);background:transparent;font-size:12px;font-weight:600">Qui 08</span><span style="position:absolute;left:588.8px;top:208px;width:1px;height:264.0px;background:var(--borda-fraca)"></span><span style="position:absolute;left:758.4px;top:176px;width:169.6px;height:32px;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;border-left:1px solid var(--borda-fraca);background:transparent;font-size:12px;font-weight:600">Sex 09</span><span style="position:absolute;left:758.4px;top:208px;width:1px;height:264.0px;background:var(--borda-fraca)"></span><span style="position:absolute;left:32px;width:40px;top:201.0px;text-align:right;font-size:10px;color:var(--texto-suave)">08:00</span><span style="position:absolute;left:80px;right:32px;top:208.0px;border-top:1px solid var(--borda-fraca)"></span><span style="position:absolute;left:32px;width:40px;top:273.0px;text-align:right;font-size:10px;color:var(--texto-suave)">09:00</span><span style="position:absolute;left:80px;right:32px;top:280.0px;border-top:1px solid var(--borda-fraca)"></span><span style="position:absolute;left:32px;width:40px;top:345.0px;text-align:right;font-size:10px;color:var(--texto-suave)">10:00</span><span style="position:absolute;left:80px;right:32px;top:352.0px;border-top:1px solid var(--borda-fraca)"></span><span style="position:absolute;left:32px;width:40px;top:417.0px;text-align:right;font-size:10px;color:var(--texto-suave)">11:00</span><span style="position:absolute;left:80px;right:32px;top:424.0px;border-top:1px solid var(--borda-fraca)"></span>
+        <div style="position:absolute;left:253.6px;top:210.0px;width:161.6px;height:116.0px;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);box-sizing:border-box;font-size:11px;line-height:1.25"><span style="font-size:12px;font-weight:600">Python</span><span style="color:var(--texto-suave)">1º A · Lab.</span><span style="margin-top:auto;align-self:flex-start;padding:1px 5px;border:1px solid var(--texto);font-size:9px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap">Feita · 6/6</span></div>
+        <div style="position:absolute;left:423.2px;top:210.0px;width:161.6px;height:116.0px;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);box-sizing:border-box;font-size:11px;line-height:1.25"><span style="font-size:12px;font-weight:600">Banco de Dados</span><span style="color:var(--texto-suave)">2º A · Lab.</span></div>
+        <div style="position:absolute;left:592.8px;top:210.0px;width:161.6px;height:116.0px;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);box-sizing:border-box;font-size:11px;line-height:1.25"><span style="font-size:12px;font-weight:600">Python</span><span style="color:var(--texto-suave)">1º A · Lab.</span></div>
+        <div style="position:absolute;left:592.8px;top:354.0px;width:161.6px;height:116.0px;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);box-sizing:border-box;font-size:11px;line-height:1.25"><span style="font-size:12px;font-weight:600">Banco de Dados</span><span style="color:var(--texto-suave)">2º A · Lab.</span></div>
+        <div style="position:absolute;left:249.6px;width:169.6px;top:376.0px;border-top:2px solid var(--texto);opacity:.5"><span style="position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:var(--texto)"></span></div>
+        <div style="position:absolute;left:253.6px;top:354.0px;width:161.6px;height:116.0px;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:2px solid var(--texto);border-radius:2px;background:var(--sunken);box-sizing:border-box;font-size:11px;line-height:1.25">
+          <span style="position:absolute;inset:0;background:var(--superficie);opacity:{{ flashBD }}"></span>
+          <span style="position:relative;font-size:12px;font-weight:600">Banco de Dados</span><span style="position:relative;color:var(--texto-suave)">2º A · Lab. · agora</span>
+          <span style="position:relative;align-self:flex-start;padding:1px 5px;border:1px solid {{ stBorda }};color:{{ stCor }};font-size:9px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap">{{ stTxt }}</span>
+          <span style="position:relative;margin-top:auto;height:26px;display:grid;place-items:center;border:1px solid {{ btBorda }};border-radius:2px;background:{{ btBg }};color:{{ btCor }};font-size:11px;font-weight:600;transform:scale({{ btEsc }})">{{ btTxt }}</span>
+        </div>
+        
+        <div style="position:absolute;inset:0;background:var(--texto);opacity:{{ scrimO }}"></div>
+        <div style="position:absolute;left:560px;top:0;width:400px;height:552px;display:flex;flex-direction:column;background:var(--superficie);border-left:1px solid var(--borda-fraca);transform:translateX({{ pX }}px)">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 20px;border-bottom:1px solid var(--borda-fraca)"><span style="font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Chamada</span><span style="width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--borda-fraca);border-radius:2px;font-size:14px">×</span></div>
+          <div style="height:96px;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 20px">
+            <span style="font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Aula da grade</span>
+            <span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:26px;line-height:1.1">Banco de Dados</span>
+            <span style="font-size:12px;color:var(--texto-suave)">Terça, 06/10/2026 · 10:00–11:40</span>
+          </div>
+          <div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 20px">
+            <span style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:28px;font-weight:500;line-height:1">{{ cont }}</span><span style="font-size:12px;color:var(--texto-suave)">presentes</span></span>
+            <span style="width:130px;height:36px;display:grid;place-items:center;border:1px solid var(--borda);border-radius:2px;font-size:13px;font-weight:500;transform:scale({{ todosEsc }})">Todos presentes</span>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ alunos }}" as="a" hint-placeholder-count="6">
+              <div style="height:48px;display:flex;align-items:center;gap:10px;padding:0 20px;border-top:1px solid var(--borda-fraca)">
+                <span style="width:26px;height:26px;display:grid;place-items:center;border:1px solid var(--borda);border-radius:50%;font-size:10px;font-weight:600;color:var(--texto-suave)">{{ a.ini }}</span>
+                <span style="flex:1;font-weight:500;font-size:13px">{{ a.nome }}</span>
+                <span style="position:relative;width:172px;height:36px;display:flex;padding:2px;gap:2px;border:1px solid var(--borda);border-radius:2px;box-sizing:border-box">
+                  <span style="position:absolute;top:2px;left:2px;width:83px;height:30px;background:var(--texto);border-radius:1px;opacity:{{ a.blocoO }};transform:translateX({{ a.blocoX }}px);transition:transform 260ms cubic-bezier(.3,1.25,.5,1),opacity 120ms linear"></span>
+                  <span style="position:relative;flex:1;display:grid;place-items:center;font-size:12px;color:{{ a.corP }};transition:color 160ms linear">Presente</span>
+                  <span style="position:relative;flex:1;display:grid;place-items:center;font-size:12px;color:{{ a.corF }};transition:color 160ms linear">Ausente</span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="flex:1"></span>
+          <div style="height:62px;display:flex;align-items:center;padding:0 20px;border-top:1px solid var(--borda-fraca)"><span style="flex:1;height:40px;display:grid;place-items:center;background:var(--texto);color:var(--fundo);border-radius:2px;font-size:14px;font-weight:500;transform:scale({{ salvarEsc }})">Salvar chamada</span></div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;top:48px;width:960px;height:552px;opacity:{{ oB }};transform:translateX({{ xB }}px)">
+        <span style="position:absolute;left:32px;top:22px;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Minhas turmas · 2º A</span>
+        <span style="position:absolute;left:32px;top:40px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:34px;line-height:1">Notas da turma</span>
+        <div style="position:absolute;left:32px;top:100px;width:896px;display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda-fraca)">
+          <div style="height:44px;display:flex;align-items:stretch;gap:4px;padding:0 12px;border-bottom:1px solid var(--borda-fraca)">
+            <span style="display:flex;flex-direction:column;justify-content:center;padding:0 10px;color:var(--texto-suave)"><span style="font-size:13px">1º semestre</span><span style="font-size:9px;letter-spacing:.06em;text-transform:uppercase">Fechado</span></span>
+            <span style="display:flex;flex-direction:column;justify-content:center;padding:0 10px;border-bottom:2px solid var(--texto);margin-bottom:-1px"><span style="font-size:13px;font-weight:600">2º semestre</span><span style="font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-suave)">Atual</span></span>
+            <span style="display:flex;flex-direction:column;justify-content:center;padding:0 10px;color:var(--texto-suave)"><span style="font-size:13px">Resultado do ano</span><span style="font-size:9px;letter-spacing:.06em;text-transform:uppercase">com prova final</span></span>
+            <span style="flex:1"></span>
+            <span style="align-self:center;font-size:12px;font-weight:600">Banco de Dados</span>
+          </div>
+          <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 20px">
+            <span style="font-size:11px;color:var(--texto-suave)">Média simples · recuperação substitui a menor nota · mínimo 6,0</span>
+            <span style="width:200px;display:flex;flex-direction:column;gap:3px"><span style="font-size:11px;font-weight:500;text-align:right">{{ progTxt }}</span><span style="height:3px;background:var(--borda-fraca);overflow:hidden"><span style="display:block;height:100%;background:var(--texto);transform:scaleX({{ progX }});transform-origin:0 50%"></span></span></span>
+          </div>
+          <div style="height:44px;display:grid;grid-template-columns:260px 110px 110px 130px 1fr;column-gap:12px;align-items:center;padding:0 20px;background:var(--fundo);border-top:1px solid var(--borda-fraca);border-bottom:1px solid var(--borda-fraca)">
+            <span style="font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Aluno</span>
+            <span style="display:flex;flex-direction:column;align-items:center"><span style="font-size:13px;font-weight:600">P1</span><span style="font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">● Publicada</span></span>
+            <span style="display:flex;flex-direction:column;align-items:center"><span style="font-size:13px;font-weight:600">P2</span><span style="font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:{{ p2PubCor }}">{{ p2Pub }}</span></span>
+            <span style="display:flex;flex-direction:column;align-items:center"><span style="font-size:13px;font-weight:600">Recuperação</span><span style="font-size:9px;color:var(--texto-suave)">só abaixo de 6,0</span></span>
+            <span style="text-align:right;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Média</span>
+          </div>
+          <sc-for list="{{ linhas }}" as="l" hint-placeholder-count="6">
+            <div style="position:relative;height:42px;display:grid;grid-template-columns:260px 110px 110px 130px 1fr;column-gap:12px;align-items:center;padding:0 20px;border-top:1px solid var(--borda-fraca)">
+              <span style="position:absolute;inset:0;background:var(--sunken);opacity:{{ l.flash }}"></span>
+              <span style="position:relative;display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:500">{{ l.nome }}</span><span style="padding:0 4px;border:1px solid var(--aviso);color:var(--aviso);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:{{ l.abaixoO }}">Abaixo</span></span>
+              <span style="position:relative;height:30px;display:grid;place-items:center;border:1px solid var(--borda-fraca);border-radius:2px;background:{{ l.b1 }};font-size:14px;font-weight:600;color:{{ l.c1 }}">{{ l.p1 }}</span>
+              <span style="position:relative;height:30px;display:grid;place-items:center;border:1px solid {{ l.bd2 }};border-radius:2px;background:{{ l.b2 }};font-size:14px;font-weight:600;color:{{ l.c2 }}"><span>{{ l.p2 }}<span style="display:inline-block;width:1.5px;height:15px;margin-left:1px;vertical-align:-2px;background:var(--texto);opacity:{{ l.caret }}"></span></span></span>
+              <span style="position:relative;height:30px;display:grid;place-items:center;border:1px solid var(--borda-fraca);border-radius:2px;background:{{ l.bRec }};font-size:13px;color:var(--texto-suave)">{{ l.rec }}</span>
+              <span style="position:relative;justify-self:end;display:flex;flex-direction:column;align-items:flex-end;padding:0 8px;border-radius:2px;background:{{ l.mBg }}"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-size:20px;font-weight:500;line-height:1.1;color:{{ l.cm }}">{{ l.media }}</span><span style="font-size:9px;color:var(--texto-suave)">{{ l.sub }}</span></span>
+            </div>
+          </sc-for>
+          <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-top:1px solid var(--borda-fraca);background:var(--fundo)">
+            <span style="font-size:11px;color:var(--texto-suave)">Enter desce · Tab avança · Esc desfaz</span>
+            <span style="height:34px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--texto);border-radius:2px;background:{{ pubBg }};color:{{ pubCor }};font-size:13px;font-weight:500;white-space:nowrap;transform:scale({{ pubBtEsc }})">{{ pubTxt }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;top:48px;width:960px;height:552px;opacity:{{ oC }};transform:translateX({{ xC }}px)">
+        <span style="position:absolute;left:32px;top:22px;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Mural da turma</span>
+        <span style="position:absolute;left:32px;top:40px;font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-style:italic;font-weight:500;font-size:34px;line-height:1">Avisos</span>
+        <div style="position:absolute;left:32px;top:100px;width:320px;height:360px;display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--superficie);border:1px solid var(--borda-fraca);box-sizing:border-box">
+          <span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:20px;margin-bottom:2px;display:flex;align-items:baseline;justify-content:space-between">Novo aviso<span style="font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-size:11px;font-weight:500;color:var(--texto-suave)">Para: Algoritmos · 1º A</span></span>
+          <span style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Título</span>
+          <span style="height:40px;display:flex;align-items:center;padding:0 10px;border:1px solid {{ titBorda }};border-radius:2px;white-space:nowrap;overflow:hidden">{{ titTxt }}<span style="width:1px;height:18px;margin-left:1px;background:var(--texto);opacity:{{ titCaret }}"></span></span>
+          <span style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Data</span>
+          <span style="height:40px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--borda);border-radius:2px;font-variant-numeric:tabular-nums">06/10/2026</span>
+          <span style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave)">Mensagem</span>
+          <span style="height:70px;display:block;padding:8px 10px;border:1px solid {{ msgBorda }};border-radius:2px;box-sizing:border-box">{{ msgTxt }}<span style="display:inline-block;width:1px;height:16px;margin-left:1px;vertical-align:-3px;background:var(--texto);opacity:{{ msgCaret }}"></span></span>
+          <span style="height:40px;display:grid;place-items:center;margin-top:4px;background:var(--texto);color:var(--fundo);border-radius:2px;font-size:13px;font-weight:500;transform:scale({{ pubEsc }})">Publicar aviso</span>
+        </div>
+        <div style="position:absolute;left:376px;top:100px;width:552px;height:452px;overflow:hidden">
+          <div style="position:absolute;left:0;top:0;width:552px;opacity:{{ novoO }};transform:translateY({{ novoY }}px)">
+            <div style="height:110px;display:flex;flex-direction:column;gap:6px;padding:16px 18px;background:var(--superficie);border:1px solid var(--texto);border-radius:2px;box-sizing:border-box">
+              <span style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:20px"><span style="display:inline-flex;align-items:center;height:16px;margin-right:6px;padding:0 4px;border:1px solid var(--borda);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;vertical-align:2px;font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-style:normal">Algoritmos</span>Prova de Algoritmos</span><span style="font-size:12px;color:var(--texto-suave)">06/10/2026</span></span>
+              <span style="font-size:13px;color:var(--texto-suave)">Quinta, 15/10. Conteúdo até grafos.</span>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;top:0;width:552px;display:flex;flex-direction:column;gap:12px;transform:translateY({{ listaY }}px)">
+            <div style="height:110px;display:flex;flex-direction:column;gap:6px;padding:16px 18px;background:var(--superficie);border:1px solid var(--borda-fraca);border-radius:2px;box-sizing:border-box">
+              <span style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:20px"><span style="display:inline-flex;align-items:center;height:16px;margin-right:6px;padding:0 4px;border:1px solid var(--borda);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;vertical-align:2px;font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-style:normal">Python</span>Prova de Python</span><span style="font-size:12px;color:var(--texto-suave)">28/09/2026</span></span>
+              <span style="font-size:13px;color:var(--texto-suave)">A P1 de Python será na aula de terça, 29/09. O conteúdo vai até funções e listas.</span>
+            </div>
+            <div style="height:110px;display:flex;flex-direction:column;gap:6px;padding:16px 18px;background:var(--superficie);border:1px solid var(--borda-fraca);border-radius:2px;box-sizing:border-box">
+              <span style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--fonte-titulo,'Newsreader',Georgia,serif);font-weight:500;font-size:20px"><span style="display:inline-flex;align-items:center;height:16px;margin-right:6px;padding:0 4px;border:1px solid var(--borda);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;vertical-align:2px;font-family:var(--fonte-corpo,'Space Grotesk',system-ui,sans-serif);font-style:normal">Geral</span>Bem-vindos ao semestre</span><span style="font-size:12px;color:var(--texto-suave)">20/09/2026</span></span>
+              <span style="font-size:13px;color:var(--texto-suave)">Confiram o calendário de aulas de cada disciplina e mantenham a frequência acima de 75%.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div ref="{{ curRef }}" style="position:absolute;left:0;top:0;width:0;height:0;z-index:5;will-change:transform">
+        <span style="position:absolute;left:-18px;top:-18px;width:36px;height:36px;border:2px solid var(--texto);border-radius:50%;opacity:{{ anelO }};transform:scale({{ anelEsc }})"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" style="position:absolute;left:-3px;top:-2px;transform:scale({{ curEsc }});transform-origin:3px 2px"><path d="M4 2l15 10.5-6.6 1.2 3.8 7.3-2.6 1.3-3.8-7.3L4 19.5z" fill="var(--texto)" stroke="var(--fundo)" stroke-width="1.4" stroke-linejoin="round"></path></svg>
+      </div>
+      </div>
+      <div style="position:absolute;left:24px;bottom:24px;z-index:8;display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--texto);color:var(--fundo);border-radius:2px;font-size:17px;font-weight:500;letter-spacing:-.005em;white-space:nowrap;opacity:{{ coO }};transform:translateY({{ coY }}px)"><span style="font-size:12px;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums">{{ coN }}</span><span aria-hidden="true" style="width:1px;height:16px;background:var(--fundo)"></span>{{ coTxt }}</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px">
+    <button onClick="{{ alternar }}" aria-label="{{ playLabel }}" style="flex:none;width:44px;height:44px;display:grid;place-items:center;padding:0;border:1px solid var(--texto);border-radius:2px;background:var(--texto);color:var(--fundo);cursor:pointer;transition:transform 80ms" style-active="transform:scale(.94)">
+      <sc-if value="{{ tocando }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16"></rect><rect x="14" y="4" width="5" height="16"></rect></svg></sc-if>
+      <sc-if value="{{ parado }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"></path></svg></sc-if>
+    </button>
+    <div role="group" aria-label="Cenas" style="flex:1 1 320px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+      <sc-for list="{{ cenas }}" as="c" hint-placeholder-count="3">
+        <button onClick="{{ c.ir }}" aria-current="{{ c.atual }}" style="display:flex;flex-direction:column;align-items:stretch;gap:8px;min-height:44px;padding:8px 0 0;border:0;background:transparent;text-align:left;cursor:pointer">
+          <span style="position:relative;height:2px;background:var(--borda-fraca);overflow:hidden"><span style="position:absolute;inset:0;background:var(--texto);transform-origin:0 50%;transform:scaleX({{ c.prog }})"></span></span>
+          <span style="display:flex;gap:6px;font-size:13px"><span style="color:var(--texto-suave);font-variant-numeric:tabular-nums">{{ c.n }}</span><span style="font-weight:{{ c.peso }};color:{{ c.cor }}">{{ c.label }}</span></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+  <p style="margin:0;min-height:44px;max-width:64ch;color:var(--texto-suave);text-wrap:pretty">{{ legenda }}</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:960,&quot;height&quot;:720}}">
+const DUR = 21000;
+const CENAS = [
+  { label: 'Fazer a chamada', ini: 0, fim: 8000, leg: 'No quadro da semana, abra a aula de agora, marque todos presentes e ajuste só quem faltou. Salvou, o quadro já mostra 4 de 6.' },
+  { label: 'Lançar notas', ini: 8000, fim: 14500, leg: 'Digite direto na grade da turma: a média do período recalcula ao vivo. Publicou, o aluno já vê no boletim.' },
+  { label: 'Publicar um aviso', ini: 14500, fim: DUR, leg: 'Escolha a turma, escreva e publique. O aviso entra no mural com o selo da disciplina e aparece só para os alunos dela.' }
+];
+const CUR = [[0, 700, 520], [500, 700, 520], [1300, 334, 503], [1700, 334, 503], [2400, 875, 206], [2900, 875, 206], [3600, 897, 354], [4200, 897, 354], [4900, 897, 498], [5400, 897, 498], [6100, 760, 558], [6800, 760, 558], [7600, 700, 520],
+  [8200, 700, 520], [8900, 501, 449], [10600, 501, 449], [11300, 640, 449], [11800, 828, 538], [12600, 828, 538], [13600, 760, 300],
+  [14500, 760, 300], [15100, 192, 238], [16500, 192, 238], [16800, 192, 394], [18300, 192, 394], [18600, 192, 470], [19300, 192, 470], [20600, 700, 520], [21000, 700, 520]];
+const CLIQUES = [1450, 2700, 3900, 5150, 6450, 9300, 12300, 15200, 16850, 18700];
+const CAM = [[0, 480, 300, 1.2], [900, 480, 300, 1], [1000, 480, 300, 1], [1450, 334, 420, 1.35], [1600, 334, 420, 1.35], [2150, 760, 300, 1.2], [2250, 760, 300, 1.2], [2600, 830, 230, 1.55], [3200, 830, 230, 1.55], [3700, 860, 420, 1.42], [5400, 860, 420, 1.42], [6050, 770, 500, 1.45], [6550, 770, 500, 1.45], [7100, 334, 420, 1.6], [7700, 334, 420, 1.6], [8100, 480, 300, 1],
+  [8400, 480, 300, 1], [9000, 540, 420, 1.45], [11100, 540, 420, 1.45], [11700, 720, 470, 1.35], [12900, 720, 470, 1.35], [13600, 480, 300, 1], [14100, 480, 300, 1],
+  [14700, 480, 300, 1], [15200, 250, 250, 1.55], [16500, 250, 250, 1.55], [16900, 250, 370, 1.55], [18500, 250, 410, 1.55], [18800, 250, 410, 1.55], [19400, 650, 230, 1.5], [20200, 650, 230, 1.5], [20800, 480, 300, 1], [21000, 480, 300, 1]];
+const CALLOUTS = [[150, 1300, '01', 'A chamada da aula de hoje'], [2650, 3500, '01', 'Um clique: todos presentes'], [3950, 5450, '01', 'Ajuste só quem faltou'], [6700, 7750, '01', 'Salvo. O quadro já mostra 4 de 6'],
+  [8250, 9200, '02', 'Notas direto na grade da turma'], [10200, 11600, '02', 'A média do período recalcula ao vivo'], [12450, 13900, '02', 'Publicou: o aluno já vê a nota'], [14650, 15400, '03', 'Publicar um aviso'], [18950, 20300, '03', 'No mural e no painel de cada aluno']];
+const ALUNOS = ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Alves', 'Eva Rocha', 'Fabio Neri'];
+const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const sai = x => 1 - Math.pow(1 - x, 3);
+const seg = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+const digita = (txt, t, a, b) => txt.slice(0, Math.round(txt.length * seg(t, a, b)));
+const fmt = n => n.toFixed(1).replace('.', ',');
+const TINTA = 'var(--texto)', AVISO = 'var(--aviso)', FUNDO = 'var(--fundo)';
+
+class Component extends DCLogic {
+  state = { t: 0, tocando: true, esc: 1 };
+  rootRef = React.createRef();
+  camRef = React.createRef();
+  curRef = React.createRef();
+  pose(t) {
+    let cx = CUR[CUR.length - 1][1], cy = CUR[CUR.length - 1][2];
+    for (let i = 0; i < CUR.length - 1; i++) { const a = CUR[i], b = CUR[i + 1]; if (t >= a[0] && t <= b[0]) { const k = ease((t - a[0]) / ((b[0] - a[0]) || 1)); cx = a[1] + (b[1] - a[1]) * k; cy = a[2] + (b[2] - a[2]) * k; break; } }
+    let kx = 480, ky = 300, kz = 1;
+    if (!this.rm) for (let i = 0; i < CAM.length - 1; i++) { const a = CAM[i], b = CAM[i + 1]; if (t >= a[0] && t <= b[0]) { const k = ease((t - a[0]) / ((b[0] - a[0]) || 1)); kx = a[1] + (b[1] - a[1]) * k; ky = a[2] + (b[2] - a[2]) * k; kz = a[3] + (b[3] - a[3]) * k; break; } }
+    kx = Math.max(480 / kz, Math.min(960 - 480 / kz, kx)); ky = Math.max(300 / kz, Math.min(600 - 300 / kz, ky));
+    const c = this.camRef.current, u = this.curRef.current;
+    if (c) c.style.transform = 'translate3d(' + (480 - kx * kz).toFixed(2) + 'px,' + (300 - ky * kz).toFixed(2) + 'px,0) scale(' + kz.toFixed(4) + ')';
+    if (u) u.style.transform = 'translate3d(' + cx.toFixed(2) + 'px,' + cy.toFixed(2) + 'px,0)';
+  }
+  componentDidUpdate() { if (!this.raf) this.pose(this.state.t); }
+  boxRef = React.createRef();
+  componentDidMount() {
+    this.rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.vis = false;
+    this.io = new IntersectionObserver(es => { this.vis = es[0].isIntersecting; this.prog(); }, { threshold: 0.25 });
+    this.io.observe(this.rootRef.current);
+    this.ro = new ResizeObserver(es => { const w = es[0].contentRect.width; if (w) this.setState({ esc: w / 960 }); });
+    this.ro.observe(this.boxRef.current);
+    this.onVis = () => this.prog();
+    document.addEventListener('visibilitychange', this.onVis);
+    this.tt = 0; this.pose(0);
+    if (this.rm) this.setState({ t: 7700, tocando: false });
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); this.io && this.io.disconnect(); this.ro && this.ro.disconnect(); document.removeEventListener('visibilitychange', this.onVis); }
+  prog() {
+    if (this.raf || !this.state.tocando || !this.vis || document.hidden) return;
+    this.last = 0; this.raf = requestAnimationFrame(this.loop);
+  }
+  loop = now => {
+    this.raf = 0;
+    if (!this.state.tocando || !this.vis || document.hidden) return;
+    const dt = this.last ? Math.min(80, now - this.last) : 16; this.last = now;
+    if (Math.abs(this.tt - this.state.t) > 120) this.tt = this.state.t;
+    this.tt = (this.tt + dt) % DUR;
+    this.pose(this.tt);
+    const q = Math.floor(this.tt / 33);
+    if (q !== this.q) { this.q = q; this.setState({ t: this.tt }); }
+    this.raf = requestAnimationFrame(this.loop);
+  };
+  renderVals() {
+    const t = this.state.t, cena = CENAS.findIndex(c => t >= c.ini && t < c.fim);
+    let cx = CUR[CUR.length - 1][1], cy = CUR[CUR.length - 1][2];
+    for (let i = 0; i < CUR.length - 1; i++) { const a = CUR[i], b = CUR[i + 1]; if (t >= a[0] && t <= b[0]) { const k = ease((t - a[0]) / ((b[0] - a[0]) || 1)); cx = a[1] + (b[1] - a[1]) * k; cy = a[2] + (b[2] - a[2]) * k; break; } }
+    const co = CALLOUTS.find(c => t >= c[0] && t < c[1]), coIn = co ? Math.min(seg(t, co[0], co[0] + 240), 1 - seg(t, co[1] - 220, co[1])) : 0;
+    const clk = CLIQUES.map(c => t - c).find(d => d >= 0 && d < 420);
+    const press = c => { const d = t - c; return d >= 0 && d < 140 ? 0.95 : 1; };
+    const oA = Math.min(seg(t, 0, 300) || (t < 300 ? 0 : 1), 1 - seg(t, 7800, 8100));
+    const oB = Math.min(seg(t, 7950, 8250), 1 - seg(t, 14300, 14600));
+    const oC = Math.min(seg(t, 14450, 14750), 1 - seg(t, 20700, 21000));
+    const tabX = t < 7900 ? 1 : t < 8300 ? 1 + ease(seg(t, 7900, 8300)) : t < 14400 ? 2 : t < 14800 ? 2 + ease(seg(t, 14400, 14800)) : t < 20700 ? 3 : 3 - 2 * ease(seg(t, 20700, 21000));
+    const abaOn = Math.round(tabX);
+    // chamada
+    const abre = sai(seg(t, 1500, 1950)), fecha = ease(seg(t, 6550, 6800)), painel = abre * (1 - fecha);
+    const todos = t >= 2700, faltas = [t >= 3900 ? 2 : -1, t >= 5150 ? 5 : -1];
+    const salvo = t >= 6500;
+    const alunos = ALUNOS.map((nome, i) => { const marcado = todos, aus = faltas.includes(i), p = marcado && !aus;
+      return { nome, ini: nome.split(' ').map(x => x[0]).join(''), blocoO: marcado ? 1 : 0, blocoX: aus ? 85 : 0, corP: p ? FUNDO : TINTA, corF: aus ? FUNDO : TINTA }; });
+    const pres = todos ? 6 - faltas.filter(x => x >= 0).length : 0;
+    // boletim
+    const nota = digita('7,5', t, 9500, 10100), lancou = t >= 10700, publicou = t >= 12300;
+    const flashN = lancou ? Math.max(0, 1 - seg(t, 10700, 12000)) : 0;
+    const NOTAS = [[8.6, 9.2], [5.4, 6.6], [3.2, 4.4], [7.8, 8.8], [4.5, null], [6.8, 7.4]];
+    const digitado = parseFloat(nota.replace(',', '.')), p2Eva = lancou ? 7.5 : isNaN(digitado) ? null : digitado;
+    // aviso
+    const pub = t >= 18750, tit = pub ? '' : digita('Prova de Algoritmos', t, 15300, 16400), msg = pub ? '' : digita('Quinta, 15/10. Conteúdo até grafos.', t, 16950, 18200);
+    const kn = ease(seg(t, 18800, 19350));
+    const blink = Math.floor(t / 450) % 2 ? 0 : 1;
+    const foco = (a, b) => t >= a && t < b;
+    const dias = []; for (let i = 0; i < 3; i++) dias.push({ vazio: true });
+    const cal = [];
+    for (let i = 0; i < 3; i++) cal.push({ n: '', pts: [], borda: 'transparent', bg: 'transparent', cor: TINTA, peso: 400 });
+    for (let d = 1; d <= 31; d++) {
+      const dow = (d + 2) % 7 + 1, n = dow === 2 || dow === 3 ? 2 : dow === 4 ? 2 : 0, hoje = d === 6;
+      const pts = Array.from({ length: n }, (_, i) => ({ bg: d < 6 || (hoje && (i === 0 || salvo)) ? 'currentColor' : 'transparent' }));
+      cal.push({ n: String(d), pts, borda: hoje ? TINTA : n ? 'var(--borda)' : 'transparent', bg: hoje ? TINTA : 'transparent', cor: hoje ? FUNDO : n ? TINTA : 'var(--texto-suave)', peso: n || hoje ? 600 : 400 });
+    }
+    while (cal.length % 7) cal.push({ n: '', pts: [], borda: 'transparent', bg: 'transparent', cor: TINTA, peso: 400 });
+    return {
+      rootRef: this.rootRef, boxRef: this.boxRef, esc: this.state.esc,
+      camRef: this.camRef, curRef: this.curRef,
+      coO: coIn, coY: (1 - coIn) * 12, coN: co ? co[2] : '', coTxt: co ? co[3] : '',
+      abas: ['Painel', 'Acadêmico', 'Minhas turmas', 'Avisos'].map((label, i) => ({ label, peso: i === abaOn ? 600 : 400 })), barraX: tabX * 110,
+      oA, oB, oC, xA: (1 - oA) * -10, xB: (1 - oB) * (t < 11000 ? 10 : -10), xC: (1 - oC) * (t < 20000 ? 10 : -10),
+      comCh: salvo ? '2' : '1', flashBD: salvo ? Math.max(0, 0.9 - seg(t, 6700, 7900)) : 0,
+      stTxt: salvo ? 'Feita · 4/6' : 'Chamada pendente', stCor: salvo ? TINTA : 'var(--texto-suave)', stBorda: salvo ? TINTA : 'var(--borda)',
+      btTxt: salvo ? 'Ver chamada' : 'Fazer chamada', btBg: salvo ? 'var(--superficie)' : TINTA, btCor: salvo ? TINTA : FUNDO, btBorda: salvo ? 'var(--borda)' : TINTA, btEsc: press(1450),
+      cal, scrimO: painel * 0.14, pX: (1 - painel) * 410, cont: pres + '/6', todosEsc: press(2700), alunos, salvarEsc: press(6450),
+      lista: ALUNOS.map(n => { const on = n === 'Eva Rocha'; return { nome: n, bg: on ? TINTA : 'transparent', cor: on ? FUNDO : TINTA, peso: on ? 600 : 400 }; }),
+      progTxt: (lancou ? 12 : 11) + ' de 12 notas lançadas', progX: lancou ? 1 : 11 / 12,
+      p2Pub: publicou ? '● Publicada' : '○ Rascunho', p2PubCor: publicou ? TINTA : 'var(--texto-suave)', pubTxt: publicou ? 'Publicadas' : 'Publicar lançadas', pubBg: publicou ? 'var(--superficie)' : TINTA, pubCor: publicou ? 'var(--texto-suave)' : FUNDO, pubBtEsc: press(12300),
+      linhas: ALUNOS.map((nome, i) => { const ev = i === 4, p1 = NOTAS[i][0], p2 = ev ? p2Eva : NOTAS[i][1], m = p2 == null ? p1 : Math.round((p1 + p2) / 2 * 10) / 10, ab = m < 6, editando = ev && t >= 9300 && t < 10700;
+        return { nome, p1: fmt(p1), c1: p1 < 6 ? AVISO : TINTA, b1: p1 < 6 ? 'var(--aviso-suave)' : 'transparent', p2: ev && !lancou ? nota : p2 == null ? '—' : fmt(p2), c2: p2 != null && p2 < 6 ? AVISO : TINTA, b2: p2 != null && p2 < 6 ? 'var(--aviso-suave)' : 'transparent', bd2: editando ? TINTA : 'var(--borda-fraca)', caret: editando ? blink : 0,
+          rec: ab ? '' : '', bRec: ab ? 'var(--superficie)' : 'var(--fundo)', media: fmt(m), cm: ab ? AVISO : TINTA, mBg: ab ? 'var(--aviso-suave)' : 'transparent', sub: ev && p2 == null ? 'parcial' : '', abaixoO: ab ? 1 : 0, flash: ev ? flashN : 0 }; }),
+      notaTxt: lancou ? '' : nota, notaBorda: foco(9300, 11100) ? TINTA : 'var(--borda)', notaCaret: foco(9300, 11100) ? blink : 0, lancarEsc: press(11100), notaMsgO: lancou ? seg(t, 11200, 11500) * (1 - seg(t, 14200, 14500)) : 0,
+      titTxt: tit, titBorda: foco(15200, 16850) ? TINTA : 'var(--borda)', titCaret: foco(15200, 16850) ? blink : 0,
+      msgTxt: msg, msgBorda: foco(16850, 18700) ? TINTA : 'var(--borda)', msgCaret: foco(16850, 18700) ? blink : 0, pubEsc: press(18700),
+      novoO: kn, novoY: (kn - 1) * 16, listaY: kn * 122,
+      curEsc: clk != null && clk < 140 ? 0.86 : 1, anelO: clk != null ? 0.5 * (1 - clk / 420) : 0, anelEsc: clk != null ? 0.4 + clk / 420 : 0,
+      tocando: this.state.tocando, parado: !this.state.tocando, playLabel: this.state.tocando ? 'Pausar demonstração' : 'Reproduzir demonstração',
+      alternar: () => this.setState(s => ({ tocando: !s.tocando }), () => this.prog()),
+      cenas: CENAS.map((c, i) => ({ n: String(i + 1).padStart(2, '0'), label: c.label, atual: i === cena ? 'step' : 'false', peso: i === cena ? 600 : 400, cor: i === cena ? TINTA : 'var(--texto-suave)',
+        prog: t >= c.fim ? 1 : t < c.ini ? 0 : (t - c.ini) / (c.fim - c.ini), ir: () => { this.last = 0; this.tt = this.rm && !this.state.tocando ? c.fim - 300 : c.ini + 1; this.setState({ t: this.rm && !this.state.tocando ? c.fim - 300 : c.ini + 1 }); } })),
+      legenda: (CENAS[cena] || CENAS[0]).leg
+    };
+  }
+}
+</script>
+</body>
+</html>
