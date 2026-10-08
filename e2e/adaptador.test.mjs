@@ -303,14 +303,25 @@ const escola = { id: 90, email: 'direcao@escola.com', perfil: 'escola', nome: 'D
 const professor = { id: 42, email: 'docente@escola.com', perfil: 'professor', nome: 'Docente', aluno_id: null, senha_provisoria: false };
 const aluno = { id: 91, email: 'bia@escola.com', perfil: 'aluno', nome: 'Bia', aluno_id: 27, senha_provisoria: true };
 const vazio = { semestre: null, semestres_encerrados: [], professores: [], alunos: [], disciplinas: [], matriculas: [], avaliacoes: [], notas: [], aulas: [], avisos: [], metricas: [] };
+// Regra e avaliações como o servidor entrega no update 4 (forma da seção 5 do contrato).
+const REGRA = { tipo: 'Semestre', periodos: [{ id: 'p1', nome: '1º semestre', inicio: '2026-08-03', fim: '2026-09-30', fechado: false }, { id: 'p2', nome: '2º semestre', inicio: '2026-10-01', fim: '2026-12-11', fechado: false }],
+  itens: [{ id: 'i1', nome: 'P1', tipo: 'Prova', peso: 1 }], extras: { permitido: true, max: 2, peso: 1 }, participacao: { ativo: true, peso: 1 }, recuperacao: { ativo: true, modo: 'menor' }, final: { ativo: true },
+  arred: '0,1', mediaMin: 6, freqMin: 75, conselho: true };
+const AVALIACOES = [
+  { id: 88, disciplina_id: 13, nome: 'P1', peso: 1, periodo_id: 'p1', tipo: 'obrigatoria', item_id: 'i1', publicada: true, prazo: '2026-09-30' },
+  { id: 89, disciplina_id: 13, nome: 'Participação', peso: 1, periodo_id: 'p1', tipo: 'participacao', item_id: null, publicada: false, prazo: null },
+  { id: 90, disciplina_id: 13, nome: 'Lista 1', peso: 1, periodo_id: 'p1', tipo: 'extra', item_id: null, publicada: false, prazo: '2026-09-15' },
+  { id: 91, disciplina_id: 13, nome: 'Recuperação · 1º semestre', peso: 0, periodo_id: 'p1', tipo: 'recuperacao', item_id: null, publicada: false, prazo: null },
+  { id: 92, disciplina_id: 13, nome: 'Prova final', peso: 0, periodo_id: 'final', tipo: 'final', item_id: null, publicada: false, prazo: null },
+];
 const turma = {
   ...vazio,
   semestre: { id: 9, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null },
   alunos: [{ id: 27, nome: 'Bia', matricula: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', semestre_historico: '2026.1' }],
   disciplinas: [{ id: 13, nome: 'Python', carga_horaria: 40, professor_id: 42, professor_nome: 'Docente', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40' }] }],
   matriculas: [{ aluno_id: 27, disciplina_id: 13 }],
-  avaliacoes: [{ id: 88, disciplina_id: 13, nome: 'P1', peso: 100 }],
-  notas: [{ aluno_id: 27, avaliacao_id: 88, valor: 0 }],
+  regra: REGRA, avaliacoes: AVALIACOES, conselho: [{ aluno_id: 27, disciplina_id: 13 }],
+  notas: [{ aluno_id: 27, avaliacao_id: 88, valor: 0 }, { aluno_id: 27, avaliacao_id: 91, valor: 7.5 }],
   aulas: [
     { id: 73, disciplina_id: 13, data: '2026-10-06', hora_inicio: '08:00', hora_fim: '09:40', status: 'agendada', origem: 'grade', remarcada_de: '2026-10-05', chamada_feita: true, chamada: [{ aluno_id: 27, presente: false }] },
     { id: 74, disciplina_id: 13, data: '2026-10-08', hora_inicio: null, hora_fim: null, status: 'cancelada', origem: 'extra', remarcada_de: null, chamada_feita: false, chamada: null },
@@ -323,16 +334,17 @@ const esperadoTurma = {
   semestre: { id: 9, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null },
   alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', turma: null, turma_nome: null }],
   discs: [{ id: 13, nome: 'Python', carga_horaria: 40, professor_id: 42, turma: '', sala: '', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '', sala_id: null }] }],
-  mats: { '27-13': true }, avals: [{ id: 88, did: 13, nome: 'P1', peso: 100, per: 'p1', extra: true }], avalMeta: { 88: { publicada: true, prazo: '' } }, conselho: {},
-  regra: { tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: '2026-08-03', fim: '2026-12-11', fechado: false }], itens: [], extras: { permitido: true, max: 99, peso: 100 }, participacao: { ativo: false, peso: 1 }, recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false },
-  notas: { '27-88': 0 },
+  mats: { '27-13': true }, avals: [{ id: 90, did: 13, per: 'p1', nome: 'Lista 1', peso: 1, extra: true }], conselho: { '27-13': true }, regra: REGRA,
+  avalApi: { v13_p1_i1: 88, v13_p1_pa: 89, 90: 90, r13_p1: 91, f13: 92 },
+  avalMeta: { v13_p1_i1: { publicada: true, prazo: '2026-09-30' }, v13_p1_pa: { publicada: false, prazo: '' }, 90: { publicada: false, prazo: '2026-09-15' }, r13_p1: { publicada: false, prazo: '' }, f13: { publicada: false, prazo: '' } },
+  notas: { '27-v13_p1_i1': 0, '27-r13_p1': 7.5 },
   aulas: [
     { aula_id: 73, disciplina_id: 13, data: '2026-10-06', hora_inicio: '08:00', hora_fim: '09:40', status: 'agendada', origem: 'grade', remarcada_de: '2026-10-05', chamada: { '27': false } },
     { aula_id: 74, disciplina_id: 13, data: '2026-10-08', hora_inicio: null, hora_fim: null, status: 'cancelada', origem: 'extra', remarcada_de: null, chamada: null },
   ],
   avisos: [{ id: 6, titulo: 'Prova', data: '2026-10-06', msg: 'Sala 2', disciplina_id: 13, autor_id: 42, autor_nome: 'Docente' }],
   metricas: [{ aluno_id: 27, media_geral: 0, frequencia_geral: 0, aprovado: false, disciplinas: [{ disciplina_id: 13, media: 0, parcial: false, frequencia: 0 }] }],
-  selAluno: 27, selDisc: 13, notaDisc: 13, notaAval: 88,
+  selAluno: 27, selDisc: 13, notaDisc: 13, notaAval: '',
 };
 
 test('escola traduz todas as coleções e formata o histórico, inclusive nulos', () => {
@@ -375,8 +387,8 @@ test('aluno usa aluno_id e marca provisória somente na própria conta', () => {
 test('professor sem disciplina recebe coleções vazias e semestre nulo', () => {
   assert.deepEqual(montarEstado(professor, { ...vazio, professores: [professor] }), {
     papel: 'prof', profId: 42, usuario: professor, semestre: null, historico: [], profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }],
-    alunos: [], discs: [], turmas: [], salas: [], eventos: [], pedidos: [], mats: {}, avals: [], avalMeta: {}, conselho: {}, notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
-    regra: { tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: '', fim: '', fechado: false }], itens: [], extras: { permitido: true, max: 99, peso: 100 }, participacao: { ativo: false, peso: 1 }, recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false },
+    alunos: [], discs: [], turmas: [], salas: [], eventos: [], pedidos: [], mats: {}, avals: [], avalMeta: {}, avalApi: {}, conselho: {}, notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
+    regra: { tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: '', fim: '', fechado: false }], itens: [], extras: { permitido: false, max: 0, peso: 1 }, participacao: { ativo: false, peso: 1 }, recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false },
   });
 });
 
@@ -494,9 +506,9 @@ test('renderVals do Portal fornece todos os valores que o template usa, em todos
   coletar(escola); coletar(escola, { hubTurma: '5', hubNova: true, hubMsg: { erro: false, t: 'ok' }, gaEd: 13, acadDisc: true, tela: 'frequencia' });
   coletar(escola, { hubTurma: '__sem' }); coletar(professor);
   // grade de notas com avaliação aberta, resultado do ano, turma do professor (com e sem estado) e estados vazios do hub
-  coletar(escola, { acadDisc: true, tela: 'frequencia', subAba: 'notas', gnCol: 88, gnExtra: { nome: 'Lista', peso: 1 } }); coletar(escola, { gnPer: 'final' });
+  coletar(escola, { acadDisc: true, tela: 'frequencia', subAba: 'notas', gnPer: 'p1', gnCol: 'v13_p1_i1', gnExtra: { nome: 'Lista', peso: 1 } }); coletar(escola, { gnPer: 'final' });
   const docente = { profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }] };
-  coletar(professor, { ...docente, hubTurma: '__semT', gnCol: 88 }); coletar(professor, docente, { estado: 'Vazio' }); coletar(escola, {}, { estado: 'Vazio' }); coletar(escola, { hubTurma: '5' });
+  coletar(professor, { ...docente, hubTurma: '__semT', gnPer: 'p1', gnCol: 'v13_p1_i1' }); coletar(professor, docente, { estado: 'Vazio' }); coletar(escola, {}, { estado: 'Vazio' }); coletar(escola, { hubTurma: '5' });
   coletar(escola, { tela: 'professores', profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }], painel: { tipo: 'prof', id: 42 }, painelUlt: { tipo: 'prof', id: 42 } }); coletar(aluno, { tela: 'meu-painel' });
   assert.deepEqual([...usados].filter(n => !fornecidos.has(n)), []);
 });
@@ -617,15 +629,56 @@ test('excluir disciplina pelo Portal: confirma antes, bloqueia com nota e mostra
   assert.equal(q.state.confExc.bloq, true); assert.equal(q.renderVals().confExcTxt, 'Disciplina com histórico'); assert.equal(q.state.excluindo, false);
 });
 
-test('recursos que o servidor ainda não guarda mostram o erro em linha em vez de fingir que gravaram', async () => {
-  const semRota = async () => { throw { status: 501, detalhe: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' }; };
-  const q = quadro([], { salvarMetaAvaliacao: semRota, salvarConselho: semRota, salvarRegra: semRota }, 'Portal.tsx');
+test('grade de notas grava pela API com o id do servidor e mostra o erro dele em linha', async () => {
+  const chamadas = [];
+  const registrar = nome => async (...a) => { chamadas.push([nome, ...a]); return nome === 'publicarAvaliacoes' ? { publicadas: 2 } : undefined; };
+  const rede = Object.fromEntries(['salvarNota', 'apagarNota', 'atualizarAvaliacao', 'apagarAvaliacao', 'criarAvaliacao', 'publicarAvaliacoes', 'aprovarConselho', 'removerConselho', 'salvarRegra'].map(n => [n, registrar(n)]));
+  const q = quadro([], rede, 'Portal.tsx');
   let recargas = 0; q.recarregar = async () => { recargas++; };
   Object.assign(q.state, montarEstado(escola, turma));
-  await q.salvarMetaAval({ id: 88, nome: 'P1' }, { publicada: false }, 'P1 voltou para rascunho.');
-  assert.deepEqual(q.state.gnMsg, { erro: true, t: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' });
-  q.setState({ gnMsg: null }); await q.publicarLancadas([{ id: 88 }]); assert.equal(q.state.gnMsg.erro, true);
-  q.setState({ gnMsg: null }); await q.salvarConselhoAluno({ id: 27, nome: 'Bia' }, { id: 13 }, true); assert.equal(q.state.gnMsg.erro, true);
-  await assert.rejects(q.salvarRegraEscola({ tipo: 'Semestre' }), { texto: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' });
-  assert.equal(recargas, 1);
+  const bia = { id: 27, nome: 'Bia' };
+  // nota: a chave do canvas (aluno-v13_p1_i1) vira o id inteiro do servidor
+  q.setState({ gnDraft: { '27-v13_p1_i1': '7,5', '27-90': '8' } });
+  await q.salvarNotaGrade('27-v13_p1_i1', 'Bia', 'P1'); await q.salvarNotaGrade('27-90', 'Bia', 'Lista 1');
+  await q.limparNotaGrade(bia, { id: 'r13_p1', nome: 'Recuperação' });
+  assert.deepEqual(chamadas, [['salvarNota', 88, 27, 7.5], ['salvarNota', 90, 27, 8], ['apagarNota', 91, 27]]);
+  assert.equal(q.state.gnMsg.t, 'Nota de Bia em Recuperação limpa.'); assert.equal(recargas, 3);
+  // publicar/rascunho, prazo, extras, publicar lançadas, conselho e regra
+  chamadas.length = 0;
+  await q.salvarMetaAval({ id: 'v13_p1_i1', nome: 'P1' }, { publicada: false }, 'P1 voltou para rascunho.');
+  await q.salvarMetaAval({ id: 90, nome: 'Lista 1' }, { prazo: '2026-10-20' });
+  await q.criarAvalGrade(13, 'p2', 'Lista 2'); await q.apagarAvalGrade({ id: 90, nome: 'Lista 1' });
+  await q.publicarLancadas(13, 'p1'); assert.equal(q.state.gnMsg.t, '2 avaliações publicadas para os alunos.');
+  await q.salvarConselhoAluno(bia, { id: 13 }, true); await q.salvarConselhoAluno(bia, { id: 13 }, false);
+  await q.salvarRegraEscola({ ...REGRA, mediaMin: 7 });
+  assert.deepEqual(chamadas, [['atualizarAvaliacao', 88, { publicada: false }], ['atualizarAvaliacao', 90, { prazo: '2026-10-20' }], ['criarAvaliacao', 13, { nome: 'Lista 2', periodo_id: 'p2' }], ['apagarAvaliacao', 90],
+    ['publicarAvaliacoes', 13, 'p1'], ['aprovarConselho', 13, 27], ['removerConselho', 13, 27], ['salvarRegra', { ...REGRA, mediaMin: 7 }]]);
+  // erro do servidor aparece em linha e a tela não anuncia sucesso
+  const falha = async () => { throw { status: 409, detalhe: 'Período fechado pela escola: notas travadas.' }; };
+  const r = quadro([], { salvarNota: falha, atualizarAvaliacao: falha, salvarRegra: async () => { throw { status: 422, detalhe: 'Períodos fora de ordem.' }; } }, 'Portal.tsx');
+  r.recarregar = async () => {}; Object.assign(r.state, montarEstado(escola, turma));
+  r.setState({ gnDraft: { '27-v13_p1_i1': '7' } }); await r.salvarNotaGrade('27-v13_p1_i1', 'Bia', 'P1');
+  assert.deepEqual(r.state.gnMsg, { erro: true, t: 'Período fechado pela escola: notas travadas.' });
+  await r.salvarMetaAval({ id: 'v13_p1_i1', nome: 'P1' }, { publicada: true }, 'publicada'); assert.equal(r.state.gnMsg.erro, true);
+  await assert.rejects(r.salvarRegraEscola(REGRA), { texto: 'Períodos fora de ordem.' });
+  // id desconhecido não vai ao servidor com um id inventado
+  await r.limparNotaGrade(bia, { id: 'v99_p1_i1', nome: 'X' }); assert.match(r.state.gnMsg.t, /Avaliação não encontrada/);
+});
+
+test('o JS do canvas coincide com o cálculo do back (notas_calc.py) com recuperação, final, extras e arredondamento', () => {
+  // Esperado gerado com notas_calc.media_ano e notas_calc.situacao do back (commit f9910f5), com a mesma regra, os mesmos pesos e as mesmas notas.
+  const q = quadro([], {}, 'Portal.tsx');
+  const conta = (modo, notas, papel = 'escola') => {
+    Object.assign(q.state, montarEstado(escola, { ...turma, regra: { ...REGRA, recuperacao: { ativo: true, modo } } }), { papel, notas, conselho: {}, avals: [{ id: 90, did: 13, per: 'p1', nome: 'Lista 1', peso: 2, extra: true }] });
+    q.state.avalMeta = { v13_p1_i1: { publicada: true }, v13_p1_pa: { publicada: true }, 90: { publicada: true }, r13_p1: { publicada: true }, v13_p2_i1: { publicada: true }, v13_p2_pa: { publicada: true }, r13_p2: { publicada: true }, f13: { publicada: false } };
+    q.fr = () => ({ p: 0, t: 0, linha: [] });
+    const x = q.mediaAno(27, 13, papel === 'aluno'), s = q.situacaoDisc(27, 13);
+    return { ano: x.ano, fin: x.fin, m: x.m, parcial: x.parcial, sit: s.t, ok: s.ok };
+  };
+  // 1: recuperação 'menor' troca a menor nota do período; ano abaixo da média com final lançada vira (ano + final) / 2 = 5,75 -> 5,8
+  assert.deepEqual(conta('menor', { '27-v13_p1_i1': 4, '27-v13_p1_pa': 8, '27-90': 6.5, '27-r13_p1': 7, '27-v13_p2_i1': 4, '27-f13': 6 }), { ano: 5.5, fin: 6, m: 5.8, parcial: true, sit: 'Abaixo da média', ok: false });
+  // 2: recuperação 'média' só vale se for maior que a média; 6,125 -> 6,1 e 6,5; ano 6,3 e período completo
+  assert.deepEqual(conta('media', { '27-v13_p1_i1': 5, '27-v13_p1_pa': 7.5, '27-90': 6, '27-r13_p1': 5, '27-v13_p2_i1': 6.5, '27-v13_p2_pa': 6.5 }), { ano: 6.3, fin: null, m: 6.3, parcial: false, sit: 'Na média', ok: true });
+  // 3: o aluno só conta o que está publicado: a final (10) fica de fora
+  assert.deepEqual(conta('menor', { '27-v13_p1_i1': 6, '27-v13_p1_pa': 6, '27-90': 6, '27-f13': 10 }, 'aluno'), { ano: 6, fin: null, m: 6, parcial: true, sit: 'Na média', ok: true });
 });

@@ -24,18 +24,31 @@ const semestre = (s: any) => s == null ? null : ({
   encerrado_em: s.encerrado_em == null ? null : s.encerrado_em.slice(0, 10),
 });
 
-// Regra de avaliação da escola. Enquanto o servidor não a entrega, vale um único período (o semestre), sem avaliação obrigatória:
-// as avaliações que o servidor guarda aparecem como atividades desse período, já publicadas, porque o servidor as mostra ao aluno.
-export const regraDoSemestre = (sem: any) => ({
-  tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: sem?.inicio ?? '', fim: sem?.fim ?? '', fechado: !!sem?.encerrado_em }],
-  itens: [] as any[], extras: { permitido: true, max: 99, peso: 100 }, participacao: { ativo: false, peso: 1 },
+// Regra de avaliação vazia: só para o visitante e para um servidor que ainda não a entrega (o canvas nunca fica sem regra).
+export const regraVazia = () => ({
+  tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: '', fim: '', fechado: false }],
+  itens: [] as any[], extras: { permitido: false, max: 0, peso: 1 }, participacao: { ativo: false, peso: 1 },
   recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false,
 });
+
+// O servidor guarda cada avaliação com id inteiro; o canvas as nomeia pela regra: v<disciplina>_<período>_<item>, _pa (participação),
+// r<disciplina>_<período> (recuperação), f<disciplina> (prova final). As atividades extras ficam com o id do servidor.
+export const idAval = (a: any) => a.tipo === 'obrigatoria' ? 'v' + a.disciplina_id + '_' + a.periodo_id + '_' + a.item_id
+  : a.tipo === 'participacao' ? 'v' + a.disciplina_id + '_' + a.periodo_id + '_pa'
+  : a.tipo === 'recuperacao' ? 'r' + a.disciplina_id + '_' + a.periodo_id
+  : a.tipo === 'final' ? 'f' + a.disciplina_id : a.id;
 
 export function montarEstado(usuario: any, estado: any) {
   const discs = estado.disciplinas.map((d: any) => ({ id: d.id, nome: d.nome, carga_horaria: d.carga_horaria, professor_id: d.professor_id,
     turma: String(d.turma_id ?? ''), sala: String(d.sala_id ?? ''), grade: d.grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: String(g.sala_id ?? d.sala_id ?? ''), sala_id: g.sala_id ?? null })) }));
-  const avals = estado.avaliacoes.map((a: any) => ({ id: a.id, did: a.disciplina_id, nome: a.nome, peso: a.peso, per: 'p1', extra: true }));
+  // avaliacoes: todas as do servidor (o aluno só recebe as publicadas). avals guarda só as extras; as demais o canvas deriva da regra.
+  const avaliacoes = estado.avaliacoes ?? [];
+  const avals = avaliacoes.filter((a: any) => a.tipo === 'extra').map((a: any) => ({ id: a.id, did: a.disciplina_id, per: a.periodo_id, nome: a.nome, peso: Number(a.peso), extra: true }));
+  const avalApi: Record<string, number> = {}, avalMeta: Record<string, any> = {}, idCanvas = new Map<number, any>();
+  for (const a of avaliacoes) {
+    const id = idAval(a); idCanvas.set(a.id, id); avalApi[id] = a.id;
+    avalMeta[id] = { publicada: !!a.publicada, prazo: a.prazo ?? '' };
+  }
   return {
     papel: usuario.perfil === 'professor' ? 'prof' : usuario.perfil,
     profId: usuario.perfil === 'professor' ? usuario.id : null, usuario,
@@ -61,8 +74,9 @@ export function montarEstado(usuario: any, estado: any) {
     })),
     discs,
     mats: Object.fromEntries(estado.matriculas.map((m: any) => [m.aluno_id + '-' + m.disciplina_id, true])),
-    avals, avalMeta: Object.fromEntries(avals.map((a: any) => [a.id, { publicada: true, prazo: '' }])), conselho: {}, regra: regraDoSemestre(estado.semestre),
-    notas: Object.fromEntries(estado.notas.map((n: any) => [n.aluno_id + '-' + n.avaliacao_id, n.valor])),
+    avals, avalMeta, avalApi, regra: estado.regra ?? regraVazia(),
+    conselho: Object.fromEntries((estado.conselho ?? []).map((c: any) => [c.aluno_id + '-' + c.disciplina_id, true])),
+    notas: Object.fromEntries(estado.notas.map((n: any) => [n.aluno_id + '-' + (idCanvas.get(n.avaliacao_id) ?? n.avaliacao_id), n.valor])),
     aulas: estado.aulas.map((a: any) => ({
       aula_id: a.id, disciplina_id: a.disciplina_id, data: a.data, hora_inicio: a.hora_inicio, hora_fim: a.hora_fim,
       status: a.status, origem: a.origem, remarcada_de: a.remarcada_de,
@@ -72,6 +86,6 @@ export function montarEstado(usuario: any, estado: any) {
     metricas: estado.metricas,
     selAluno: usuario.aluno_id ?? estado.alunos[0]?.id ?? null,
     selDisc: discs[0]?.id ?? null, notaDisc: discs[0]?.id ?? null,
-    notaAval: avals.find((a: any) => a.did === discs[0]?.id)?.id ?? '',
+    notaAval: '',
   };
 }
