@@ -310,7 +310,8 @@ try {
     await grade().getByText('Pedido recusado. O professor vê o motivo.', { exact: true }).waitFor({ state: 'visible' });
     await sair(); await entrar('marta@escola.com'); await abrirGrade();
     await grade().getByRole('tab', { name: /^Aulas extras/ }).click();
-    await grade().getByText(motivoRecusa, { exact: true }).waitFor({ state: 'visible' });
+    // pedidos de rodadas anteriores ficam no banco até o reseed e repetem o motivo: basta um visível
+    await grade().getByText(motivoRecusa, { exact: true }).first().waitFor({ state: 'visible' });
     const pedido = (await api('/pedidos')).corpo.find(p => p.id === pedidoId);
     assert.ok(pedido); assert.equal(pedido.status, 'recusada'); assert.equal(pedido.resposta, motivoRecusa);
   });
