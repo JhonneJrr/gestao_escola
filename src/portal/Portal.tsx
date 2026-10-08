@@ -4,13 +4,13 @@ import { DCLogic, criarDC } from "./dc";
 import Template from "./template";
 import { publicar, configurarRecarga } from "./loja";
 import { salvarOcupacoes, pedirGradeIA, erroGradeIA } from "./rede";
-import { montarEstado, fmt, pct, AVISO, TINTA, dataHoje, alunosLoja, matriculasDe, turmaDoAluno } from "./adaptador";
+import { montarEstado, regraDoSemestre, fmt, pct, AVISO, TINTA, dataHoje, alunosLoja, matriculasDe, turmaDoAluno } from "./adaptador";
 import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
 import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
   criarAluno, atualizarAluno, redefinirAluno, apagarAluno, criarDisciplina, atualizarDisciplina,
   salvarGrade, apagarDisciplina, criarTurma, matricular as matricularAPI, desmatricular as desmatricularAPI } from "./rede";
 import { criarAvaliacao, apagarAvaliacao, salvarNota, apagarNota, salvarChamada as salvarChamadaAPI,
-  atualizarAula, criarAula, criarAviso, atualizarAviso, apagarAviso } from "./rede";
+  atualizarAula, criarAula, criarAviso, atualizarAviso, apagarAviso, salvarMetaAvaliacao, salvarConselho, salvarRegra } from "./rede";
 
 const textoErro = erro => (erro && erro.detalhe) || 'Não consegui salvar. Confira a conexão e tente de novo.';
 const HOJE = dataHoje(new Date(), import.meta.env.DEV && new URLSearchParams(window.location.search).has('inicio'));
@@ -39,7 +39,7 @@ const gerarAulas = (d, de, ate) => {
 };
 const TELAS_POR = {
   escola: [{ id: 'painel', label: 'Painel' }, { id: 'semestre', label: 'Semestre' }, { id: 'professores', label: 'Professores' }, { id: 'alunos', label: 'Alunos' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'avisos', label: 'Avisos' }],
-  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'alunos', label: 'Meus alunos' }, { id: 'avisos', label: 'Avisos' }],
+  prof: [{ id: 'painel', label: 'Painel' }, { id: 'frequencia', label: 'Acadêmico' }, { id: 'alunos', label: 'Minhas turmas' }, { id: 'avisos', label: 'Avisos' }],
   aluno: []
 };
 const TELAS = TELAS_POR.escola;
@@ -54,27 +54,15 @@ const MOLAS = { fast: { k: 1500, z: 1 }, moderate: { k: 620, z: 0.82 }, slow: { 
 const ini = n => { const p = n.split(' ').filter(Boolean); return (p.length > 1 ? p[0][0] + p[1][0] : (p[0] || '').slice(0, 2)).toUpperCase(); };
 const br = d => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : '—'; };
 const FUNCOES = [
-  { nome: 'Agenda e chamada', curto: 'As aulas do dia, por horário', titulo: 'A chamada sai da agenda do dia.', desc: 'A grade semanal de cada disciplina gera as aulas do semestre. Toda manhã a agenda mostra as aulas de hoje, de todas as disciplinas, com o status de cada uma: agendada, chamada feita ou cancelada.',
-    passos: ['Abra a aula de hoje na agenda.', 'Toque em Todos presentes e marque só quem faltou.', 'Salve. A frequência de cada aluno recalcula na hora.'],
-    prof: 'Cancela, remarca ou cria uma aula extra pelo menu de cada aula. O calendário do mês mostra um ponto por aula.', aluno: 'Vê a própria frequência por disciplina, com aviso em marrom abaixo de 75%.' },
-  { nome: 'Notas e boletim', curto: 'Média ponderada, sem calculadora', titulo: 'Lance a nota. A média se calcula sozinha.', desc: 'Cada disciplina tem avaliações com peso, que somam 100. Ao lançar uma nota, a média ponderada do aluno recalcula; enquanto falta alguma avaliação, a média aparece como parcial.',
-    passos: ['Crie as avaliações da disciplina e os pesos.', 'Escolha o aluno e lance a nota de 0 a 10.', 'Errou? O × limpa a nota e ela volta para —.'],
-    prof: 'Exporta o boletim de cada aluno em CSV e vê, no painel, quais avaliações ainda estão sem nota.', aluno: 'Vê cada nota assim que é lançada, sem precisar perguntar.' },
-  { nome: 'Painel de risco', curto: 'Quem precisa de atenção, primeiro', titulo: 'Quem precisa de atenção aparece primeiro.', desc: 'O painel junta média e frequência de todas as disciplinas e coloca no topo quem está abaixo de 6 ou de 75%, com o motivo escrito ao lado do nome. Não é preciso montar filtro.',
+  { prev: 2, tela: 'Painel', recursos: [['Em risco', 'Abaixo da média ou de 75%, com o motivo.'], ['Aulas de hoje', 'Chamada pendente ou feita, com atalho.'], ['Avaliações sem nota', 'O que falta lançar no período.'], ['Ranking da turma', 'Médias da maior para a menor.']], nome: 'Painel', curto: 'Quem precisa de atenção, primeiro', titulo: 'A primeira tela já diz quem precisa de ajuda.', desc: 'O painel junta média e frequência de todas as disciplinas e coloca no topo quem está abaixo da média ou de 75%, com o motivo ao lado do nome. Também mostra as aulas de hoje e as avaliações que ainda estão sem nota.',
     passos: ['Entre no portal: o painel é a primeira tela.', 'Leia o motivo ao lado de cada nome.', 'Toque no aluno para abrir o detalhe e agir.'],
-    prof: 'Também vê o ranking da turma e a média e a frequência gerais, com o mínimo marcado.', aluno: 'Vê a própria situação no topo do painel: aprovado, em risco ou sem dados.' },
-  { nome: 'Disciplinas e grade', curto: 'Horários da semana, aulas geradas', titulo: 'Defina a grade uma vez. As aulas aparecem até o fim do semestre.', desc: 'Cada disciplina tem nome, carga horária e uma grade semanal: dia, início e fim. Ao salvar, o portal gera as aulas do semestre e avisa se um horário bate com outra disciplina.',
-    passos: ['Crie a disciplina com nome e carga horária.', 'Adicione os horários da semana.', 'Salve: o portal mostra quantas aulas gerou.'],
-    prof: 'Matricula e desmatricula alunos na mesma tela e exporta a frequência da turma.', aluno: 'Vê as próximas aulas no próprio painel, só para leitura.' },
-  { nome: 'Avisos', curto: 'Um mural, não três grupos', titulo: 'Um mural, não três grupos de mensagem.', desc: 'Publique uma vez e o aviso entra no topo do mural da turma e no painel de cada aluno, do mais novo ao mais antigo. A busca por título acha qualquer aviso antigo.',
-    passos: ['Escreva título, data e mensagem.', 'Publique.', 'Edite ou exclua quando precisar.'],
-    prof: 'Corrige uma data sem precisar mandar outra mensagem.', aluno: 'Acha a data da prova sem rolar conversa antiga.' },
-  { nome: 'Semestre', curto: 'Abre, roda, encerra e fica guardado', titulo: 'O semestre fecha e fica guardado.', desc: 'Só um semestre fica ativo, e tudo pertence a ele: disciplinas, aulas, notas e chamadas. Ao encerrar, notas e chamadas congelam e o resumo por disciplina vai para o histórico.',
-    passos: ['Abra o semestre com nome, início e fim.', 'Trabalhe nele o período todo.', 'Encerre: o resumo vai para o histórico, só leitura.'],
-    prof: 'Antes de encerrar, vê o resumo: alunos, média, frequência, aprovados e reprovados.', aluno: 'Continua vendo as notas do semestre encerrado, sem nada mudar depois.' },
-  { nome: 'Acesso do aluno', curto: 'Senha provisória, troca no 1º acesso', titulo: 'O acesso do aluno nasce com o cadastro.', desc: 'Ao cadastrar o aluno com um e-mail, o portal gera uma senha provisória e mostra uma única vez. No primeiro acesso, o aluno cria a própria senha antes de entrar.',
-    passos: ['Cadastre o aluno com o e-mail da escola.', 'Entregue a senha provisória, que aparece uma vez só.', 'No primeiro acesso, ele troca a senha e entra.'],
-    prof: 'Redefine a senha quando o aluno esquece, pelo painel do aluno.', aluno: 'Troca a própria senha quando quiser, pelo menu do avatar.' }
+    prof: 'Vê só os próprios alunos e as próprias aulas de hoje, com atalho para fazer a chamada.', aluno: 'Vê o próprio boletim, a frequência e os avisos da turma.' },
+  { prev: 3, tela: 'Acadêmico · Quadro semanal', recursos: [['Quadro semanal', 'A grade de todos, com choques marcados.'], ['Ano letivo', 'Provas, eventos e feriados por turma.'], ['Regra de avaliação', 'Períodos, provas e média mínima.'], ['Aula extra', 'O professor pede, a escola aprova.']], nome: 'Portal acadêmico', curto: 'Grade, ano letivo e notas num lugar só', titulo: 'Grade, calendário e notas no mesmo lugar.', desc: 'O Acadêmico junta o quadro semanal, o ano letivo com provas e eventos, as disciplinas de cada turma e a regra de avaliação da escola. O professor lança as notas na grade da turma, e a média do período sai sozinha.',
+    passos: ['A escola define períodos, provas e a média mínima.', 'Monte a grade de cada disciplina; o quadro avisa os choques.', 'O professor lança as notas e publica quando quiser.'],
+    prof: 'Pede aula extra, faz a chamada e lança notas só das turmas dele.', aluno: 'Vê a grade da turma, os eventos do ano e as notas publicadas.' },
+  { prev: 7, tela: 'Acadêmico · Agora', recursos: [['Em aula, livre ou ocupado', 'O status de cada professor, agora.'], ['Linha do agora', 'Atravessa a grade da semana.'], ['Quanto falta', 'Barra até o fim da aula.'], ['Filtro por professor', 'Um toque mostra a semana dele.']], nome: 'Aula ao vivo', curto: 'Quem está em aula agora', titulo: 'Quem está em aula, agora, sem perguntar.', desc: 'O quadro mostra cada professor em tempo real: em aula, livre ou ocupado, com a disciplina, a turma, a sala e quanto falta para acabar. Uma linha marca o horário atual na grade da semana.',
+    passos: ['Abra o Acadêmico: o quadro já começa no agora.', 'Veja quem está em aula e até que horas.', 'Toque num professor para filtrar a semana dele.'],
+    prof: 'Vê a própria aula de agora e a próxima, com atalho para a chamada.', aluno: 'Vê a aula atual da turma, a sala e o professor.' }
 ];
 function molaLinear(k, z, ms) {
   const w = Math.sqrt(k), pts = [], N = 40;
@@ -88,7 +76,7 @@ function molaLinear(k, z, ms) {
   return 'linear(' + pts.join(',') + ')';
 }
 
-const VISITANTE = { usuario: null, profs: [], profId: null, alunos: [], turmas: [], carga: 'ok', discs: [], semestre: null, historico: [], avisos: [], mats: {}, avals: [], notas: {}, aulas: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '' };
+const VISITANTE = { usuario: null, profs: [], profId: null, alunos: [], turmas: [], carga: 'ok', discs: [], semestre: null, historico: [], avisos: [], mats: {}, avals: [], avalMeta: {}, conselho: {}, regra: regraDoSemestre(null), notas: {}, aulas: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '' };
 
 class Component extends DCLogic {
   frameRef = React.createRef();
@@ -117,7 +105,7 @@ class Component extends DCLogic {
   }
   state = Object.assign({}, VISITANTE, {
     logado: false, papel: null, tela: 'inicio', papelEscolhido: 'prof', faqAberta: 0, loginEmail: '', loginSenha: '', loginErro: '',
-    funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, semPerm: null, rotaAviso: '', alunoErro: '',
+    funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, gnPer: null, gnCol: null, gnExtra: null, confExc: null, excluindo: false, hubMatAberta: null, semPerm: null, rotaAviso: '', alunoErro: '',
     q: '', idadeMin: '', mediaMin: '', ordem: 'nome', pagina: 1,
     painel: null, painelUlt: null, fNome: '', fIdade: '', fMat: '', fErro: '',
     fEmail: '', fOk: '', fGrade: [], fOcup: [], fTurma: '', gaEd: null, acadDisc: false, gaAbaIni: 'quadro', hubTurma: null, hubNova: false, hubNome: '', hubErro: '', hubMsg: null, hubGravando: false, ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
@@ -351,7 +339,7 @@ class Component extends DCLogic {
     const el = document.createElement('div');
     el.setAttribute('aria-hidden', 'true');
     const bg = kind === 'hov' ? (g.dataset.hl === 'dark' ? 'var(--texto-suave)' : 'var(--sunken)') : 'var(--texto)';
-    Object.assign(el.style, { position: 'absolute', left: '0', top: '0', width: '0px', height: '0px', boxSizing: 'border-box', pointerEvents: 'none', zIndex: kind === 'hov' ? '-2' : '-1', opacity: '0', background: bg });
+    Object.assign(el.style, { position: 'absolute', left: '0', top: '0', width: '0px', height: '0px', boxSizing: 'border-box', pointerEvents: 'none', zIndex: kind === 'hov' ? '-2' : '-1', opacity: '0', background: bg, borderRadius: g.dataset.pill != null ? '999px' : '' });
     if (getComputedStyle(g).position === 'static') g.style.position = 'relative';
     g.style.isolation = 'isolate';
     g.insertBefore(el, g.firstChild);
@@ -557,7 +545,7 @@ class Component extends DCLogic {
   }
   linhasBoletim(aid) {
     const st = this.state, r = [['Disciplina', 'Avaliação', 'Peso', 'Nota', 'Média da disciplina']];
-    st.discs.filter(d => st.mats[aid + '-' + d.id]).forEach(d => { const m = this.discMedia(aid, d.id); st.avals.filter(v => v.did === d.id).forEach(v => { const n = st.notas[aid + '-' + v.id]; r.push([d.nome, v.nome, v.peso, n == null ? '' : fmt(n), m ? fmt(m.m) : '']); }); });
+    st.discs.filter(d => st.mats[aid + '-' + d.id]).forEach(d => { const m = this.discMedia(aid, d.id); this.avalsDisc(d.id).forEach(v => { const n = this.nota(aid, v.id, st.papel === 'aluno'); r.push([d.nome, (v.per && v.per !== 'final' && !v.rec ? (st.regra.periodos.find(p => p.id === v.per) || {}).nome + ' · ' : '') + v.nome, v.peso || '', n == null ? '' : fmt(n), m ? fmt(m.m) : '']); }); });
     return r;
   }
   irDia(d) {
@@ -698,14 +686,29 @@ class Component extends DCLogic {
       aplicarIADemo(this, nome);
     }
   }
+  // Excluir disciplina pede confirmação; com nota ou chamada o servidor recusa (409) e o diálogo só explica.
+  pedirExcluirDisc(id) {
+    const S = this.state, d = S.discs.find(x => x.id === id); if (!d) return;
+    const temNota = this.avalsDisc(id).some(v => Object.keys(S.notas).some(k => k.endsWith('-' + v.id) && S.notas[k] != null));
+    const temCham = S.aulas.some(a => a.disciplina_id === id && a.chamada && Object.keys(a.chamada).length);
+    const mats = Object.keys(S.mats).filter(k => S.mats[k] && k.split('-')[1] === String(id)).length, aulas = S.aulas.filter(a => a.disciplina_id === id).length;
+    this.setState({ gaEd: null, confExc: { id, nome: d.nome, bloq: temNota || temCham, aulas, mats, erro: '' } });
+  }
   async excluirDisc(id) {
-    try { await apagarDisciplina(id); await this.recarregar(); this.setState({ matMsg: null }); }
-    catch (erro) { this.setState({ matMsg: { erro: true, t: erro.detalhe } }); }
+    if (this.state.excluindo) return;
+    this.setState({ excluindo: true });
+    try {
+      await apagarDisciplina(id); await this.recarregar();
+      this.setState(s => ({ matMsg: null, confExc: null, selDisc: (s.discs.find(x => x.id !== id) || {}).id || null, rotaAviso: 'Disciplina excluída.' }));
+      if (this.state.acadDisc) this.voltarAcad();
+    } catch (erro) {
+      this.setState(s => ({ matMsg: { erro: true, t: textoErro(erro) }, confExc: s.confExc ? Object.assign({}, s.confExc, { bloq: erro.status === 409 || s.confExc.bloq, erro: textoErro(erro) }) : null }));
+    } finally { this.setState({ excluindo: false }); }
   }
   async desmatricular(aid, did) {
     const st = this.state, k = aid + '-' + did;
     if (!this.ativo()) return;
-    const temNota = st.avals.some(v => v.did === did && st.notas[aid + '-' + v.id] != null);
+    const temNota = this.avalsDisc(did).some(v => st.notas[aid + '-' + v.id] != null);
     const temFreq = st.aulas.some(a => a.disciplina_id === did && a.chamada && a.chamada[aid] != null);
     if (temNota || temFreq) return this.setState({ confDesm: null, desmErro: { k, t: 'Aluno já tem notas ou frequência nessa disciplina.' } });
     const al = st.alunos.find(a => a.id === aid), d = st.discs.find(x => x.id === did);
@@ -722,7 +725,7 @@ class Component extends DCLogic {
     if (S.hubGravando) return;
     if (!this.ativo()) return this.setState({ hubMsg: { erro: true, t: 'Semestre encerrado: somente leitura.' } });
     if (matriculado) {
-      const temNota = S.avals.some(v => v.did === did && S.notas[aid + '-' + v.id] != null), temFreq = S.aulas.some(a => a.disciplina_id === did && a.chamada && a.chamada[aid] != null);
+      const temNota = this.avalsDisc(did).some(v => S.notas[aid + '-' + v.id] != null), temFreq = S.aulas.some(a => a.disciplina_id === did && a.chamada && a.chamada[aid] != null);
       if (temNota || temFreq) return this.setState({ hubMsg: { erro: true, t: al.nome + ' já tem notas ou frequência em ' + d.nome + ': não dá para desmatricular.' } });
     }
     this.setState({ hubGravando: true });
@@ -775,31 +778,65 @@ class Component extends DCLogic {
     const m = this.mainRef.current; if (m) m.scrollTop = 0;
   }
   voltarAcad() { this.setState({ acadDisc: false, gaAbaIni: 'disc' }); this.atualizarURL('frequencia'); }
-  valsHub(ehEscola) {
-    const S = this.state, ht = S.hubTurma;
-    if (!ehEscola) return { hubVis: false, turmaVis: false, listaVis: true, hubVoltarVis: false, hubNovaBtnVis: false, hubNovaVis: false };
-    const vs = S.alunos.map(a => this.vis(a));
-    const stat = arr => { const cm = arr.filter(a => a.s && a.s.media != null), cf = arr.filter(a => a.s && a.s.freq != null); return { media: cm.length ? cm.reduce((x, a) => x + a.s.media, 0) / cm.length : null, freq: cf.length ? cf.reduce((x, a) => x + a.s.freq, 0) / cf.length : null, risco: arr.filter(a => a.s && ((a.s.media != null && a.s.media < 6) || (a.s.freq != null && a.s.freq < 0.75))).length }; };
-    const grupos = S.turmas.map(t => ({ id: t.id, nome: t.nome })).concat(S.alunos.some(a => !a.turma) ? [{ id: '__sem', nome: 'Sem turma' }] : []);
-    const deT = id => vs.filter(a => id === '__sem' ? !a.turma : a.turma === id);
-    const discsT = id => id === '__sem' ? [] : S.discs.filter(d => d.turma === id);
-    const cards = grupos.map(g => { const al = deT(g.id), x = stat(al), ds = discsT(g.id), aulas = ds.reduce((n, d) => n + (d.grade || []).length, 0), sem = g.id === '__sem';
-      return { nome: g.nome, nTxt: al.length + (al.length === 1 ? ' aluno' : ' alunos'), media: x.media == null ? '—' : fmt(x.media), mediaCor: x.media != null && x.media < 6 ? AVISO : TINTA, freq: x.freq == null ? '—' : pct(x.freq), freqCor: x.freq != null && x.freq < 0.75 ? AVISO : TINTA, risco: String(x.risco), riscoCor: x.risco ? AVISO : TINTA,
-        discs: ds.map(d => ({ nome: d.nome })), temDiscs: ds.length > 0, discVazio: sem ? 'Sem turma, o aluno não entra automaticamente em disciplinas.' : 'Nenhuma disciplina ligada a esta turma.', aulasTxt: sem ? '' : aulas + (aulas === 1 ? ' aula por semana' : ' aulas por semana'),
-        borda: sem ? '1px dashed var(--aviso)' : '1px solid var(--borda-fraca)', abrir: () => this.setState({ hubTurma: g.id, hubMsg: null, q: '', pagina: 1 }) }; });
-    const r = { hubVis: ht == null, turmaVis: ht != null && ht !== '__sem', listaVis: ht != null, hubVoltarVis: ht != null, hubVoltar: () => this.setState({ hubTurma: null, hubMsg: null }), hubCards: cards,
-      hubNovaBtnVis: ht == null, hubNovaVis: !!S.hubNova, abrirHubNova: () => this.setState({ hubNova: true, hubNome: '', hubErro: '' }), fecharHubNova: () => this.setState({ hubNova: false, hubErro: '' }), hubNome: S.hubNome || '', setHubNome: e => this.setState({ hubNome: e.target.value, hubErro: '' }), hubErro: S.hubErro || '', hubCriar: e => this.hubCriarTurma(e),
-      hubMsgVis: !!S.hubMsg, hubMsg: S.hubMsg ? S.hubMsg.t : '', hubMsgCor: S.hubMsg && S.hubMsg.erro ? AVISO : TINTA, hubMsgBorda: S.hubMsg && S.hubMsg.erro ? AVISO : 'var(--borda)', hubMsgBg: S.hubMsg && S.hubMsg.erro ? 'var(--aviso-suave)' : 'var(--sunken)', fecharHubMsg: () => this.setState({ hubMsg: null }) };
-    if (ht != null) {
-      const g = grupos.find(x => x.id === ht) || { nome: 'Turma' }, al = deT(ht), x = stat(al), ds = discsT(ht);
-      Object.assign(r, { turmaNome: g.nome, turmaStats: [['Alunos', String(al.length), TINTA], ['Média', x.media == null ? '—' : fmt(x.media), x.media != null && x.media < 6 ? AVISO : TINTA], ['Frequência', x.freq == null ? '—' : pct(x.freq), x.freq != null && x.freq < 0.75 ? AVISO : TINTA], ['Em risco', String(x.risco), x.risco ? AVISO : TINTA]].map(([l, v, c]) => ({ l, v, c })),
-        turmaDiscs: ds.map(d => ({ nome: d.nome, prof: d.professor_id != null ? (S.profs.find(p => p.id === d.professor_id) || {}).nome || 'Sem professor' : 'Sem professor', abrir: () => { this.setState({ selDisc: d.id, subAba: 'alunos' }); this.ir('disciplinas'); } })), turmaTemDiscs: ds.length > 0, turmaSemDiscs: !ds.length,
-        turmaGrade: [1, 2, 3, 4, 5].map(dia => ({ dia: DIA_C[dia], itens: ds.flatMap(d => (d.grade || []).filter(h => h.dia_semana === dia).map(h => ({ hora: h.hora_inicio, nome: d.nome, k: hm(h.hora_inicio) }))).sort((a, b) => a.k - b.k), vazio: !ds.some(d => (d.grade || []).some(h => h.dia_semana === dia)) })),
-        matTemDiscs: ds.length > 0 && al.length > 0, matCols: 'minmax(160px,1.4fr) repeat(' + Math.max(1, ds.length) + ',minmax(110px,1fr))',
-        matCab: ds.map(d => ({ nome: d.nome, n: al.filter(a => S.mats[a.id + '-' + d.id]).length + '/' + al.length, todos: () => this.hubTodos(d, al) })),
-        matLinhas: al.map(a => ({ nome: a.nome, cels: ds.map(d => { const on = !!S.mats[a.id + '-' + d.id]; return { on, txt: on ? 'Matriculado' : '—', bg: on ? 'var(--texto)' : 'var(--superficie)', cor: on ? 'var(--fundo)' : 'var(--texto-suave)', label: (on ? 'Desmatricular ' : 'Matricular ') + a.nome + (on ? ' de ' : ' em ') + d.nome, ir: () => this.hubToggle(a.id, d.id) }; }) })) });
-    }
-    return r;
+  valsHub(ehEscola, meuProf, E, st) {
+      const S = this.state, esc = ehEscola, ht = S.hubTurma;
+      if (!esc && !meuProf) return { listaVisF: true, hubVis: false, turmaVis: false, profTurmaVis: false, listaVis: true, hubVoltarVis: false, hubNovaBtnVis: false, hubNovaVis: false, hubEstadoVis: false };
+      if (!esc) {
+        if (E) return { listaVisF: false, hubVis: false, turmaVis: false, profTurmaVis: false, listaVis: false, hubVoltarVis: false, hubNovaBtnVis: false, hubNovaVis: false, hubMsgVis: false, hubEstadoVis: true, hubEstado: E, hubEstadoMsg: E === 'vazio' ? 'Você ainda não tem turmas neste semestre. Fale com a secretaria.' : '' };
+        const tid = d => d.turma || '__semT', tids = [...new Set(st.discs.map(tid))];
+        const dsT = id => st.discs.filter(d => tid(d) === id), alT = id => st.alunos.filter(a => dsT(id).some(d => st.mats[a.id + '-' + d.id]));
+        const nomeTT = id => id === '__semT' ? 'Sem turma' : this.nomeT(id);
+        const statP = (al, ds) => { const ms = [], fs = []; let risco = 0;
+          al.forEach(a => { const m = [], q = []; ds.forEach(d => { if (!st.mats[a.id + '-' + d.id]) return; const x = this.discMedia(a.id, d.id); if (x) m.push(x.m); const r2 = this.fr(a.id, d.id); if (r2.t) q.push(r2.p / r2.t); });
+            const mm = m.length ? m.reduce((x, y) => x + y, 0) / m.length : null, ff = q.length ? q.reduce((x, y) => x + y, 0) / q.length : null;
+            if (mm != null) ms.push(mm); if (ff != null) fs.push(ff); if ((mm != null && mm < 6) || (ff != null && ff < 0.75)) risco++; });
+          return { media: ms.length ? ms.reduce((x, y) => x + y, 0) / ms.length : null, freq: fs.length ? fs.reduce((x, y) => x + y, 0) / fs.length : null, risco }; };
+        const pend = (al, ds) => ds.reduce((n, d) => n + this.avalsPer(d.id, this.perAtual().id, st).reduce((k, v) => k + al.filter(a => st.mats[a.id + '-' + d.id] && st.notas[a.id + '-' + v.id] == null).length, 0), 0);
+        const abrirT = id => { const ds = dsT(id), d0 = ds.find(d => d.id === S.selDisc) || ds[0]; this.setState({ hubTurma: id, selDisc: d0 ? d0.id : null, gnMsg: null, gnDraft: {}, q: '', pagina: 1 }); };
+        const cards = tids.map(id => { const al = alT(id), ds = dsT(id), x = statP(al, ds), p = pend(al, ds);
+          return { nome: nomeTT(id), nTxt: al.length + (al.length === 1 ? ' aluno' : ' alunos'), media: x.media == null ? '—' : fmt(x.media), mediaCor: x.media != null && x.media < 6 ? AVISO : TINTA, freq: x.freq == null ? '—' : pct(x.freq), freqCor: x.freq != null && x.freq < 0.75 ? AVISO : TINTA, risco: String(x.risco), riscoCor: x.risco ? AVISO : TINTA,
+            discs: ds.map(d => ({ nome: d.nome })), temDiscs: ds.length > 0, aulasTxt: p ? p + (p === 1 ? ' nota a lançar' : ' notas a lançar') : 'Notas em dia', borda: '1px solid var(--borda-fraca)', abrir: () => abrirT(id) }; });
+        const ht2 = ht != null && tids.includes(ht) ? ht : null;
+        const r = { hubEstadoVis: false, hubMsgVis: false, hubNovaBtnVis: false, hubNovaVis: false, turmaVis: false, hubVis: ht2 == null, profTurmaVis: ht2 != null, listaVis: ht2 != null, listaVisF: ht2 != null && alT(ht2).length > 0,
+          hubVoltarVis: ht2 != null, hubVoltarTxt: 'Minhas turmas', hubVoltar: () => this.setState({ hubTurma: null, gnMsg: null, gnDraft: {} }), hubCards: cards, profHubVazio: !tids.length };
+        if (ht2 != null) { const ds = dsT(ht2), sel = ds.find(d => d.id === S.selDisc) || ds[0];
+          Object.assign(r, { profTurmasL: tids.map(id => ({ nome: nomeTT(id), on: id === ht2, bg: id === ht2 ? 'var(--texto)' : 'var(--superficie)', cor: id === ht2 ? 'var(--fundo)' : 'var(--texto)', borda: id === ht2 ? 'var(--texto)' : 'var(--borda)', ir: () => abrirT(id) })),
+            profVariasDiscs: ds.length > 1, profUmaDisc: ds.length === 1, profDiscNome: sel ? sel.nome : '', profTurmaMuitas: tids.length > 1,
+            profDiscsL: ds.map(d => { const on = sel && d.id === sel.id; return { nome: d.nome, on: !!on, peso: on ? 600 : 500, barra: on ? 'var(--texto)' : 'transparent', cor: on ? 'var(--texto)' : 'var(--texto-suave)', ir: () => this.setState({ selDisc: d.id, gnMsg: null, gnDraft: {} }) }; }),
+            profSemAlunos: !alT(ht2).length }); }
+        return r;
+      }
+      if (E) return { listaVisF: false, hubVis: false, turmaVis: false, listaVis: false, hubVoltarVis: false, hubNovaBtnVis: E === 'vazio', hubNovaVis: !!S.hubNova && E === 'vazio', hubEstadoVis: true, hubEstado: E, hubEstadoMsg: E === 'vazio' ? 'Nenhuma turma cadastrada. Crie a primeira turma.' : '',
+        abrirHubNova: () => this.setState({ hubNova: true, hubNome: '', hubErro: '' }), fecharHubNova: () => this.setState({ hubNova: false, hubErro: '' }), hubNome: S.hubNome || '', setHubNome: e => this.setState({ hubNome: e.target.value, hubErro: '' }), hubErro: S.hubErro || '', hubCriar: e => this.hubCriarTurma(e), hubMsgVis: false };
+      const vs = S.alunos.map(a => this.vis(a));
+      const stat = arr => { const cm = arr.filter(a => a.s && a.s.media != null), cf = arr.filter(a => a.s && a.s.freq != null); return { media: cm.length ? cm.reduce((x, a) => x + a.s.media, 0) / cm.length : null, freq: cf.length ? cf.reduce((x, a) => x + a.s.freq, 0) / cf.length : null, risco: arr.filter(a => a.s && ((a.s.media != null && a.s.media < 6) || (a.s.freq != null && a.s.freq < 0.75))).length }; };
+      const grupos = S.turmas.map(t => ({ id: t.id, nome: t.nome })).concat(S.alunos.some(a => !a.turma) ? [{ id: '__sem', nome: 'Sem turma' }] : []);
+      const deT = id => vs.filter(a => id === '__sem' ? !a.turma : a.turma === id);
+      const discsT = id => id === '__sem' ? [] : S.discs.filter(d => d.turma === id);
+      const cards = grupos.map(g => { const al = deT(g.id), x = stat(al), ds = discsT(g.id), aulas = ds.reduce((n, d) => n + (d.grade || []).length, 0), sem = g.id === '__sem';
+        return { nome: g.nome, nTxt: al.length + (al.length === 1 ? ' aluno' : ' alunos'), media: x.media == null ? '—' : fmt(x.media), mediaCor: x.media != null && x.media < 6 ? AVISO : TINTA, freq: x.freq == null ? '—' : pct(x.freq), freqCor: x.freq != null && x.freq < 0.75 ? AVISO : TINTA, risco: String(x.risco), riscoCor: x.risco ? AVISO : TINTA,
+          discs: ds.map(d => ({ nome: d.nome })), temDiscs: ds.length > 0, discVazio: sem ? 'Sem turma, o aluno não entra automaticamente em disciplinas.' : 'Nenhuma disciplina ligada a esta turma.', aulasTxt: sem ? '' : aulas + (aulas === 1 ? ' aula por semana' : ' aulas por semana'),
+          borda: sem ? '1px dashed var(--aviso)' : '1px solid var(--borda-fraca)', abrir: () => this.setState({ hubTurma: g.id, hubMsg: null, q: '', pagina: 1 }) }; });
+      const r = { hubVoltarTxt: 'Turmas', profTurmaVis: false, hubEstadoVis: false, listaVisF: ht != null, hubVis: ht == null, turmaVis: ht != null && ht !== '__sem', listaVis: ht != null, hubVoltarVis: ht != null, hubVoltar: () => this.setState({ hubTurma: null, hubMsg: null }), hubCards: cards,
+        hubNovaBtnVis: ht == null, hubNovaVis: !!S.hubNova, abrirHubNova: () => this.setState({ hubNova: true, hubNome: '', hubErro: '' }), fecharHubNova: () => this.setState({ hubNova: false, hubErro: '' }), hubNome: S.hubNome || '', setHubNome: e => this.setState({ hubNome: e.target.value, hubErro: '' }), hubErro: S.hubErro || '', hubCriar: e => this.hubCriarTurma(e),
+        hubMsgVis: !!S.hubMsg, hubMsg: S.hubMsg ? S.hubMsg.t : '', hubMsgCor: S.hubMsg && S.hubMsg.erro ? AVISO : TINTA, hubMsgBorda: S.hubMsg && S.hubMsg.erro ? AVISO : 'var(--borda)', hubMsgBg: S.hubMsg && S.hubMsg.erro ? 'var(--aviso-suave)' : 'var(--sunken)', fecharHubMsg: () => this.setState({ hubMsg: null }) };
+      if (ht != null) {
+        const g = grupos.find(x => x.id === ht) || { nome: 'Turma' }, al = deT(ht), x = stat(al), ds = discsT(ht);
+        Object.assign(r, { turmaNome: g.nome, turmaStats: [['Alunos', String(al.length), TINTA], ['Média', x.media == null ? '—' : fmt(x.media), x.media != null && x.media < 6 ? AVISO : TINTA], ['Frequência', x.freq == null ? '—' : pct(x.freq), x.freq != null && x.freq < 0.75 ? AVISO : TINTA], ['Em risco', String(x.risco), x.risco ? AVISO : TINTA]].map(([l, v, c]) => ({ l, v, c })),
+          turmaDiscs: ds.map(d => ({ nome: d.nome, prof: d.professor_id != null ? (S.profs.find(p => p.id === d.professor_id) || {}).nome || 'Sem professor' : 'Sem professor', abrir: () => { this.setState({ selDisc: d.id, subAba: 'alunos' }); this.ir('disciplinas'); } })), turmaTemDiscs: ds.length > 0, turmaSemDiscs: !ds.length,
+          turmaGrade: [1, 2, 3, 4, 5].map(dia => ({ dia: DIA_C[dia], itens: ds.flatMap(d => (d.grade || []).filter(h => h.dia_semana === dia).map(h => ({ hora: h.hora_inicio, nome: d.nome, k: hm(h.hora_inicio) }))).sort((a, b) => a.k - b.k), vazio: !ds.some(d => (d.grade || []).some(h => h.dia_semana === dia)) })),
+          turmaSemAlunos: !al.length, listaVisF: al.length > 0, turmaSemAlunosTxt: 'Nenhum aluno nesta turma. Cadastre um aluno com a turma ' + g.nome + ' para ele entrar nas disciplinas dela.', matTemDiscs: ds.length > 0 && al.length > 0, matResumo: (() => { const falt = ds.reduce((n, d) => n + al.filter(a => !S.mats[a.id + '-' + d.id]).length, 0); return !ds.length ? '' : !al.length ? 'Sem alunos para matricular.' : falt ? falt + (falt === 1 ? ' matrícula faltando' : ' matrículas faltando') : 'Turma inteira matriculada em tudo.'; })(), matCols: 'minmax(160px,1.4fr) repeat(' + Math.max(1, ds.length) + ',minmax(110px,1fr))',
+          matDiscs: ds.map(d => { const dentro = al.filter(a => S.mats[a.id + '-' + d.id]), fora = al.filter(a => !S.mats[a.id + '-' + d.id]), ab = S.hubMatAberta === d.id, ro = !this.ativo();
+            return { nome: d.nome, prof: d.professor_id != null ? (S.profs.find(p => p.id === d.professor_id) || {}).nome || 'Sem professor' : 'Sem professor', n: al.length ? dentro.length + ' de ' + al.length + ' matriculados' : 'Sem alunos na turma',
+              horarios: (d.grade || []).length ? d.grade.map(h => DIA_C[h.dia_semana] + ' ' + h.hora_inicio).join(', ') : 'sem horário', abrir: () => { this.setState({ selDisc: d.id, subAba: 'alunos' }); this.ir('disciplinas'); }, gerVis: al.length > 0,
+              completo: al.length > 0 && !fora.length, temFora: fora.length > 0, foraTxt: fora.length === 1 ? 'Fora: ' : 'Fora (' + fora.length + '): ', fora: fora.map(a => ({ nome: a.nome.split(' ')[0], label: 'Matricular ' + a.nome + ' em ' + d.nome, ir: () => this.hubToggle(a.id, d.id) })),
+              bar: 'scaleX(' + (al.length ? dentro.length / al.length : 0).toFixed(3) + ')', aberto: ab, gerTxt: ab ? 'Fechar' : 'Gerenciar', ger: () => this.setState({ hubMatAberta: ab ? null : d.id }),
+              todosVis: fora.length > 1 && !ro, todos: () => this.hubTodos(d, al),
+              alunos: al.map(a => { const on = !!S.mats[a.id + '-' + d.id]; return { nome: a.nome, on, marca: on ? 'var(--texto)' : 'transparent', borda: on ? 'var(--texto)' : 'var(--borda)', check: on ? 1 : 0, label: (on ? 'Desmatricular ' : 'Matricular ') + a.nome + (on ? ' de ' : ' em ') + d.nome, ir: () => this.hubToggle(a.id, d.id) }; }) }; }),
+          matCab: ds.map(d => ({ nome: d.nome, n: al.filter(a => S.mats[a.id + '-' + d.id]).length + '/' + al.length, todos: () => this.hubTodos(d, al) })),
+          matLinhas: al.map(a => ({ nome: a.nome, cels: ds.map(d => { const on = !!S.mats[a.id + '-' + d.id]; return { on, txt: on ? 'Matriculado' : '—', bg: on ? 'var(--texto)' : 'var(--superficie)', cor: on ? 'var(--fundo)' : 'var(--texto-suave)', label: (on ? 'Desmatricular ' : 'Matricular ') + a.nome + (on ? ' de ' : ' em ') + d.nome, ir: () => this.hubToggle(a.id, d.id) }; }) })) });
+      }
+      return r;
   }
   abrirChamada(au) { this.abrirPainel({ tipo: 'chamada', id: au.aula_id }, { cham: Object.assign({}, au.chamada || {}) }); }
   async salvarChamada() {
@@ -977,10 +1014,154 @@ class Component extends DCLogic {
       this.entrarAnimado(st.primeiroPapel);
     } catch (falha) { erro(falha.detalhe); }
   }
-  discMedia(aid, did) {
-    const av = this.state.avals.filter(v => v.did === did); let s = 0, p = 0, falta = 0;
-    av.forEach(v => { const n = this.state.notas[aid + '-' + v.id]; if (n == null) falta++; else { s += n * v.peso; p += v.peso; } });
-    return p ? { m: s / p, parcial: falta > 0 } : null;
+  valsGrade(st, selD, bloqueado, ehEscola) {
+    const R = st.regra, als = st.alunos.filter(a => st.mats[a.id + '-' + selD.id]), dr = st.gnDraft || {}, meta = st.avalMeta || {}, mn = R.mediaMin, r = {};
+    const perSel = st.gnPer && (st.gnPer === 'final' || R.periodos.some(p => p.id === st.gnPer)) ? st.gnPer : this.perAtual().id;
+    const ehFinal = perSel === 'final', perObj = R.periodos.find(p => p.id === perSel), travado = bloqueado || !!(perObj && perObj.fechado);
+    const fN = n => (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
+    const tab = (id, label, sub) => ({ label, sub, on: id === perSel, peso: id === perSel ? 600 : 500, barra: id === perSel ? 'var(--texto)' : 'transparent', cor: id === perSel ? 'var(--texto)' : 'var(--texto-suave)', ir: () => this.setState({ gnPer: id, gnCol: null, gnExtra: null, gnMsg: null, gnDraft: {} }) });
+    r.gnPers = R.periodos.map(p => tab(p.id, p.nome, p.fechado ? 'Fechado' : HOJE >= p.inicio && HOJE <= p.fim ? 'Atual' : HOJE < p.inicio ? 'A começar' : 'Aberto')).concat([tab('final', 'Resultado do ano', R.final.ativo ? 'com prova final' : 'média dos períodos')]);
+    r.gnRegra = (R.itens.every(i => i.peso === 1) ? 'Média simples' : 'Média com pesos') + (R.recuperacao.ativo ? ' · recuperação ' + (R.recuperacao.modo === 'menor' ? 'substitui a menor nota' : 'substitui a média') : '') + ' · mínimo ' + fN(mn);
+    r.gnModoPer = !ehFinal; r.gnModoFinal = ehFinal; r.gnTem = als.length > 0; r.gnSemAlunos = !als.length; r.gnSemAvals = false;
+    r.gnTravado = !!(perObj && perObj.fechado); r.gnTravadoTxt = perObj && perObj.fechado ? perObj.nome + ' fechado pela escola: notas travadas.' : '';
+    r.gnMsg = st.gnMsg ? st.gnMsg.t : ''; r.gnMsgCor = st.gnMsg && st.gnMsg.erro ? AVISO : TINTA;
+    const mover = (ri, ci, d) => { const el = document.querySelector('[data-gn="' + (ri + d) + '-' + ci + '"]'); if (el && !el.disabled) { el.focus(); if (el.select) el.select(); } else if (document.activeElement) document.activeElement.blur(); };
+    const celula = (a, v, ri, ci, offExtra) => {
+      const key = a.id + '-' + v.id, n = st.notas[key], d = dr[key], inval = d != null && String(d).trim() !== '' && !this.notaOk(d), atual = d != null && String(d).trim() !== '' && !inval ? parseFloat(String(d).replace(',', '.')) : n, off = travado || offExtra;
+      return { val: d != null ? d : n != null ? fmt(n) : '', gn: ri + '-' + ci, label: 'Nota de ' + a.nome + ' em ' + v.nome, off, ph: off && n == null ? '' : '—',
+        cor: atual != null && atual < mn ? AVISO : TINTA, bg: off ? 'var(--fundo)' : atual != null && atual < mn ? 'var(--aviso-suave)' : 'var(--superficie)', borda: inval ? AVISO : d != null ? TINTA : 'var(--borda-fraca)',
+        mudar: e => { const x = e.target.value; this.setState(s => ({ gnDraft: Object.assign({}, s.gnDraft, { [key]: x }), gnMsg: null })); },
+        salvar: () => this.salvarNotaGrade(key, a.nome, v.nome),
+        tecla: e => { if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); mover(ri, ci, e.shiftKey ? -1 : 1); } else if (e.key === 'ArrowUp') { e.preventDefault(); mover(ri, ci, -1); } else if (e.key === 'Escape') this.setState(s => { const g = Object.assign({}, s.gnDraft); delete g[key]; return { gnDraft: g }; }); },
+        podeLimpar: n != null && d == null && !off, limparLabel: 'Limpar nota de ' + a.nome + ' em ' + v.nome,
+        limpar: () => this.limparNotaGrade(a, v) };
+    };
+    if (!ehFinal) {
+      const cols = this.avalsPer(selD.id, perSel).concat(R.recuperacao.ativo ? [Object.assign({ id: this.recId(selD.id, perSel), nome: 'Recuperação', tipo: 'Recuperação', rec: true }, meta[this.recId(selD.id, perSel)] || {})] : []);
+      const norm = cols.filter(c => !c.rec); let lanc = 0; norm.forEach(c => als.forEach(a => { if (st.notas[a.id + '-' + c.id] != null) lanc++; })); const tot = norm.length * als.length;
+      r.gnProg = lanc + ' de ' + tot + ' notas lançadas'; r.gnProgBar = 'scaleX(' + (tot ? lanc / tot : 0).toFixed(3) + ')';
+      r.gnGrid = 'minmax(180px,1.4fr) ' + cols.map(c => c.rec ? '120px' : '100px').join(' ') + ' 112px';
+      r.gnCols = cols.map(c => { const falta = !c.rec && als.some(a => st.notas[a.id + '-' + c.id] == null), atras = !!c.prazo && c.prazo < HOJE && falta, on = st.gnCol === c.id;
+        return { nome: c.nome, sub: c.rec ? 'só abaixo de ' + fN(mn) : c.extra ? 'Extra · peso ' + c.peso : c.tipo + (c.peso !== 1 ? ' · peso ' + c.peso : ''), prazo: c.prazo ? (atras ? 'atrasada · ' : 'até ') + ddmm(c.prazo) : c.rec ? '' : 'sem prazo', prazoCor: atras ? AVISO : 'var(--texto-suave)',
+          pub: c.publicada ? 'Publicada' : 'Rascunho', pubCor: c.publicada ? TINTA : 'var(--texto-suave)', pubPonto: c.publicada ? 'var(--texto)' : 'transparent', bg: on ? 'var(--sunken)' : 'transparent', borda: c.extra ? '1px dashed var(--borda)' : '1px solid transparent', on,
+          ir: () => this.setState(s => ({ gnCol: s.gnCol === c.id ? null : c.id, gnExtra: null })) }; });
+      r.gnLinhas = als.map((a, ri) => { const base = this.mediaPer(a.id, selD.id, perSel, false, dr, true), mp = this.mediaPer(a.id, selD.id, perSel, false, dr), abaixo = !!(mp && mp.m < mn);
+        return { nome: a.nome, mat: a.mat, abaixo, cels: cols.map((v, ci) => { const precisa = base && base.m < mn, temRec = st.notas[a.id + '-' + v.id] != null; return celula(a, v, ri, ci, v.rec && !precisa && !temRec); }),
+          mediaTxt: mp ? fmt(mp.m) : '—', mediaCor: abaixo ? AVISO : TINTA, mediaBg: abaixo ? 'var(--aviso-suave)' : 'transparent', mediaSub: !mp ? '' : mp.parcial ? 'parcial' : mp.rec ? 'com recuperação' : 'fechada' }; });
+      const cs = cols.find(c => c.id === st.gnCol);
+      r.gnColVis = !!cs;
+      if (cs) { const temN = als.some(a => st.notas[a.id + '-' + cs.id] != null), setM = o => this.salvarMetaAval(cs, o);
+        Object.assign(r, { gnColNome: cs.nome, gnColSub: cs.rec ? 'Recuperação do período · ' + (R.recuperacao.modo === 'menor' ? 'substitui a menor nota' : 'substitui a média, se for maior') : cs.extra ? 'Atividade extra do professor · peso ' + cs.peso : 'Obrigatória da escola · ' + cs.tipo + ' · peso ' + cs.peso,
+          gnColPrazo: cs.prazo || '', gnColPrazoOff: bloqueado, setGnColPrazo: e => setM({ prazo: e.target.value }),
+          gnColPub: { on: !!cs.publicada, label: cs.publicada ? 'Publicada · os alunos já veem' : 'Rascunho · os alunos ainda não veem', trilho: cs.publicada ? 'var(--texto)' : 'var(--borda)', bola: cs.publicada ? 'translateX(18px)' : 'none', ir: () => this.salvarMetaAval(cs, { publicada: !cs.publicada }, cs.nome + (cs.publicada ? ' voltou para rascunho.' : ' publicada para os alunos.')) },
+          gnColExcVis: !!cs.extra && !travado, gnColExcO: temN ? 0.4 : 1, gnColExcDica: temN ? 'Só dá para excluir atividade sem notas.' : 'Excluir atividade',
+          gnColExc: () => { if (temN) return this.setState({ gnMsg: { erro: true, t: cs.nome + ' já tem notas: não dá para excluir.' } }); this.apagarAvalGrade(cs); },
+          gnColFechar: () => this.setState({ gnCol: null }) }); }
+      const nEx = cols.filter(c => c.extra).length, ex = st.gnExtra;
+      Object.assign(r, { gnExtraBtnVis: R.extras.permitido && !travado && nEx < R.extras.max && !ex, gnExtraTxt: 'Atividade extra · ' + nEx + ' de ' + R.extras.max, gnExtraLimite: R.extras.permitido && !travado && nEx >= R.extras.max, gnExtraLimiteTxt: 'Limite de ' + R.extras.max + (R.extras.max === 1 ? ' atividade extra' : ' atividades extras') + ' por período atingido.',
+        abrirGnExtra: () => this.setState({ gnExtra: { nome: '', peso: 1 }, gnCol: null }), gnExtraVis: !!ex, gnExNome: ex ? ex.nome : '', gnExPeso: ex ? String(ex.peso) : '1',
+        setGnExNome: e => { const v = e.target.value; this.setState(s => ({ gnExtra: Object.assign({}, s.gnExtra, { nome: v }) })); },
+        gnExMenos: () => this.setState(s => ({ gnExtra: Object.assign({}, s.gnExtra, { peso: Math.max(1, s.gnExtra.peso - 1) }) })), gnExMais: () => this.setState(s => ({ gnExtra: Object.assign({}, s.gnExtra, { peso: Math.min(R.extras.peso, s.gnExtra.peso + 1) }) })),
+        fecharExtra: () => this.setState({ gnExtra: null }),
+        criarExtra: async e => { e.preventDefault(); const nm = (ex.nome || '').trim(); if (!nm) return this.setState({ gnMsg: { erro: true, t: 'Dê um nome à atividade.' } }); if (cols.some(c => c.nome.toLowerCase() === nm.toLowerCase())) return this.setState({ gnMsg: { erro: true, t: 'Já existe uma avaliação com esse nome neste período.' } });
+          return this.criarAvalGrade(selD.id, perSel, nm, ex.peso); },
+        gnPublicarVis: !bloqueado && cols.some(c => !c.publicada && als.some(a => st.notas[a.id + '-' + c.id] != null)),
+        gnPublicar: () => this.publicarLancadas(cols.filter(c => !c.publicada && als.some(a => st.notas[a.id + '-' + c.id] != null))) });
+    } else {
+      const pers = R.periodos;
+      r.gnFinGrid = 'minmax(180px,1.4fr) ' + pers.map(() => '92px').join(' ') + ' 100px' + (R.final.ativo ? ' 112px' : '') + ' 100px minmax(160px,1fr)';
+      r.gnFinPers = pers.map(p => ({ nome: p.nome }));
+      r.gnFinComFinal = R.final.ativo;
+      let comRes = 0;
+      r.gnFinLinhas = als.map((a, ri) => { const x = this.mediaAno(a.id, selD.id, false, dr), sit = this.situacaoDisc(a.id, selD.id, dr), precisa = x && x.ano < mn, k = a.id + '-' + selD.id;
+        if (x && !x.parcial) comRes++;
+        const fv = { id: this.finId(selD.id), nome: 'Prova final' };
+        return { nome: a.nome, mat: a.mat, pers: (x ? x.pers : pers.map(() => null)).map(p => ({ txt: p ? fmt(p.m) : '—', cor: p && p.m < mn ? AVISO : TINTA })),
+          anoTxt: x ? fmt(x.ano) : '—', anoCor: x && x.ano < mn ? AVISO : TINTA, fin: celula(a, fv, ri, 0, !precisa && st.notas[a.id + '-' + fv.id] == null), resTxt: x ? fmt(x.m) : '—', resCor: x && x.m < mn ? AVISO : TINTA, resBg: x && x.m < mn ? 'var(--aviso-suave)' : 'transparent',
+          sit: sit.t, sitCor: sit.ok === false ? AVISO : TINTA, sitBorda: sit.ok === false ? AVISO : sit.ok ? TINTA : 'var(--borda)', sitBg: sit.cons ? 'var(--sunken)' : 'transparent',
+          consVis: ehEscola && R.conselho && (sit.ok === false || sit.cons) && !bloqueado, consTxt: sit.cons ? 'Desfazer' : 'Aprovar pelo conselho',
+          cons: () => this.salvarConselhoAluno(a, selD, !sit.cons) }; });
+      r.gnProg = comRes + ' de ' + als.length + ' alunos com o ano completo'; r.gnProgBar = 'scaleX(' + (als.length ? comRes / als.length : 0).toFixed(3) + ')';
+      r.gnColVis = false; r.gnExtraBtnVis = false; r.gnExtraLimite = false; r.gnExtraVis = false; r.gnPublicarVis = false;
+    }
+    return r;
+  }
+  perAtual() { const R = this.state.regra; return R.periodos.find(p => HOJE >= p.inicio && HOJE <= p.fim) || R.periodos.find(p => !p.fechado) || R.periodos[R.periodos.length - 1]; }
+  avalsPer(did, per, S) {
+    S = S || this.vst || this.state; const R = this.state.regra, meta = this.state.avalMeta || {};
+    const o = R.itens.map(it => ({ id: 'v' + did + '_' + per + '_' + it.id, did, per, nome: it.nome, tipo: it.tipo, peso: it.peso, obrig: true }));
+    if (R.participacao.ativo) o.push({ id: 'v' + did + '_' + per + '_pa', did, per, nome: 'Participação', tipo: 'Participação', peso: R.participacao.peso, obrig: true });
+    (S.avals || []).filter(v => v.did === did && v.per === per).forEach(v => o.push(Object.assign({ tipo: 'Atividade', extra: true }, v)));
+    return o.map(v => Object.assign({}, v, meta[v.id] || {}));
+  }
+  recId(did, per) { return 'r' + did + '_' + per; }
+  finId(did) { return 'f' + did; }
+  avalsDisc(did, S) { const R = this.state.regra; let o = []; R.periodos.forEach(p => { o = o.concat(this.avalsPer(did, p.id, S)); if (R.recuperacao.ativo) o.push({ id: this.recId(did, p.id), did, per: p.id, nome: 'Recuperação · ' + p.nome, peso: 0, rec: true }); }); if (R.final.ativo) o.push({ id: this.finId(did), did, per: 'final', nome: 'Prova final', peso: 0, fin: true }); return o; }
+  arred(x) { if (x == null) return x; const a = this.state.regra.arred; return a === '0,5' ? Math.round(x * 2) / 2 : a === 'inteiro' ? Math.round(x) : Math.round(x * 10) / 10; }
+  nota(aid, vid, pub, ov) {
+    const k = aid + '-' + vid;
+    if (ov && ov[k] != null && String(ov[k]).trim() !== '' && this.notaOk(ov[k])) return parseFloat(String(ov[k]).replace(',', '.'));
+    const n = this.state.notas[k]; if (n == null) return null;
+    if (pub && !((this.state.avalMeta || {})[vid] || {}).publicada) return null; return n;
+  }
+  mediaPer(aid, did, per, pub, ov, semRec) {
+    const R = this.state.regra, av = this.avalsPer(did, per);
+    const arr = av.map(v => ({ peso: v.peso, n: this.nota(aid, v.id, pub, ov) })); const com = arr.filter(x => x.n != null); if (!com.length) return null;
+    const rec = R.recuperacao.ativo && !semRec ? this.nota(aid, this.recId(did, per), pub, ov) : null;
+    if (rec != null && R.recuperacao.modo === 'menor') { let mi = -1; arr.forEach((x, i) => { if (x.n != null && (mi < 0 || x.n < arr[mi].n)) mi = i; }); if (mi >= 0 && rec > arr[mi].n) arr[mi] = { peso: arr[mi].peso, n: rec }; }
+    const c = arr.filter(x => x.n != null), p = c.reduce((t, x) => t + x.peso, 0); let m = p ? c.reduce((t, x) => t + x.n * x.peso, 0) / p : null;
+    if (rec != null && R.recuperacao.modo === 'media' && rec > m) m = rec;
+    return { m: this.arred(m), parcial: c.length < arr.length, rec: rec != null };
+  }
+  mediaAno(aid, did, pub, ov) {
+    const R = this.state.regra, ps = R.periodos.map(p => this.mediaPer(aid, did, p.id, pub, ov)), c = ps.filter(Boolean); if (!c.length) return null;
+    const ano = this.arred(c.reduce((t, x) => t + x.m, 0) / c.length), fin = R.final.ativo ? this.nota(aid, this.finId(did), pub, ov) : null;
+    return { ano, fin, m: fin != null && ano < R.mediaMin ? this.arred((ano + fin) / 2) : ano, parcial: c.length < ps.length || c.some(x => x.parcial), pers: ps };
+  }
+  discMedia(aid, did) { const x = this.mediaAno(aid, did, this.state.papel === 'aluno'); return x ? { m: x.m, parcial: x.parcial } : null; }
+  situacaoDisc(aid, did, ov) {
+    const R = this.state.regra, x = this.mediaAno(aid, did, false, ov), o = this.fr(aid, did), f = o.t ? o.p / o.t : null, fim = R.periodos.every(p => p.fechado);
+    if ((this.state.conselho || {})[aid + '-' + did]) return { t: 'Aprovado pelo conselho', ok: true, cons: true };
+    if (!x) return { t: 'Sem nota', ok: null };
+    const freqOk = f == null || f * 100 >= R.freqMin;
+    if (!freqOk) return { t: 'Abaixo da frequência', ok: false };
+    if (x.m >= R.mediaMin) return { t: fim ? 'Aprovado' : 'Na média', ok: true };
+    if (R.final.ativo && x.fin == null) return { t: 'Prova final', ok: false, final: true };
+    return { t: fim ? 'Reprovado' : 'Abaixo da média', ok: false };
+  }
+
+  // Notas e avaliações da grade de notas: cada gravação vai ao servidor, relê o estado e só então mostra o resultado.
+  async limparNotaGrade(a, v) {
+    try { await apagarNota(v.id, a.id); await this.recarregar(); this.setState({ gnMsg: { erro: false, t: 'Nota de ' + a.nome + ' em ' + v.nome + ' limpa.' } }); }
+    catch (erro) { this.setState({ gnMsg: { erro: true, t: textoErro(erro) } }); }
+  }
+  async salvarMetaAval(c, o, aviso) {
+    try { await salvarMetaAvaliacao(c.id, o); await this.recarregar(); if (aviso) this.setState({ gnMsg: { erro: false, t: aviso } }); }
+    catch (erro) { this.setState({ gnMsg: { erro: true, t: textoErro(erro) } }); }
+  }
+  async apagarAvalGrade(c) {
+    try { await apagarAvaliacao(c.id); await this.recarregar(); this.setState({ gnCol: null, gnMsg: { erro: false, t: c.nome + ' excluída.' } }); }
+    catch (erro) { this.setState({ gnMsg: { erro: true, t: textoErro(erro) } }); }
+  }
+  async criarAvalGrade(did, per, nome, peso) {
+    try { await criarAvaliacao(did, { nome, peso }); await this.recarregar(); this.setState({ gnExtra: null, gnMsg: { erro: false, t: nome + ' criada. Começa como rascunho.' } }); }
+    catch (erro) { this.setState({ gnMsg: { erro: true, t: textoErro(erro) } }); }
+  }
+  async publicarLancadas(cols) {
+    try {
+      for (const c of cols) await salvarMetaAvaliacao(c.id, { publicada: true });
+      await this.recarregar(); this.setState({ gnMsg: { erro: false, t: cols.length + (cols.length === 1 ? ' avaliação publicada' : ' avaliações publicadas') + ' para os alunos.' } });
+    } catch (erro) { try { await this.recarregar(); } catch {} this.setState({ gnMsg: { erro: true, t: textoErro(erro) } }); }
+  }
+  async salvarConselhoAluno(a, d, aprovado) {
+    try {
+      await salvarConselho(a.id, d.id, aprovado); await this.recarregar();
+      this.setState({ gnMsg: { erro: false, t: aprovado ? a.nome + ' aprovado pelo conselho de classe.' : 'Aprovação pelo conselho desfeita para ' + a.nome + '.' } });
+    } catch (erro) { this.setState({ gnMsg: { erro: true, t: textoErro(erro) } }); }
+  }
+  async salvarRegraEscola(R) {
+    try { await salvarRegra(R); await this.recarregar(); this.setState({ gnPer: null, gnCol: null }); }
+    catch (erro) { throw { texto: textoErro(erro) }; }
   }
   resumo(a) {
     if (a.fixo) return a.fixo;
@@ -1021,16 +1202,16 @@ class Component extends DCLogic {
   boletim(aid) {
     const { discs, mats, avals, notas, limpar } = this.state, pode = !!this.ativo();
     return discs.filter(d => mats[aid + '-' + d.id]).map(d => {
-      const m = this.discMedia(aid, d.id), avD = avals.filter(v => v.did === d.id), alvo = limpar ? avD.find(v => aid + '-' + v.id === limpar) : null;
+      const alunoV = this.state.papel === 'aluno', pa = this.perAtual(), m = this.discMedia(aid, d.id), avD = this.avalsPer(d.id, pa.id).concat(this.state.regra.recuperacao.ativo && notas[aid + '-' + this.recId(d.id, pa.id)] != null ? [{ id: this.recId(d.id, pa.id), nome: 'Recuperação', publicada: ((this.state.avalMeta || {})[this.recId(d.id, pa.id)] || {}).publicada }] : []).filter(v => !alunoV || v.publicada), alvo = limpar ? avD.find(v => aid + '-' + v.id === limpar) : null;
       return {
         id: d.id, nome: d.nome,
-        avs: avD.map(v => { const k = aid + '-' + v.id, n = notas[k]; return { nome: v.nome, notaTxt: n == null ? '—' : fmt(n), cor: n != null && n < 6 ? AVISO : TINTA, podeLimpar: pode && n != null, limparLabel: 'Limpar nota ' + v.nome + ' de ' + d.nome, pedirLimpar: e => { if (e) e.stopPropagation(); this.setState({ limpar: k, notaMsg: null }); } }; }),
+        avs: avD.map(v => { const k = aid + '-' + v.id, n = notas[k]; return { nome: v.nome, notaTxt: n == null ? '—' : fmt(n), cor: n != null && n < this.state.regra.mediaMin ? AVISO : TINTA, podeLimpar: pode && n != null && !alunoV, limparLabel: 'Limpar nota ' + v.nome + ' de ' + d.nome, pedirLimpar: e => { if (e) e.stopPropagation(); this.setState({ limpar: k, notaMsg: null }); } }; }),
         mediaTxt: m ? fmt(m.m) : 'sem nota lançada', mediaCor: m && m.m < 6 ? AVISO : m ? TINTA : 'var(--texto-suave)',
         parcial: m && m.parcial ? ' (parcial)' : '',
         confirmando: !!alvo, confTxt: alvo ? 'Limpar ' + alvo.nome + ' de ' + d.nome + ' (' + fmt(notas[limpar]) + ')?' : '',
         cancelarLimpar: () => this.setState({ limpar: null }),
         confirmarLimpar: async () => { try { await apagarNota(alvo.id, aid); await this.recarregar(); this.setState({ limpar: null, notaMsg: { erro: false, t: 'Nota ' + (alvo ? alvo.nome : '') + ' de ' + d.nome + ' limpa. Agora aparece como —.' } }); } catch (erro) { this.setState({ notaMsg: { erro: true, t: erro.detalhe } }); } },
-        escolher: () => this.setState({ notaDisc: d.id, notaAval: (avals.find(v => v.did === d.id) || {}).id || '' })
+        escolher: () => this.setState({ notaDisc: d.id, notaAval: (this.avalsPer(d.id, pa.id)[0] || {}).id || '' })
       };
     });
   }
@@ -1500,11 +1681,11 @@ class Component extends DCLogic {
       recursosRotulo: pr ? 'Para o professor' : 'Para o aluno',
       verDemo: () => this.irSecao('demo'), funcRef: this.funcRef, funcSecRef: this.funcSecRef, funcMarca: this.funcMarca, funcStick: this.funcStick, funcN: String(FUNCOES.length).padStart(2, '0'),
       funcPos: this.funcSticky ? 'sticky' : 'relative', funcSecH: this.funcSticky ? 'calc(100vh + ' + (tinta ? (FUNCOES.length - 1) * 45 : (FUNCOES.length - 1) * 62) + 'vh)' : 'auto',
-      tintaModo: tinta, espiralModo: !tinta, tintaMarca: this.tintaMarca, tintaStick: this.tintaStick, tintaH: this.funcSticky ? 'min(780px,calc(100vh - 104px))' : 'auto',
+      tintaModo: tinta, espiralModo: !tinta, tintaMarca: this.tintaMarca, tintaStick: this.tintaStick, tintaWrap: this.funcSticky ? 'nowrap' : 'wrap', tintaDescD: (((this.mainRef.current && this.mainRef.current.clientHeight) || st.altura || 800) - 92) < 660 ? 'none' : 'block', tintaH: this.funcSticky ? Math.max(480, Math.min(760, ((this.mainRef.current && this.mainRef.current.clientHeight) || st.altura || 800) - 92)) + 'px' : 'auto',
       tintaSumVis: this.funcSticky, tintaPilha: this.funcSticky ? 'grid' : 'flex', tintaPagBorda: this.funcSticky ? '0' : '1px solid var(--borda-fraca)', tintaVis0: this.funcSticky ? 'hidden' : 'visible', tintaOp0: this.rm ? 1 : 0,
-      tintaPags: FUNCOES.map((f, i) => ({ i, n: String(i + 1).padStart(2, '0'), nome: f.nome, nomeW: f.nome.split(' ').map(w => ({ ls: Array.from(w).map(c => ({ c })) })), tituloW: f.titulo.split(' ').map(t => ({ t })) })),
+      tintaPags: FUNCOES.map((f, i) => ({ i, prev: f.prev, tela: f.tela, recursos: (f.recursos || []).map((r, k) => ({ n: String(k + 1).padStart(2, '0'), t: r[0], d: r[1] })), n: String(i + 1).padStart(2, '0'), nome: f.nome, nomeW: f.nome.split(' ').map(w => ({ ls: Array.from(w).map(c => ({ c })) })), tituloW: f.titulo.split(' ').map(t => ({ t })) })),
       funcDica: tinta ? (this.funcSticky ? 'Continue descendo: cada função se escreve inteira na página e ganha o carimbo. O sumário risca o que já foi. Clique nele para pular.' : 'Desça a página: cada função se escreve quando aparece na tela.') : this.funcSticky ? 'Continue descendo: o mostrador gira e cada tela se abre em espiral sobre a anterior. Também dá para arrastar o mostrador ou clicar numa função.' : 'Arraste o mostrador ou toque numa função: a tela dela se abre em espiral sobre a anterior.', funcTotal: FUNCOES.length + ' no portal',
-      funcoes: FUNCOES.map((f, i) => { const on = i === (st.funcSel || 0); return { n: String(i + 1).padStart(2, '0'), nome: f.nome, curto: f.curto, on, peso: peso(on), cor: on ? 'var(--fundo)' : TI, i, ir: () => this.irFuncao(i), tinta: () => this.tintaIr(i) }; }),
+      funcoes: FUNCOES.map((f, i) => { const on = i === (st.funcSel || 0); return { prev: f.prev, n: String(i + 1).padStart(2, '0'), nome: f.nome, curto: f.curto, on, peso: peso(on), cor: on ? 'var(--fundo)' : TI, i, ir: () => this.irFuncao(i), tinta: () => this.tintaIr(i) }; }),
       funcRoda: this.funcRoda, funcDown: this.funcDown, funcKey: this.funcKey, rodaMinH: st.largura < 900 ? '150px' : '520px',
       fs: (() => { const i = Math.max(0, Math.min(FUNCOES.length - 1, st.funcSel | 0)), f = FUNCOES[i], r = { n: String(i + 1).padStart(2, '0'), nome: f.nome, titulo: f.titulo, desc: f.desc, prof: f.prof, aluno: f.aluno, passos: f.passos.map((t, j) => ({ n: String(j + 1), j: String(j), t })) }; for (let k = 0; k < FUNCOES.length; k++) r['m' + k] = k === i; return r; })(),
       recursos: (pr ? recP : recA).map(([tag, titulo, desc], i) => ({ n: String(i + 1).padStart(3, '0'), tag, titulo, desc })),
@@ -1541,7 +1722,7 @@ class Component extends DCLogic {
 
     // alunos
     const base = st.alunos.concat(muitos && !meuProf ? EXTRAS.map((n, i) => ({ id: 100 + i, nome: n, mat: String(2026007 + i), idade: 18 + (i * 5) % 9, fixo: i % 9 === 4 ? { media: null, freq: null, linha: [] } : { media: ((i * 37) % 66 + 32) / 10, freq: 0.55 + ((i * 13) % 46) / 100, linha: [], presencas: 0, faltas: 0, comNota: 0 } })) : []);
-    const todos = E === 'vazio' ? [] : base.filter(a => S0.papel !== 'escola' || S0.hubTurma == null || (S0.hubTurma === '__sem' ? !a.turma : a.turma === S0.hubTurma)).map(a => this.vis(a));
+    const todos = E === 'vazio' ? [] : base.filter(a => S0.papel === 'aluno' || S0.hubTurma == null || (S0.papel === 'prof' ? (this.vst || S0).discs.some(d => (d.turma || '__semT') === S0.hubTurma && (this.vst || S0).mats[a.id + '-' + d.id]) : (S0.hubTurma === '__sem' ? !a.turma : a.turma === S0.hubTurma))).map(a => this.vis(a));
     let lista = todos.filter(a => {
       const q = st.q.trim().toLowerCase();
       if (q && !a.nome.toLowerCase().includes(q) && !a.mat.includes(q)) return false;
@@ -1563,14 +1744,14 @@ class Component extends DCLogic {
     const mT = reais.filter(a => a.s.media != null), fT = reais.filter(a => a.s.freq != null);
     const mediaT = mT.length ? mT.reduce((x, a) => x + a.s.media, 0) / mT.length : null;
     const freqT = fT.length ? fT.reduce((x, a) => x + a.s.freq, 0) / fT.length : null;
-    const semNota = st.avals.filter(av => !Object.keys(st.notas).some(k => k.endsWith('-' + av.id) && st.notas[k] != null)).map(av => ({ did: av.did, disc: (st.discs.find(d => d.id === av.did) || {}).nome, nome: av.nome, peso: av.peso })).filter(s => s.disc);
+    const perA = this.perAtual(), semNota = st.discs.flatMap(d => this.avalsPer(d.id, perA.id, st)).filter(av => !Object.keys(st.notas).some(k => k.endsWith('-' + av.id) && st.notas[k] != null)).map(av => ({ did: av.did, disc: (st.discs.find(d => d.id === av.did) || {}).nome, nome: av.nome + ' · ' + perA.nome, peso: av.peso })).filter(s => s.disc);
 
     // seletor (matrículas/boletim)
     const selA = reais.find(a => a.id === st.selAluno) || reais[0];
     const seletorEstado = E && E !== 'vazio' ? E : (E === 'vazio' || !reais.length) ? 'vazio' : null;
     const notaDiscs = selA ? st.discs.filter(d => st.mats[selA.id + '-' + d.id]) : [];
     const avalDisc = st.discs.find(d => d.id === +st.notaDisc) || st.discs[0];
-    const avalsD = avalDisc ? st.avals.filter(a => a.did === avalDisc.id) : [];
+    const avalsD = avalDisc ? this.avalsPer(avalDisc.id, this.perAtual().id, st) : [];
     const soma = avalsD.reduce((x, a) => x + a.peso, 0);
 
     // semestre + agenda
@@ -1645,12 +1826,12 @@ class Component extends DCLogic {
       const ms = ddAl.map(a => this.discMedia(a.id, selD.id)).filter(Boolean).map(x => x.m);
       let tp = 0, ta = 0; ddAl.forEach(a => { const o = this.fr(a.id, selD.id); tp += o.p; ta += o.t; });
       const mm = ms.length ? ms.reduce((x, y) => x + y, 0) / ms.length : null, ff = ta ? tp / ta : null;
-      const nav = st.avals.filter(a => a.did === selD.id).length, nAu = st.aulas.filter(a => a.disciplina_id === selD.id && a.status !== 'cancelada').length;
+      const nav = this.avalsPer(selD.id, this.perAtual().id, st).length, nAu = st.aulas.filter(a => a.disciplina_id === selD.id && a.status !== 'cancelada').length;
       const slug = selD.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
       dd = { prof: profNome(selD), profCor: selD.professor_id == null ? AVISO : TINTA, nome: selD.nome, meta: selD.carga_horaria + 'h · ' + nav + (nav === 1 ? ' avaliação' : ' avaliações') + ' · ' + nAu + (nAu === 1 ? ' aula' : ' aulas') + ' no semestre', gradeTxt: gradeTxt(selD.grade), semGrade: !(selD.grade || []).length,
         editar: () => this.setState({ gaEd: selD.id }), alunos: String(ddAl.length), alunosTxt: ddAl.length + ' de ' + reais.length,
         mediaTxt: mm == null ? '—' : fmt(mm), mediaCor: mm != null && mm < 6 ? AVISO : TINTA, freqTxt: ff == null ? '—' : pct(ff), freqCor: ff != null && ff < 0.75 ? AVISO : TINTA,
-        excluir: () => this.excluirDisc(selD.id),
+        excluir: () => this.pedirExcluirDisc(selD.id),
         exportar: () => this.exportar('disc', 'frequencia-' + slug + '-' + semNome + '.csv', [['Aluno', 'Matrícula', 'Presenças', 'Aulas com chamada', 'Frequência', 'Média']].concat(ddAl.map(a => { const o = this.fr(a.id, selD.id), m = this.discMedia(a.id, selD.id); return [a.nome, a.mat, o.p, o.t, o.t ? pct(o.p / o.t) : '', m ? fmt(m.m) : '']; }))),
         exportTxt: expTxt('disc'), exportO: st.exportando === 'disc' ? 0.6 : 1 };
     }
@@ -1785,12 +1966,12 @@ class Component extends DCLogic {
         if (semMat) L.push({ txt: 'Semestre sem matrículas', det: 'nenhum aluno matriculado em ' + semNome, acao: 'Matricular', ir: () => this.ir('boletim') });
         return { temPend: L.length > 0, pendencias: L, pendTxt: L.length === 1 ? '1 item' : L.length + ' itens' };
       })(),
-      semNota: semNota.map(x => Object.assign({}, x, { ir: meuProf ? () => { this.setState({ selDisc: x.did, subAba: 'notas' }); this.ir('disciplinas'); } : () => this.ir('boletim') })), semNotaContagem: semNota.length + (semNota.length === 1 ? ' avaliação' : ' avaliações'), irBoletim: () => this.ir('boletim'),
+      semNota: semNota.map(x => Object.assign({}, x, { ir: meuProf ? () => { const dd = st.discs.find(d => d.id === x.did); this.ir('alunos'); this.setState({ hubTurma: (dd && dd.turma) || '__semT', selDisc: x.did, gnMsg: null, gnDraft: {} }); } : () => this.ir('boletim') })), semNotaContagem: semNota.length + (semNota.length === 1 ? ' avaliação' : ' avaliações'), irBoletim: () => this.ir('boletim'),
       painelRotulo: (ehEscola ? 'Escola' : meuProf ? meuProf.nome : 'Turma 2026') + ' · semestre ' + semNome,
 
       // alunos
-      alunosRotuloTopo: S0.papel !== 'escola' ? (meuProf ? `${todos.length} alunos nas suas disciplinas` : '') : S0.hubTurma == null ? S0.turmas.length + (S0.turmas.length === 1 ? ' turma · ' : ' turmas · ') + S0.alunos.length + ' alunos' : 'Turma · semestre ' + ((S0.semestre || {}).nome || ''),
-      alunosTotalTxt: meuProf ? `${todos.length} alunos nas suas disciplinas` : `${todos.length} alunos · turma 2026`, alunosTitulo: meuProf ? 'Meus alunos' : S0.hubTurma == null ? 'Alunos' : S0.hubTurma === '__sem' ? 'Alunos sem turma' : this.nomeT(S0.hubTurma), alunosAdmin: ehEscola,
+      alunosRotuloTopo: S0.papel !== 'escola' ? (meuProf ? (S0.hubTurma == null ? 'Suas turmas · semestre ' + semNome : 'Notas da turma · semestre ' + semNome) : '') : S0.hubTurma == null ? S0.turmas.length + (S0.turmas.length === 1 ? ' turma · ' : ' turmas · ') + S0.alunos.length + ' alunos' : 'Turma · semestre ' + ((S0.semestre || {}).nome || ''),
+      alunosTotalTxt: meuProf ? `${todos.length} alunos nas suas disciplinas` : `${todos.length} alunos · turma 2026`, alunosTitulo: meuProf ? (S0.hubTurma == null ? 'Minhas turmas' : S0.hubTurma === '__semT' ? 'Sem turma' : this.nomeT(S0.hubTurma)) : S0.hubTurma == null ? 'Alunos' : S0.hubTurma === '__sem' ? 'Alunos sem turma' : this.nomeT(S0.hubTurma), alunosAdmin: ehEscola,
       colMedia: meuProf ? 'Média na sua disciplina' : 'Média', colFreq: meuProf ? 'Freq. na sua disciplina' : 'Frequência', paAdmin: ehEscola, paMediaRot: meuProf ? 'Média na sua disciplina' : 'Média', paFreqRot: meuProf ? 'Frequência na sua disciplina' : 'Frequência', q: st.q, idadeMin: st.idadeMin, mediaMin: st.mediaMin,
       setQ: e => this.setState({ q: e.target.value, pagina: 1 }), setIdadeMin: e => this.setState({ idadeMin: e.target.value, pagina: 1 }), setMediaMin: e => this.setState({ mediaMin: e.target.value, pagina: 1 }),
       limparFiltros: () => this.setState({ q: '', idadeMin: '', mediaMin: '', pagina: 1 }), limparO: st.q || st.idadeMin || st.mediaMin ? 1 : 0,
@@ -1803,7 +1984,7 @@ class Component extends DCLogic {
       abrirNovoAluno: () => this.abrirPainel({ tipo: 'novoAluno' }, { fTurma: S0.hubTurma && S0.hubTurma !== '__sem' ? S0.hubTurma : '' }),
       fTurma: st.fTurma, setFTurma: e => this.setState({ fTurma: e.target.value, fErro: '' }), optTurmasAl: S0.turmas.map(t => ({ v: t.id, l: t.nome })), turmaAjuda: 'Ao salvar, o aluno entra nas disciplinas dessa turma.',
       ...(() => { const n = S0.alunos.filter(a => !a.turma).length; return { semTurmaVis: ehEscola && n > 0, semTurmaTxt: n + (n === 1 ? ' aluno sem turma: não entra automaticamente nas disciplinas.' : ' alunos sem turma: não entram automaticamente nas disciplinas.') }; })(),
-      ...this.valsHub(ehEscola),
+      ...this.valsHub(ehEscola, meuProf, E, st),
 
       // disciplinas
       discTotalTxt: st.discs.length + (st.discs.length === 1 ? ' disciplina' : ' disciplinas') + ' · semestre ' + semNome, discQ: st.discQ, setDiscQ: set('discQ'),
@@ -1816,7 +1997,7 @@ class Component extends DCLogic {
         const sa = st.subAba || 'alunos';
         const r = { subRef: this.subRef, subAlunos: sa === 'alunos', subChamada: sa === 'chamada', subNotas: sa === 'notas', subAvisos: sa === 'avisos',
           subAbas: [['alunos', 'Alunos'], ['chamada', 'Chamada'], ['notas', 'Avaliações e notas'], ['avisos', 'Avisos da turma']].map(([id, label]) => ({ label, on: sa === id, peso: peso(sa === id), ir: () => this.setSub(id) })) };
-        if (!selD) return Object.assign(r, { scAulas: [], scTem: false, scVazio: true, scResumo: '', gnCols: [], gnLinhas: [], gnTem: false, gnSemAlunos: true, gnSemAvals: false, gnMsg: '', gnMsgCor: TINTA, avsSel: [], somaSelTxt: '', somaSelBar: 'scaleX(0)', notasEditaveis: false, saAvisos: [], saTem: false, saVazio: true });
+        if (!selD) return Object.assign(r, { scAulas: [], scTem: false, scVazio: true, scResumo: '', gnCols: [], gnLinhas: [], gnTem: false, gnSemAlunos: true, gnSemAvals: false, gnMsg: '', gnMsgCor: TINTA, gnPers: [], gnModoPer: false, gnModoFinal: false, gnFinLinhas: [], gnFinPers: [], gnColVis: false, gnExtraBtnVis: false, gnExtraLimite: false, gnExtraVis: false, gnPublicarVis: false, gnTravado: false, saAvisos: [], saTem: false, saVazio: true });
         const aus = st.aulas.filter(a => a.disciplina_id === selD.id).sort((x, y) => x.data.localeCompare(y.data) || ordH(x, y));
         let k = aus.findIndex(a => a.data > HOJE); if (k < 0) k = aus.length;
         const jan = aus.slice(Math.max(0, k - 6), k + 3);
@@ -1826,22 +2007,7 @@ class Component extends DCLogic {
           return { dia: DIA_C[dsem(au.data)] + ' ' + ddmm(au.data), hora: au.hora_inicio ? au.hora_inicio + '–' + au.hora_fim : 'sem horário', extra: au.origem === 'extra', stTxt: s1[0], stCor: s1[1], stBorda: s1[2], stRisco: s1[3], temAcao: !!ac, acaoTxt: ac ? ac[0] : '', acao: ac ? ac[1] : null, acaoBg: ac && ac[2] ? TINTA : 'var(--superficie)', acaoCor: ac && ac[2] ? 'var(--fundo)' : TINTA, acaoBorda: ac && ac[2] ? TINTA : 'var(--borda)' }; });
         const feitas = aus.filter(a => a.chamada).length, ate = aus.filter(a => a.data <= HOJE && a.status !== 'cancelada').length;
         Object.assign(r, { scTem: jan.length > 0, scVazio: !jan.length, scResumo: feitas + ' de ' + ate + ' chamadas feitas até hoje', irAgendaDisc: () => { if (ehEscola) this.setState({ agDiscF: String(selD.id), agProfF: '' }); this.ir('frequencia'); } });
-        const avs = st.avals.filter(a => a.did === selD.id), als = st.alunos.filter(a => st.mats[a.id + '-' + selD.id]), dr = st.gnDraft || {};
-        r.gnCols = avs.map(v => ({ nome: v.nome, peso: 'peso ' + v.peso }));
-        r.gnLinhas = als.map(a => { const m = this.discMedia(a.id, selD.id);
-          return { nome: a.nome, mat: a.mat, mediaTxt: m ? fmt(m.m) : '—', mediaCor: m && m.m < 6 ? AVISO : TINTA, parcial: m && m.parcial ? 'parcial' : '',
-            cels: avs.map(v => { const key = a.id + '-' + v.id, n = st.notas[key], d = dr[key], inval = d != null && String(d).trim() !== '' && !this.notaOk(d);
-              return { val: d != null ? d : n != null ? fmt(n) : '', label: 'Nota de ' + a.nome + ' em ' + v.nome, off: bloqueado, cor: n != null && n < 6 && d == null ? AVISO : TINTA, borda: inval ? AVISO : d != null ? TINTA : 'var(--borda-fraca)',
-                podeLimpar: n != null && d == null && !bloqueado, limparLabel: 'Limpar nota de ' + a.nome + ' em ' + v.nome,
-                mudar: e => { const x = e.target.value; this.setState(s => ({ gnDraft: Object.assign({}, s.gnDraft, { [key]: x }), gnMsg: null })); },
-                salvar: () => this.salvarNotaGrade(key, a.nome, v.nome),
-                tecla: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') this.setState(s => { const g = Object.assign({}, s.gnDraft); delete g[key]; return { gnDraft: g }; }); },
-                limpar: async () => { try { await apagarNota(v.id, a.id); await this.recarregar(); this.setState({ gnMsg: { erro: false, t: 'Nota de ' + a.nome + ' em ' + v.nome + ' limpa. Voltou para —.' } }); } catch (erro) { this.setState({ gnMsg: { erro: true, t: erro.detalhe } }); } } }; }) }; });
-        const somaS = avs.reduce((x, a) => x + a.peso, 0);
-        Object.assign(r, { gnTem: als.length > 0 && avs.length > 0, gnSemAlunos: !als.length, gnSemAvals: als.length > 0 && !avs.length, gnMsg: st.gnMsg ? st.gnMsg.t : '', gnMsgCor: st.gnMsg && st.gnMsg.erro ? AVISO : TINTA,
-          somaSelTxt: somaS + ' / 100', somaSelBar: 'scaleX(' + Math.min(1, somaS / 100) + ')', notasEditaveis: !bloqueado,
-          avsSel: avs.map(a => { const tem = Object.keys(st.notas).some(k2 => k2.endsWith('-' + a.id) && st.notas[k2] != null), off = tem || bloqueado; return { nome: a.nome, peso: a.peso, status: tem ? 'com notas' : 'sem notas', bloqueado: off, opacidade: off ? 0.4 : 1, dica: tem ? 'Só é possível excluir avaliações sem notas' : 'Excluir avaliação', excluir: async () => { if (off) return; try { await apagarAvaliacao(a.id); await this.recarregar(); this.setState({ avalMsg: { erro: false, t: a.nome + ' excluída.' } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } } }; }),
-          criarAvalSel: async e => { e.preventDefault(); if (bloqueado) return; const p = parseInt(st.avalPeso, 10); if (!st.avalNome.trim()) return this.setState({ avalMsg: { erro: true, t: 'Dê um nome à avaliação.' } }); if (isNaN(p) || p <= 0) return this.setState({ avalMsg: { erro: true, t: 'O peso precisa ser maior que zero.' } }); if (somaS + p > 100) return this.setState({ avalMsg: { erro: true, t: 'A soma passaria de 100 (hoje: ' + somaS + '). Ajuste o peso.' } }); try { await criarAvaliacao(selD.id, { nome: st.avalNome.trim(), peso: p }); await this.recarregar(); this.setState({ avalNome: '', avalPeso: '', avalMsg: { erro: false, t: 'Avaliação criada.' } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } } });
+        Object.assign(r, this.valsGrade(st, selD, bloqueado, ehEscola));
         const avT = st.avisos.filter(a => a.disciplina_id === selD.id).sort((x, y) => y.data.localeCompare(x.data));
         Object.assign(r, { saAvisos: avT.map(a => ({ titulo: a.titulo, msg: a.msg, dataBR: br(a.data), autor: a.autor_nome || 'Secretaria' })), saTem: avT.length > 0, saVazio: !avT.length, escreverAvisoTurma: () => { this.setState({ avDestino: String(selD.id) }); this.ir('avisos'); } });
         return r;
@@ -1879,10 +2045,10 @@ class Component extends DCLogic {
       bol: selA ? this.boletim(selA.id) : [],
       exportarBol: () => { if (selA) this.exportar('bol', 'boletim-' + selA.mat + '-' + semNome + '.csv', this.linhasBoletim(selA.id)); }, expBolTxt: expTxt('bol'), expBolO: st.exportando === 'bol' ? 0.6 : 1,
       notaDiscOpcoes: notaDiscs.map(d => ({ v: String(d.id), l: d.nome })), notaDisc: String(st.notaDisc),
-      setNotaDisc: e => { const did = +e.target.value; this.setState({ notaDisc: did, notaAval: (st.avals.find(a => a.did === did) || {}).id || '', notaMsg: null, avalMsg: null }); },
-      notaAvalOpcoes: avalsD.map(a => ({ v: String(a.id), l: `${a.nome} · peso ${a.peso}` })), notaAval: String(st.notaAval), setNotaAval: e => this.setState({ notaAval: +e.target.value }),
+      setNotaDisc: e => { const did = +e.target.value; this.setState({ notaDisc: did, notaAval: (this.avalsPer(did, this.perAtual().id)[0] || {}).id || '', notaMsg: null, avalMsg: null }); },
+      notaAvalOpcoes: avalsD.map(a => ({ v: String(a.id), l: `${a.nome} · peso ${a.peso}` })), notaAval: String(st.notaAval), setNotaAval: e => this.setState({ notaAval: e.target.value }),
       notaValor: st.notaValor, setNotaValor: set('notaValor'),
-      lancarNota: async e => { e.preventDefault(); if (bloqueado) return; const n = parseFloat(String(st.notaValor).replace(',', '.')); const av = st.avals.find(a => a.id === +st.notaAval); if (!av) return this.setState({ notaMsg: { erro: true, t: 'Escolha uma avaliação.' } }); if (isNaN(n) || n < 0 || n > 10) return this.setState({ notaMsg: { erro: true, t: 'A nota precisa estar entre 0 e 10.' } }); if (!this.notaOk(st.notaValor)) return this.setState({ notaMsg: { erro: true, t: 'Use um valor de 0 a 10, com até uma casa decimal.' } }); const k = selA.id + '-' + av.id; const tinha = st.notas[k] != null; try { await salvarNota(av.id, selA.id, Math.round(n * 10) / 10); await this.recarregar(); this.setState({ notaValor: '', notaMsg: { erro: false, t: `${tinha ? 'Nota atualizada' : 'Nota lançada'}: ${av.nome} = ${fmt(n)}.` } }); } catch (erro) { this.setState({ notaMsg: { erro: true, t: erro.detalhe } }); } },
+      lancarNota: async e => { e.preventDefault(); if (bloqueado) return; const n = parseFloat(String(st.notaValor).replace(',', '.')); const av = avalsD.find(a => String(a.id) === String(st.notaAval)); if (!av) return this.setState({ notaMsg: { erro: true, t: 'Escolha uma avaliação.' } }); if (isNaN(n) || n < 0 || n > 10) return this.setState({ notaMsg: { erro: true, t: 'A nota precisa estar entre 0 e 10.' } }); if (!this.notaOk(st.notaValor)) return this.setState({ notaMsg: { erro: true, t: 'Use um valor de 0 a 10, com até uma casa decimal.' } }); const k = selA.id + '-' + av.id; const tinha = st.notas[k] != null; try { await salvarNota(av.id, selA.id, Math.round(n * 10) / 10); await this.recarregar(); this.setState({ notaValor: '', notaMsg: { erro: false, t: `${tinha ? 'Nota atualizada' : 'Nota lançada'}: ${av.nome} = ${fmt(n)}.` } }); } catch (erro) { this.setState({ notaMsg: { erro: true, t: erro.detalhe } }); } },
       notaMsg: st.notaMsg ? st.notaMsg.t : '', notaMsgCor: st.notaMsg && st.notaMsg.erro ? AVISO : TINTA,
       avalDiscNome: avalDisc ? avalDisc.nome : '', somaTxt: `${soma} / 100`, somaBar: `scaleX(${Math.min(1, soma / 100)})`,
       avalLista: avalsD.map(a => { const tem = Object.keys(st.notas).some(k => k.endsWith('-' + a.id) && st.notas[k] != null); return { nome: a.nome, peso: a.peso, status: tem ? 'com notas' : 'sem notas', bloqueado: tem, opacidade: tem ? 0.4 : 1, dica: tem ? 'Só é possível excluir avaliações sem notas' : 'Excluir avaliação', excluir: async () => { try { await apagarAvaliacao(a.id); await this.recarregar(); this.setState({ avalMsg: { erro: false, t: `${a.nome} excluída.` } }); } catch (erro) { this.setState({ avalMsg: { erro: true, t: erro.detalhe } }); } } }; }),
@@ -1898,8 +2064,16 @@ class Component extends DCLogic {
       gaNovaTurma: () => this.recarregarComAviso(),
       gaAbaIni: S0.gaAbaIni || 'quadro', acadDiscVis: !!S0.acadDisc && tela === 'frequencia', voltarAcad: () => this.voltarAcad(),
       gaAbrirDisc: id => this.gaAbrirDisc(id),
-      gaEdVis: S0.gaEd != null, gaDiscId: S0.gaEd == null ? '' : String(S0.gaEd), gaFechar: () => this.setState({ gaEd: null }), gaSalvar: obj => this.gaSalvar(obj),
-      gaBase: st.discs.map(d => ({ id: d.id, nome: d.nome, turma: d.turma || null, prof: d.professor_id != null ? d.professor_id : null, sala: d.sala || null, carga: d.carga_horaria, grade: (d.grade || []).map(g => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: g.sala || d.sala || null })) })),
+      gaRO: ativo ? '' : sem && sem.encerrado_em ? 'Semestre encerrado em ' + br(sem.encerrado_em) + ': somente leitura.' : 'Sem semestre ativo: somente leitura. Abra um semestre na aba Semestre.',
+      gaCarga: E === 'erro' ? 'erro' : E === 'carregando' ? 'carregando' : 'ok',
+      gnSel: e => { if (e.target && e.target.select) e.target.select(); },
+      regra: this.state.regra, salvarRegra: R => this.salvarRegraEscola(R),
+      regraUso: (() => { const o = { itens: {}, pers: {}, part: false }; Object.keys(this.state.notas).forEach(k => { if (this.state.notas[k] == null) return; const v = k.split('-')[1] || ''; const m = /^v\d+_(p\d+)_(\w+)$/.exec(v); if (m) { o.pers[m[1]] = true; if (m[2] === 'pa') o.part = true; else o.itens[m[2]] = true; } else { const x = /^[rx]\d+_(p\d+)$/.exec(v); if (x) o.pers[x[1]] = true; } }); (this.state.avals || []).forEach(v => { if (v.per && Object.keys(this.state.notas).some(k => k.endsWith('-' + v.id) && this.state.notas[k] != null)) o.pers[v.per] = true; }); return o; })(),
+      gaEdVis: S0.gaEd != null, gaDiscId: S0.gaEd == null ? '' : String(S0.gaEd), gaFechar: () => this.setState({ gaEd: null }), gaSalvar: obj => this.gaSalvar(obj), gaExcluir: id => this.pedirExcluirDisc(id),
+      ...(() => { const c = this.state.confExc; return { confExcVis: !!c, confExcBloq: !!(c && c.bloq), confExcOk: !!(c && !c.bloq), confExcTitulo: c ? (c.bloq ? 'Não dá para excluir ' : 'Excluir ') + c.nome + (c.bloq ? '' : '?') : '',
+        confExcTxt: c ? (c.erro ? c.erro : c.bloq ? 'Disciplina já tem notas ou chamadas: não dá para excluir. O histórico do semestre precisa ficar.' : 'Saem junto ' + c.aulas + (c.aulas === 1 ? ' aula' : ' aulas') + ' do semestre e ' + c.mats + (c.mats === 1 ? ' matrícula' : ' matrículas') + '. Não dá para desfazer.') : '',
+        confExcSim: () => c && !c.bloq && this.excluirDisc(c.id), confExcNao: () => this.setState({ confExc: null }) }; })(),
+      gaBase: (E === 'vazio' ? [] : st.discs).map(d => ({ id: d.id, nome: d.nome, turma: d.turma || null, prof: d.professor_id != null ? d.professor_id : null, sala: d.sala || null, carga: d.carga_horaria, grade: (d.grade || []).map(g => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: g.sala || d.sala || null })) })),
       gaProfs: st.profs.map(p => ({ id: p.id, nome: p.nome, ocupados: p.ocupados || [] })), agendaLegado: false, irGrade: () => this.ir('grade'), irMeu: () => this.ir('meu-painel'),
       agFiltroVis: ehEscola, agProfF: st.agProfF, agDiscF: st.agDiscF, setAgProfF: e => this.setState({ agProfF: e.target.value }), setAgDiscF: e => this.setState({ agDiscF: e.target.value }),
       agFiltrado: !!(st.agProfF || st.agDiscF), limparAgFiltro: () => this.setState({ agProfF: '', agDiscF: '' }), temAgErro: !!st.agErro, agErro: st.agErro, fecharAgErro: () => this.setState({ agErro: '' }),
@@ -1909,7 +2083,7 @@ class Component extends DCLogic {
       agResumo: doDia.length ? doDia.length + (doDia.length === 1 ? ' aula' : ' aulas') + ' · ' + doDia.filter(a => a.chamada).length + ' com chamada' : 'Sem aulas',
       diaAnterior: () => this.irDia(addD(agDia, -1)), diaProximo: () => this.irDia(addD(agDia, 1)), irHoje: () => this.irDia(HOJE),
       cal, agMesTxt: MESES[cm - 1] + ' de ' + cy, aulasMesTxt: aulasMes + (aulasMes === 1 ? ' aula' : ' aulas'), mesAnterior: () => this.moverMes(-1), mesProximo: () => this.moverMes(1),
-      abrirExtra: () => this.abrirExtra(),
+      abrirExtra: e => { const g = e && e.currentTarget && e.currentTarget.closest && e.currentTarget.closest('[data-grade-notas-v2]'); return g ? this.setState({ gnExtra: { nome: '', peso: 1 }, gnCol: null }) : this.abrirExtra(); },
 
       // semestre
       semEstado: E && E !== 'vazio' ? E : null, semAtivoVis: !!ativo && !E, semEncerradoVis: !!sem && !!sem.encerrado_em && !E, semNovoVis: E === 'vazio' || (!ativo && !E), semHistVis: !(E && E !== 'vazio'),
