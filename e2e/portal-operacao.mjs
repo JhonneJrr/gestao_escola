@@ -191,8 +191,9 @@ try {
   let segundoDia;
   await conferir('aula extra (criada pela API) e chamada completa pela página da disciplina', async () => {
     const sem = (await api('/semestres/atual')).corpo;
-    dia = sem.inicio; novoDia = new Date(Date.parse(dia) + 2 * 86400000).toISOString().slice(0, 10);
-    segundoDia = new Date(Date.parse(dia) + 86400000).toISOString().slice(0, 10);
+    // os três primeiros dias úteis do semestre: o servidor não aceita aula extra nem remarcação em fim de semana
+    const uteis = []; for (let t = Date.parse(sem.inicio); uteis.length < 3; t += 86400000) { const d = new Date(t); if (d.getUTCDay() >= 1 && d.getUTCDay() <= 5) uteis.push(d.toISOString().slice(0, 10)); }
+    [dia, segundoDia, novoDia] = uteis;
     assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: dia, hora_inicio: '15:30', hora_fim: '17:10' })).status, 201);
     assert.equal((await api(`/disciplinas/${disc.id}/aulas`, 'POST', { data: segundoDia, hora_inicio: '13:30', hora_fim: '15:10' })).status, 201);
     const aulas = (await api(`/disciplinas/${disc.id}/aulas`)).corpo;
@@ -227,9 +228,10 @@ try {
     const r = await api('/aulas/' + aula.id, 'PATCH', { status: 'cancelada' });
     assert.equal(r.status, 409); assert.equal(r.corpo.detail, 'Aula já tem presenças');
     assert.equal((await api('/agenda?data=' + dia)).corpo.find(a => a.aula_id === aula.id).status, 'agendada');
-    assert.equal((await api('/aulas/' + outra.id, 'PATCH', { status: 'agendada' })).status, 200);
+    const reativada = await api('/aulas/' + outra.id, 'PATCH', { status: 'agendada' });
+    assert.equal(reativada.status, 200, JSON.stringify(reativada.corpo));
     const re = await api('/aulas/' + outra.id, 'PATCH', { data: novoDia, hora_inicio: '12:00', hora_fim: '13:40', status: 'agendada' });
-    assert.equal(re.status, 200);
+    assert.equal(re.status, 200, JSON.stringify(re.corpo));
     const au = (await api('/portal/estado')).corpo.aulas.find(a => a.id === outra.id);
     assert.equal(au.remarcada_de, segundoDia); assert.equal(au.data, novoDia);
   });
