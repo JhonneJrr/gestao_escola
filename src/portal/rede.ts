@@ -112,3 +112,10 @@ type PropostaIA = { disciplina_id: number; disciplina_nome: string; professor_no
 type RecusadaIA = { disciplina_id: number; disciplina_nome: string; motivo: string };
 export const pedirGradeIA = (mensagens: MensagemIA[]) => pedir<{ resposta: string; proposta: PropostaIA[]; recusados: RecusadaIA[] }>('/ia/grade', { mensagens });
 export const erroGradeIA = (erro: { status?: number; detalhe?: string }) => erro.status === 0 ? 'Não consegui falar com o assistente. Tente de novo.' : erro.detalhe || (erro.status === 503 ? 'O assistente não está configurado neste servidor.' : erro.status === 429 ? 'O assistente atingiu o limite de uso. Tente de novo em alguns minutos.' : 'Não consegui falar com o assistente. Tente de novo.');
+
+// Recursos do update 4 que o servidor ainda não guarda (regra de avaliação, publicar e prazo de nota, conselho de classe).
+// Não gravam nada: dizem na tela que o servidor não tem a rota, em vez de fingir que salvaram.
+const semRota = (): never => { throw { status: 501, detalhe: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' }; };
+export const salvarMetaAvaliacao = async (_avaliacao: number | string, _meta: { publicada?: boolean; prazo?: string }): Promise<void> => semRota();
+export const salvarConselho = async (_aluno: number, _disciplina: number, _aprovado: boolean): Promise<void> => semRota();
+export const salvarRegra = async (_regra: object): Promise<void> => semRota();

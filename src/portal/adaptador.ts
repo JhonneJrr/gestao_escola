@@ -24,10 +24,18 @@ const semestre = (s: any) => s == null ? null : ({
   encerrado_em: s.encerrado_em == null ? null : s.encerrado_em.slice(0, 10),
 });
 
+// Regra de avaliação da escola. Enquanto o servidor não a entrega, vale um único período (o semestre), sem avaliação obrigatória:
+// as avaliações que o servidor guarda aparecem como atividades desse período, já publicadas, porque o servidor as mostra ao aluno.
+export const regraDoSemestre = (sem: any) => ({
+  tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: sem?.inicio ?? '', fim: sem?.fim ?? '', fechado: !!sem?.encerrado_em }],
+  itens: [] as any[], extras: { permitido: true, max: 99, peso: 100 }, participacao: { ativo: false, peso: 1 },
+  recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false,
+});
+
 export function montarEstado(usuario: any, estado: any) {
   const discs = estado.disciplinas.map((d: any) => ({ id: d.id, nome: d.nome, carga_horaria: d.carga_horaria, professor_id: d.professor_id,
     turma: String(d.turma_id ?? ''), sala: String(d.sala_id ?? ''), grade: d.grade.map((g: any) => ({ dia_semana: g.dia_semana, hora_inicio: g.hora_inicio, hora_fim: g.hora_fim, sala: String(g.sala_id ?? d.sala_id ?? ''), sala_id: g.sala_id ?? null })) }));
-  const avals = estado.avaliacoes.map((a: any) => ({ id: a.id, did: a.disciplina_id, nome: a.nome, peso: a.peso }));
+  const avals = estado.avaliacoes.map((a: any) => ({ id: a.id, did: a.disciplina_id, nome: a.nome, peso: a.peso, per: 'p1', extra: true }));
   return {
     papel: usuario.perfil === 'professor' ? 'prof' : usuario.perfil,
     profId: usuario.perfil === 'professor' ? usuario.id : null, usuario,
@@ -53,7 +61,7 @@ export function montarEstado(usuario: any, estado: any) {
     })),
     discs,
     mats: Object.fromEntries(estado.matriculas.map((m: any) => [m.aluno_id + '-' + m.disciplina_id, true])),
-    avals,
+    avals, avalMeta: Object.fromEntries(avals.map((a: any) => [a.id, { publicada: true, prazo: '' }])), conselho: {}, regra: regraDoSemestre(estado.semestre),
     notas: Object.fromEntries(estado.notas.map((n: any) => [n.aluno_id + '-' + n.avaliacao_id, n.valor])),
     aulas: estado.aulas.map((a: any) => ({
       aula_id: a.id, disciplina_id: a.disciplina_id, data: a.data, hora_inicio: a.hora_inicio, hora_fim: a.hora_fim,

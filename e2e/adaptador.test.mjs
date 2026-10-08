@@ -323,7 +323,9 @@ const esperadoTurma = {
   semestre: { id: 9, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: null },
   alunos: [{ id: 27, nome: 'Bia', mat: 'A027', idade: null, media: 7.5, email: 'bia@escola.com', hist: '2026.1', turma: null, turma_nome: null }],
   discs: [{ id: 13, nome: 'Python', carga_horaria: 40, professor_id: 42, turma: '', sala: '', grade: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '09:40', sala: '', sala_id: null }] }],
-  mats: { '27-13': true }, avals: [{ id: 88, did: 13, nome: 'P1', peso: 100 }], notas: { '27-88': 0 },
+  mats: { '27-13': true }, avals: [{ id: 88, did: 13, nome: 'P1', peso: 100, per: 'p1', extra: true }], avalMeta: { 88: { publicada: true, prazo: '' } }, conselho: {},
+  regra: { tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: '2026-08-03', fim: '2026-12-11', fechado: false }], itens: [], extras: { permitido: true, max: 99, peso: 100 }, participacao: { ativo: false, peso: 1 }, recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false },
+  notas: { '27-88': 0 },
   aulas: [
     { aula_id: 73, disciplina_id: 13, data: '2026-10-06', hora_inicio: '08:00', hora_fim: '09:40', status: 'agendada', origem: 'grade', remarcada_de: '2026-10-05', chamada: { '27': false } },
     { aula_id: 74, disciplina_id: 13, data: '2026-10-08', hora_inicio: null, hora_fim: null, status: 'cancelada', origem: 'extra', remarcada_de: null, chamada: null },
@@ -373,7 +375,8 @@ test('aluno usa aluno_id e marca provisória somente na própria conta', () => {
 test('professor sem disciplina recebe coleções vazias e semestre nulo', () => {
   assert.deepEqual(montarEstado(professor, { ...vazio, professores: [professor] }), {
     papel: 'prof', profId: 42, usuario: professor, semestre: null, historico: [], profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }],
-    alunos: [], discs: [], turmas: [], salas: [], eventos: [], pedidos: [], mats: {}, avals: [], notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
+    alunos: [], discs: [], turmas: [], salas: [], eventos: [], pedidos: [], mats: {}, avals: [], avalMeta: {}, conselho: {}, notas: {}, aulas: [], avisos: [], metricas: [], selAluno: null, selDisc: null, notaDisc: null, notaAval: '',
+    regra: { tipo: 'Semestre', periodos: [{ id: 'p1', nome: 'Semestre', inicio: '', fim: '', fechado: false }], itens: [], extras: { permitido: true, max: 99, peso: 100 }, participacao: { ativo: false, peso: 1 }, recuperacao: { ativo: false, modo: 'menor' }, final: { ativo: false }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: false },
   });
 });
 
@@ -480,8 +483,9 @@ test('renderVals do Portal fornece todos os valores que o template usa, em todos
   const usados = new Set([...readFileSync('src/portal/template.tsx', 'utf8').matchAll(/\bv\.([A-Za-z_$][\w$]*)/g)].map(m => m[1]));
   const dados = { ...turma, turmas: [{ id: 5, nome: '1º A' }], alunos: [{ ...turma.alunos[0], turma_id: 5, turma_nome: '1º A' }, { id: 28, nome: 'Colega', matricula: 'A028', idade: 20, media: 0, email: null, semestre_historico: null, turma_id: null, turma_nome: null }] };
   const fornecidos = new Set();
-  const coletar = (usuario, extra = {}) => {
+  const coletar = (usuario, extra = {}, props = {}) => {
     const q = quadro([], {}, 'Portal.tsx');
+    Object.assign(q.props, props);
     Object.assign(q.state, montarEstado(usuario, dados), { logado: true, tela: 'alunos' }, extra);
     for (const k of Object.keys(q.renderVals())) fornecidos.add(k);
     return q;
@@ -489,6 +493,10 @@ test('renderVals do Portal fornece todos os valores que o template usa, em todos
   coletar({ id: 0, perfil: 'escola', nome: 'Visitante', email: '', aluno_id: null }, { papel: null, logado: false, tela: 'inicio' });
   coletar(escola); coletar(escola, { hubTurma: '5', hubNova: true, hubMsg: { erro: false, t: 'ok' }, gaEd: 13, acadDisc: true, tela: 'frequencia' });
   coletar(escola, { hubTurma: '__sem' }); coletar(professor);
+  // grade de notas com avaliação aberta, resultado do ano, turma do professor (com e sem estado) e estados vazios do hub
+  coletar(escola, { acadDisc: true, tela: 'frequencia', subAba: 'notas', gnCol: 88, gnExtra: { nome: 'Lista', peso: 1 } }); coletar(escola, { gnPer: 'final' });
+  const docente = { profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }] };
+  coletar(professor, { ...docente, hubTurma: '__semT', gnCol: 88 }); coletar(professor, docente, { estado: 'Vazio' }); coletar(escola, {}, { estado: 'Vazio' }); coletar(escola, { hubTurma: '5' });
   coletar(escola, { tela: 'professores', profs: [{ id: 42, nome: 'Docente', email: 'docente@escola.com', ocupados: [] }], painel: { tipo: 'prof', id: 42 }, painelUlt: { tipo: 'prof', id: 42 } }); coletar(aluno, { tela: 'meu-painel' });
   assert.deepEqual([...usados].filter(n => !fornecidos.has(n)), []);
 });

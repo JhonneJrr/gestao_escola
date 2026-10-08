@@ -36,6 +36,9 @@ const SEM0 = { id: 2, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', e
 const PROFS0 = [{ id: 1, nome: 'Carlos Mendes', email: 'prof@escola.com', ocupados: [{ dia_semana: 2, hora_inicio: '08:00', hora_fim: '12:00', motivo: 'Outra escola' }] }, { id: 2, nome: 'Marta Ribeiro', email: 'marta@escola.com' }, { id: 3, nome: 'Paulo Antunes', email: 'paulo@escola.com' }];
 
 const AVISO = 'var(--aviso)', TINTA = 'var(--texto)';
+const REGRA0 = { tipo: 'Semestre', periodos: [{ id: 'p1', nome: '1º semestre', inicio: '2026-02-02', fim: '2026-07-03', fechado: true }, { id: 'p2', nome: '2º semestre', inicio: '2026-08-03', fim: '2026-12-11', fechado: false }],
+  itens: [{ id: 'i1', nome: 'P1', tipo: 'Prova', peso: 1 }, { id: 'i2', nome: 'P2', tipo: 'Prova', peso: 1 }], extras: { permitido: true, max: 2, peso: 1 }, participacao: { ativo: false, peso: 1 },
+  recuperacao: { ativo: true, modo: 'menor' }, final: { ativo: true }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: true };
 
 const HIST0 = [{ id: 1, nome: '2026.1', inicio: '2026-02-09', fim: '2026-06-26', encerrado_em: '2026-07-01', resumo: [
   ['Lógica de Programação', 6, '7,2', '88%', 5, 1], ['Matemática Discreta', 6, '6,4', '81%', 4, 2], ['Introdução à Computação', 6, '7,8', '92%', 6, 0]
@@ -44,13 +47,14 @@ const HIST0 = [{ id: 1, nome: '2026.1', inicio: '2026-02-09', fim: '2026-06-26',
 function seed() {
   const notas = {}, mats = {}, avals = [];
   const off = { 1: 0.3, 2: -0.3, 3: 0 };
-  DISC0.forEach(d => avals.push({ id: d.id * 10 + 1, did: d.id, nome: 'P1', peso: 50 }, { id: d.id * 10 + 2, did: d.id, nome: 'P2', peso: 50 }));
+  const avalMeta = {}; DISC0.forEach(d => { avalMeta['v' + d.id + '_p1_i1'] = { publicada: true, prazo: '2026-04-30' }; avalMeta['v' + d.id + '_p1_i2'] = { publicada: true, prazo: '2026-06-30' }; avalMeta['v' + d.id + '_p2_i1'] = { publicada: true, prazo: '2026-09-30' }; avalMeta['v' + d.id + '_p2_i2'] = { publicada: false, prazo: '2026-10-05' }; });
   ALUNOS0.forEach(a => {
     [1, 2, 3].forEach(did => {
       mats[a.id + '-' + did] = true;
       const m = a.media + off[did];
-      notas[a.id + '-' + (did * 10 + 1)] = Math.round((m - 0.5) * 10) / 10;
-      notas[a.id + '-' + (did * 10 + 2)] = Math.round((m + 0.5) * 10) / 10;
+      const cl = x => Math.max(0, Math.min(10, Math.round(x * 10) / 10));
+      notas[a.id + '-v' + did + '_p1_i1'] = cl(m - 0.2); notas[a.id + '-v' + did + '_p1_i2'] = cl(m + 0.3);
+      notas[a.id + '-v' + did + '_p2_i1'] = cl(m - 0.5); if (a.id !== 2 || did !== 1) notas[a.id + '-v' + did + '_p2_i2'] = cl(m + 0.5);
     });
     if ([1, 2, 4, 5].includes(a.id)) mats[a.id + '-4'] = true;
   });
@@ -67,14 +71,14 @@ function seed() {
   });
   aulas.forEach(au => { if (au.data === '2026-10-08' && au.disciplina_id === 3) au.status = 'cancelada'; });
   aulas.push({ aula_id: AID++, disciplina_id: 3, data: '2026-10-09', hora_inicio: '10:00', hora_fim: '11:40', status: 'agendada', origem: 'extra', chamada: null });
-  return { notas, mats, avals, aulas };
+  return { notas, mats, avals, aulas, avalMeta };
 }
 
 export function estadoDemo(papel: 'escola' | 'prof' | 'aluno') {
   AID = 1;
   const usuario = papel === 'escola' ? { nome: 'Secretaria', email: 'escola@escola.com' }
     : papel === 'prof' ? PROFS0[0] : { nome: 'Ana Souza', email: 'ana@escola.com', aluno_id: 1 };
-  return Object.assign(seed(), {
+  return Object.assign(seed(), { regra: REGRA0, conselho: {},
     alunos: ALUNOS0, turmas: TURMAS0, discs: DISC0, profs: PROFS0, semestre: SEM0, historico: HIST0,
     avisos: [
       { id: 3, titulo: 'Lista de grafos', data: '2026-10-02', msg: 'A lista 3 de grafos está no mural da sala. Entrega na aula de quinta.', disciplina_id: 3, autor_id: 2, autor_nome: 'Marta Ribeiro' },
