@@ -189,7 +189,7 @@ class Component extends DCLogic {
   }
   // Só DEV: no desktop o canvas mede a aba do Painel antes de trocar de tela (e deixa essa medida no indicador, que
   // some sem aba selecionada); no celular a troca vem antes do primeiro quadro e nada é medido.
-  esperarQuadro() { return window.innerWidth >= 768 ? new Promise(resolve => this.setState({}, () => requestAnimationFrame(resolve))) : Promise.resolve(); }
+  esperarQuadro(sempre = false) { return sempre || window.innerWidth >= 768 ? new Promise(resolve => this.setState({}, () => requestAnimationFrame(resolve))) : Promise.resolve(); }
   async aplicarInicio() {
     if (!import.meta.env.DEV || this.props.inicio === undefined) return;
     const i = this.props.inicio ?? 'Apresentação';
@@ -225,7 +225,7 @@ class Component extends DCLogic {
     else if (/^Escola · /.test(i)) { this.entrarComo('escola'); await this.esperarQuadro(); if (i === 'Escola · horários do professor') { this.setState({ tela: 'professores' }); this.abrirFicha(this.state.profs[0]); } else await this.iaEstadoAplicar({ 'Escola · assistente vazio': 'Vazio', 'Escola · assistente com proposta': 'Com \"Não coube\"', 'Escola · assistente com erro': 'Erro: sem conexão' }[i]); }
     else if (i === 'Professor · sem permissão') { this.entrarComo('prof'); this.setState({ tela: 'disciplinas', semPerm: 3 }); }
     else this.entrarComo(i === 'Aluno' ? 'aluno' : 'escola');
-    if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') { await this.esperarQuadro(); await this.iaEstadoAplicar(this.props.iaEstado); }
+    if ((this.props.iaEstado ?? 'Conversa livre') !== 'Conversa livre') { await this.esperarQuadro(true); await this.iaEstadoAplicar(this.props.iaEstado); }
   }
   async carregarEstado(usuario) {
     this.setState({ carregando: true, carga: 'carregando' });
