@@ -703,7 +703,6 @@ class Component extends DCLogic {
     try {
       await apagarDisciplina(id); await this.recarregar();
       this.setState(s => ({ matMsg: null, confExc: null, selDisc: (s.discs.find(x => x.id !== id) || {}).id || null, rotaAviso: 'Disciplina excluída.' }));
-      if (this.state.acadDisc) this.voltarAcad();
     } catch (erro) {
       this.setState(s => ({ matMsg: { erro: true, t: textoErro(erro) }, confExc: s.confExc ? Object.assign({}, s.confExc, { bloq: erro.status === 409 || s.confExc.bloq, erro: textoErro(erro) }) : null }));
     } finally { this.setState({ excluindo: false }); }

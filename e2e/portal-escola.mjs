@@ -183,7 +183,14 @@ try {
   const campo = rotulo => editor().locator('label').filter({ hasText: new RegExp('^' + rotulo) });
   const lista = () => page.getByRole('listbox', { name: 'Disciplinas', exact: true });
   const itemDisc = nome => lista().getByText(nome, { exact: true }).first();
-  const seletorAluno = () => page.locator('select').filter({ has: page.locator('option', { hasText: 'Escolha o aluno' }) });
+  // Excluir disciplina pede confirmação: o DELETE só sai depois de "Excluir de vez" (e não sai se a pessoa cancelar).
+  async function excluirComConfirmacao(nome) {
+    await botao('Excluir disciplina').click();
+    const dialogo = page.getByRole('alertdialog', { name: 'Excluir ' + nome + '?', exact: true });
+    await dialogo.waitFor({ state: 'visible' });
+    await dialogo.getByRole('button', { name: 'Excluir de vez', exact: true }).click();
+  }
+  const seletorAluno = () => page.locator('select').filter({ has: page.locator('option', { hasText: 'Escolha um aluno' }) });
   async function paginaDisciplinas() {
     await page.goto(FRONT + '/disciplinas');
     await itemDisc('Python').waitFor({ state: 'visible' });
@@ -336,7 +343,7 @@ try {
     assert.equal((await lerDisciplina(criada.corpo.id)).professor_id, null);
     await editor().getByRole('button', { name: /^Fechar/ }).click(); await editor().waitFor({ state: 'hidden' });
     await itemDisc(nomeDisc + ' sem professor').waitFor({ state: 'visible' });
-    assert.equal((await resposta(`/disciplinas/${criada.corpo.id}`, 'DELETE', () => botao('Excluir disciplina').click())).status, 204);
+    assert.equal((await resposta(`/disciplinas/${criada.corpo.id}`, 'DELETE', () => excluirComConfirmacao(nomeDisc + ' sem professor'))).status, 204);
     await itemDisc(nomeDisc + ' sem professor').waitFor({ state: 'hidden' });
     assert.ok(await logic('return logic.state.discs.some(d => d.id === arg);', disc.id));
     assert.equal(await logic('return logic.state.discs.some(d => d.id === arg);', criada.corpo.id), false);
@@ -344,7 +351,7 @@ try {
   await conferir('exclui disciplina e alunos; seleções inválidas caem no primeiro válido', async () => {
     await logic('logic.setState({ selDisc: arg, notaDisc: arg, notaAval: 999999, matDisc: String(arg) });', disc.id);
     await itemDisc(nomeDisc + ' editada').waitFor({ state: 'visible' });
-    assert.equal((await resposta(`/disciplinas/${disc.id}`, 'DELETE', () => botao('Excluir disciplina').click())).status, 204);
+    assert.equal((await resposta(`/disciplinas/${disc.id}`, 'DELETE', () => excluirComConfirmacao(nomeDisc + ' editada'))).status, 204);
     await page.waitForFunction(() => !document.body.textContent.includes('Disciplina F3a'));
     const st = await logic('return { selDisc: logic.state.selDisc, notaDisc: logic.state.notaDisc, matDisc: logic.state.matDisc, primeiro: logic.state.discs[0].id };');
     assert.equal(st.selDisc, st.primeiro); assert.equal(st.notaDisc, st.primeiro); assert.equal(st.matDisc, String(st.primeiro));
