@@ -281,7 +281,13 @@ class Component extends DCLogic {
       this.entrarComo(this.state.papel, null, true);
     } catch (erro) {
       if (erro.status === 401) this.sair(['inicio', 'login', 'primeiro-acesso'].includes(tela) ? tela : 'login');
-      else this.setState({ carregando: false, loginErro: erro.detalhe });
+      else {
+        // Rede ou servidor fora do ar: abre o login (o card só aparece com o mergulho aberto) e mostra o motivo.
+        // O token fica guardado: a sessão pode estar boa e o próximo carregamento volta a restaurá-la.
+        this.setState({ carregando: false });
+        this.abrirMergulho(null, null, true);
+        this.setState({ loginErro: erro.detalhe || 'Não foi possível restaurar a sessão. Entre de novo.' });
+      }
     }
   }
   sair(tela = 'inicio') {
