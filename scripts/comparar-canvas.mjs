@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as esperar } from 'node:timers/promises';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// PORTA escolhe a porta do vite do comparador (padrão 5173); use outra quando já houver um vite rodando.
+const PORTA = Number(process.env.PORTA || 5173);
 const canvas = resolve(raiz, 'design/canvas');
 const saida = resolve(raiz, 'e2e/saida');
 // Os estados de `inicio` vêm direto das opções do canvas da atualização 3 (os mesmos nomes que o porte DEV aceita).
@@ -26,7 +28,7 @@ let opcoes = {};
 // Menu da atualização 3: os Alt+N seguem esta ordem (TELAS_POR do canvas).
 const abas = {
   Escola: ['Painel', 'Semestre', 'Professores', 'Alunos', 'Acadêmico', 'Avisos'],
-  Professor: ['Painel', 'Acadêmico', 'Meus alunos', 'Avisos'],
+  Professor: ['Painel', 'Acadêmico', 'Minhas turmas', 'Avisos'],
 };
 const filtro = process.argv.includes('--estado') ? process.argv[process.argv.indexOf('--estado') + 1] : '';
 // ESTADOS=<regex> filtra também por expressão regular (rodar por partes, sem estourar o tempo).
@@ -68,7 +70,7 @@ async function portaOcupada() {
   return new Promise((resolvePorta, reject) => {
     const probe = servidorTCP();
     probe.once('error', erro => erro.code === 'EADDRINUSE' ? resolvePorta(true) : reject(erro));
-    probe.listen(5173, 'localhost', () => probe.close(() => resolvePorta(false)));
+    probe.listen(PORTA, 'localhost', () => probe.close(() => resolvePorta(false)));
   });
 }
 
@@ -130,18 +132,18 @@ try {
   mkdirSync(saida, { recursive: true });
   await new Promise(resolveServidor => servidor.listen(0, '127.0.0.1', resolveServidor));
   if (!await portaOcupada()) {
-    vite = spawn(process.execPath, [resolve(raiz, 'node_modules/vite/bin/vite.js'), '--host', 'localhost', '--port', '5173', '--strictPort'], { cwd: raiz, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    vite = spawn(process.execPath, [resolve(raiz, 'node_modules/vite/bin/vite.js'), '--host', 'localhost', '--port', String(PORTA), '--strictPort'], { cwd: raiz, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let log = '';
     vite.stdout.on('data', data => { log += data; });
     vite.stderr.on('data', data => { log += data; });
     let pronto = false;
     for (let i = 0; i < 100; i++) {
       if (vite.exitCode !== null) throw new Error('Vite encerrou antes de servir o portal:\n' + log);
-      try { pronto = (await fetch('http://localhost:5173/')).ok; } catch {}
+      try { pronto = (await fetch('http://localhost:' + PORTA + '/')).ok; } catch {}
       if (pronto) break;
       await esperar(100);
     }
-    if (!pronto) throw new Error('Vite não ficou disponível em :5173:\n' + log);
+    if (!pronto) throw new Error('Vite não ficou disponível em :' + PORTA + ':\n' + log);
   }
   browser = await chromium.launch({ channel: 'msedge' });
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
@@ -171,7 +173,7 @@ try {
       const urlReferencia = 'http://127.0.0.1:' + servidor.address().port + '/Portal%20Escolar.dc.html';
       await Promise.all([
         referencia.goto(urlReferencia, { waitUntil: 'load' }),
-        porte.goto('http://localhost:5173/?' + new URLSearchParams({ relogio: 'Terça 08:40', ...caso, movimento: 'Reduzido' }), { waitUntil: 'load' }),
+        porte.goto('http://localhost:' + PORTA + '/?' + new URLSearchParams({ relogio: 'Terça 08:40', ...caso, movimento: 'Reduzido' }), { waitUntil: 'load' }),
       ]);
       if (externas.size) throw new Error('URL externa não prevista pelo plano; comparação interrompida:\n' + [...externas].join('\n'));
       if (erros.length) throw new Error('Erro de execução do canvas/porte:\n' + erros.join('\n'));
