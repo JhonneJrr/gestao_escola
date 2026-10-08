@@ -101,12 +101,12 @@ try {
     }
     await page.keyboard.press('Alt+1'); await telaMenu('Painel', '/painel');
   });
-  await conferir('Acadêmico abre o quadro semanal em /agenda e tem as quatro abas da escola', async () => {
+  await conferir('Acadêmico abre o quadro semanal em /agenda e tem as cinco abas da escola', async () => {
     await menu('Acadêmico', '/agenda');
     const grade = page.locator('[data-sc-name="GradeAgenda"]');
     const abas = grade.getByRole('tablist', { name: 'Seções', exact: true });
     await abas.waitFor({ state: 'visible' });
-    for (const aba of ['Quadro semanal', 'Ano letivo', 'Disciplinas']) await abas.getByRole('tab', { name: aba, exact: true }).waitFor({ state: 'visible' });
+    for (const aba of ['Quadro semanal', 'Ano letivo', 'Disciplinas', 'Avaliação']) await abas.getByRole('tab', { name: aba, exact: true }).waitFor({ state: 'visible' });
     await abas.getByRole('tab', { name: /^Pedidos de aula extra/ }).waitFor({ state: 'visible' });
     assert.equal(await abas.getByRole('tab', { name: 'Quadro semanal', exact: true }).getAttribute('aria-selected'), 'true');
   });
