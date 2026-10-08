@@ -61,7 +61,7 @@ try {
   }
   async function sair() {
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
-    await url('/'); await apresentacao();
+    await url('/login'); await page.getByLabel('E-mail', { exact: true }).first().waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), null);
   }
 
@@ -214,7 +214,10 @@ try {
     await page.getByLabel('Nova senha', { exact: true }).waitFor({ state: 'visible' });
     await url('/primeiro-acesso');
     assert.equal(await usuario().count(), 0);
-    await sair();
+    // Na troca de senha do primeiro acesso, Sair volta à apresentação; o Sair do menu volta ao login.
+    await page.getByRole('button', { name: 'Sair', exact: true }).click();
+    await url('/'); await apresentacao();
+    assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), null);
   });
   await conferir('portal na raiz sem erros e sem escritas de dados na API', async () => {
     assert.equal(await page.locator('#dc-root > [data-sc-name="Portal Escolar"]').count(), 1);

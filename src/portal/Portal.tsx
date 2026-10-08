@@ -1892,7 +1892,7 @@ class Component extends DCLogic {
       usuarioEmail: st.usuario?.email || '', usuarioIniciais: ini(usuarioNome),
       usuarioNome, rotuloPerfil: ehEscola ? 'Escola' : ehProf ? 'Professor' : 'Aluno',
       telaAnterior: () => this.ir(this.telas()[(idx + this.telas().length - 1) % this.telas().length].id), telaProxima: () => this.ir(this.telas()[(idx + 1) % this.telas().length].id),
-      sair: () => this.sair(),
+      sair: () => this.sair('login'),
       abrirNav: () => this.setState({ navAberta: true }), fecharNav: () => this.setState({ navAberta: false }),
       navO: st.navAberta ? 1 : 0, navT: st.navAberta || this.rm ? 'none' : 'translateY(-6px)', navPE: st.navAberta ? 'auto' : 'none',
       abas: this.telas().map((t, i) => ({ label: t.label, atalho: 'Alt ' + (i + 1), on: t.id === tela, peso: peso(t.id === tela), ir: () => this.ir(t.id) })),

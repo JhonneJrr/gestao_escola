@@ -38,8 +38,8 @@ try {
   async function entrou() { await page.getByRole('button', { name: 'Menu do usuário' }).waitFor({ state: 'visible' }); }
   async function saiu() {
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
-    await page.getByRole('button', { name: 'Entrar no portal', exact: true }).first().waitFor({ state: 'visible' });
-    assert.equal(new URL(page.url()).pathname, '/');
+    await page.getByLabel('E-mail', { exact: true }).first().waitFor({ state: 'visible' });
+    assert.equal(new URL(page.url()).pathname, '/login');
     assert.equal(await page.evaluate(() => localStorage.getItem('portal.token')), null);
   }
   async function identidade(email, nome) {
