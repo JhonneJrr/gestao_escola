@@ -90,7 +90,7 @@ class Component extends DCLogic {
     if (String(d).trim() === '') return this.setState({ gnDraft: limpa() });
     if (!this.notaOk(d)) return this.setState({ gnMsg: { erro: true, t: 'Nota de ' + an + ' em ' + vn + ': use um valor de 0 a 10, com até uma casa decimal.' } });
     const n = Math.round(parseFloat(String(d).replace(',', '.')) * 10) / 10;
-    const [aid, vid] = key.split('-').map(Number);
+    const corte = key.indexOf('-'), aid = Number(key.slice(0, corte)), idAval = key.slice(corte + 1), vid = /^\d+$/.test(idAval) ? Number(idAval) : idAval;
     try {
       await salvarNota(vid, aid, n); await this.recarregar();
       this.setState({ gnDraft: limpa(), gnMsg: { erro: false, t: 'Nota de ' + an + ' em ' + vn + ': ' + fmt(n) + '.' } });
