@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const API = 'http://localhost:8000', FRONT = 'http://localhost:5173', sufixo = Date.now();
+const API = process.env.API_URL || 'http://localhost:8000', FRONT = process.env.FRONT_URL || 'http://localhost:5173', sufixo = Date.now();
 let browser, token, disc, aluno, colega, seed;
 const avisos = new Set();
 async function api(caminho, method = 'GET', corpo, credencial = token) {
@@ -96,63 +96,74 @@ try {
     const r = await api(`/alunos/${aluno.id}/boletim`); assert.equal(r.status, 200);
     return r.corpo.find(b => b.disciplina.id === disc.id);
   }
+  // valores das duas atividades extras de teste, na ordem p1, p2 (a regra do update 4 cria várias avaliações por disciplina)
+  const notasDe = async () => { const b = await boletim(); const m = Object.fromEntries(b.notas.map(n => [n.avaliacao.id, n.valor])); return [m[p1.id] ?? null, m[p2.id] ?? null]; };
+  const extrasDe = async () => (await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo.filter(a => a.tipo === 'extra');
+  const periodoAtual = async () => { const r = (await api('/regra-avaliacao')).corpo, hoje = new Date().toISOString().slice(0, 10); return (r.periodos.find(p => p.inicio <= hoje && hoje <= p.fim) || r.periodos[0]).id; };
   let p1, p2, aula, outra, dia, novoDia;
-  await conferir('escola entra pela tela e cria avaliações pelos dois formulários (50/50)', async () => {
+  await conferir('escola cria atividades extras pela grade da disciplina e pelo formulário do boletim', async () => {
     await entrar('escola@escola.com');
-    await preparar("logic.setState({ tela: 'disciplinas', selDisc: arg.disc.id, selAluno: arg.aluno.id, notaDisc: arg.disc.id, subAba: 'notas', avalNome: 'P1 F3b', avalPeso: '50' });");
-    await agir(`/disciplinas/${disc.id}/avaliacoes`, 'POST', 'await logic.renderVals().criarAvalSel({ preventDefault() {} });', undefined, 201);
-    await visivel('Avaliação criada.').waitFor({ state: 'visible' });
-    await preparar("logic.setState({ tela: 'boletim', avalNome: 'P2 F3b', avalPeso: '50' });");
-    await agir(`/disciplinas/${disc.id}/avaliacoes`, 'POST', 'await logic.renderVals().criarAval({ preventDefault() {} });', undefined, 201);
-    const r = await api(`/disciplinas/${disc.id}/avaliacoes`); assert.equal(r.status, 200);
-    assert.deepEqual(r.corpo.map(a => [a.nome, a.peso]), [['P1 F3b', 50], ['P2 F3b', 50]]);
-    [p1, p2] = r.corpo;
+    const periodo = await periodoAtual();
+    await page.goto(FRONT + '/disciplinas');
+    await page.getByRole('listbox', { name: 'Disciplinas', exact: true }).getByText(disc.nome, { exact: true }).first().click();
+    await page.getByRole('tab', { name: /^Avaliações e notas/ }).click();
+    await page.getByRole('button', { name: /^Atividade extra/ }).click();
+    await page.getByLabel('Nome da atividade', { exact: true }).fill('Lista A F3b');
+    const a = await agirUI(`/disciplinas/${disc.id}/avaliacoes`, 'POST', () => page.getByRole('button', { name: 'Criar', exact: true }).click(), 201);
+    assert.deepEqual(a.pedido, { nome: 'Lista A F3b', periodo_id: periodo });
+    await visivel('Lista A F3b criada. Começa como rascunho.').waitFor({ state: 'visible' });
+    await preparar("logic.setState({ tela: 'boletim', selDisc: arg.disc.id, selAluno: arg.aluno.id, notaDisc: arg.disc.id, avalNome: 'Lista B F3b', avalPeso: '1' });");
+    const b = await agir(`/disciplinas/${disc.id}/avaliacoes`, 'POST', 'await logic.renderVals().criarAval({ preventDefault() {} });', undefined, 201);
+    assert.deepEqual(b.pedido, { nome: 'Lista B F3b', periodo_id: periodo });
+    const extras = await extrasDe();
+    assert.deepEqual(extras.map(x => [x.nome, x.publicada]), [['Lista A F3b', false], ['Lista B F3b', false]]);
+    [p1, p2] = extras;
     assert.equal(await logic('return logic.state.selDisc;'), disc.id);
   });
-  await conferir('grade e boletim lançam notas reais e média ponderada 7,0', async () => {
+  await conferir('grade e boletim lançam notas reais e a média do servidor é 7,0', async () => {
     const key = aluno.id + '-' + p1.id;
     await preparar("logic.setState({ tela: 'disciplinas', subAba: 'notas' });");
     await logic('logic.setState({ gnDraft: { [arg]: "6,0" } });', key);
-    const r = await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, logic.state.alunos.find(a => a.id === +arg.split("-")[0]).nome, "P1 F3b");', key);
+    const r = await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, logic.state.alunos.find(a => a.id === +arg.split("-")[0]).nome, "Lista A F3b");', key);
     assert.deepEqual(r.pedido, { valor: 6 });
-    await visivel('Nota de ' + aluno.nome + ' em P1 F3b: 6,0.').waitFor({ state: 'visible' });
+    await visivel('Nota de ' + aluno.nome + ' em Lista A F3b: 6,0.').waitFor({ state: 'visible' });
     await logic("logic.setState({ tela: 'boletim', notaAval: arg, notaValor: '8,0' });", p2.id);
     await agir(`/avaliacoes/${p2.id}/notas/${aluno.id}`, 'PUT', 'await logic.renderVals().lancarNota({ preventDefault() {} });');
-    const b = await boletim(); assert.deepEqual(b.notas.map(n => n.valor), [6, 8]);
-    assert.equal(b.media, 7); assert.equal(b.parcial, false);
+    assert.deepEqual(await notasDe(), [6, 8]);
+    assert.equal((await boletim()).media, 7);
   });
-  await conferir('exclusão de avaliação com notas mostra o 409 real e preserva ambas as avaliações', async () => {
-    assert.deepEqual((await boletim()).notas.map(n => n.valor), [6, 8]);
-    await agir('/avaliacoes/' + p1.id, 'DELETE', 'await logic.renderVals().avalLista.find(a => a.nome === "P1 F3b").excluir();', undefined, 409);
-    const detalhe = 'Não é possível excluir: já existem notas lançadas nessa avaliação';
+  await conferir('exclusão de atividade com notas mostra o 409 real e preserva as duas', async () => {
+    assert.deepEqual(await notasDe(), [6, 8]);
+    await agir('/avaliacoes/' + p1.id, 'DELETE', 'await logic.renderVals().avalLista.find(a => a.nome === "Lista A F3b").excluir();', undefined, 409);
+    const detalhe = 'Só dá para excluir atividade sem notas.';
     await visivel(detalhe).waitFor({ state: 'visible' });
     assert.deepEqual(await logic('return logic.state.avalMsg;'), { erro: true, t: detalhe });
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo.map(a => a.id), [p1.id, p2.id]);
+    assert.deepEqual((await extrasDe()).map(a => a.id), [p1.id, p2.id]);
   });
   await conferir('uma casa decimal é validada localmente nos dois caminhos, com nota válida como âncora', async () => {
-    assert.equal((await boletim()).notas[0].valor, 6);
+    assert.equal((await notasDe())[0], 6);
     const antes = respostas.length, key = aluno.id + '-' + p1.id;
-    await logic('logic.setState({ gnDraft: { [arg]: "6,25" } }); await logic.salvarNotaGrade(arg, "Aluno", "P1 F3b");', key);
+    await logic('logic.setState({ gnDraft: { [arg]: "6,25" } }); await logic.salvarNotaGrade(arg, "Aluno", "Lista A F3b");', key);
     assert.match(await logic('return logic.state.gnMsg.t;'), /até uma casa decimal/);
     await logic("logic.setState({ notaValor: '8,25' }); await logic.renderVals().lancarNota({ preventDefault() {} });");
     assert.deepEqual(await logic('return logic.state.notaMsg;'), { erro: true, t: 'Use um valor de 0 a 10, com até uma casa decimal.' });
     assert.equal(respostas.slice(antes).filter(r => r.metodo === 'PUT').length, 0);
-    assert.deepEqual((await boletim()).notas.map(n => n.valor), [6, 8]);
+    assert.deepEqual(await notasDe(), [6, 8]);
     await logic('logic.setState({ gnDraft: {} });');
   });
   await conferir('limpa notas pela grade e pela confirmação do boletim, preservando a outra nota', async () => {
     await preparar("logic.setState({ tela: 'disciplinas', subAba: 'notas' });");
-    await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'DELETE', 'await logic.renderVals().gnLinhas.find(l => l.nome === arg).cels[0].limpar();', aluno.nome);
-    assert.deepEqual((await boletim()).notas.map(n => n.valor), [null, 8]);
+    await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'DELETE', 'await logic.renderVals().gnLinhas.find(l => l.nome === arg).cels.find(c => c.label.endsWith("em Lista A F3b")).limpar();', aluno.nome);
+    assert.deepEqual(await notasDe(), [null, 8]);
     await logic("logic.setState({ tela: 'boletim', limpar: arg });", aluno.id + '-' + p2.id);
     await agir(`/avaliacoes/${p2.id}/notas/${aluno.id}`, 'DELETE', 'await logic.boletim(arg)[0].confirmarLimpar();', aluno.id);
-    assert.deepEqual((await boletim()).notas.map(n => n.valor), [null, null]);
+    assert.deepEqual(await notasDe(), [null, null]);
     assert.equal(await logic('return logic.state.limpar;'), null);
   });
   await conferir('erro real de nota sem matrícula aparece em notaMsg e gnMsg, ao lado de lançamento válido', async () => {
     await logic("logic.setState({ notaAval: arg, notaValor: '7' });", p1.id);
     await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'PUT', 'await logic.renderVals().lancarNota({ preventDefault() {} });');
-    await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'DELETE', 'await logic.boletim(arg)[0].avs[0].pedirLimpar(); await logic.boletim(arg)[0].confirmarLimpar();', aluno.id);
+    await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'DELETE', 'await logic.boletim(arg)[0].avs.find(a => a.nome === "Lista A F3b").pedirLimpar(); await logic.boletim(arg)[0].confirmarLimpar();', aluno.id);
     assert.equal((await api(`/alunos/${aluno.id}/matricular/${disc.id}`, 'DELETE')).status, 204);
     // O estado da tela fica deliberadamente anterior à desmatrícula concorrente.
     await logic("logic.setState({ notaValor: '7' });");
@@ -161,7 +172,7 @@ try {
     await visivel(detalhe).waitFor({ state: 'visible' });
     assert.deepEqual(await logic('return logic.state.notaMsg;'), { erro: true, t: detalhe });
     await logic('logic.setState({ tela: "disciplinas", subAba: "notas", gnDraft: { [arg]: "7" } });', aluno.id + '-' + p1.id);
-    await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, "Aluno", "P1 F3b");', aluno.id + '-' + p1.id, 409);
+    await agir(`/avaliacoes/${p1.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, "Aluno", "Lista A F3b");', aluno.id + '-' + p1.id, 409);
     await visivel(detalhe).waitFor({ state: 'visible' });
     assert.equal((await boletim()), undefined);
     assert.equal((await api(`/alunos/${aluno.id}/matricular/${disc.id}`, 'POST')).status, 201);
@@ -242,22 +253,23 @@ try {
       assert.equal(await logic('return logic.state.avisos.some(a => a.id === arg);', aviso.id), false);
     }
   });
-  await conferir('exclui avaliações sem notas pelos dois caminhos e conserva a outra como âncora', async () => {
+  await conferir('exclui atividades sem notas pela coluna da grade e pela lista do boletim', async () => {
     // A página foi recarregada nos passos de chamada: reaponta a seleção para a disciplina própria.
-    await preparar("logic.setState({ tela: 'disciplinas', selDisc: arg.disc.id, notaDisc: arg.disc.id, subAba: 'notas' });");
-    await agir('/avaliacoes/' + p1.id, 'DELETE', 'await logic.renderVals().avsSel.find(a => a.nome === "P1 F3b").excluir();');
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo.map(a => a.id), [p2.id]);
+    await preparar("logic.setState({ tela: 'disciplinas', selDisc: arg.disc.id, notaDisc: arg.disc.id, subAba: 'notas', gnCol: null });");
+    await page.locator('[role=columnheader]', { hasText: 'Lista A F3b' }).first().click();
+    await agirUI('/avaliacoes/' + p1.id, 'DELETE', () => page.getByRole('button', { name: 'Excluir atividade', exact: true }).click());
+    assert.deepEqual((await extrasDe()).map(a => a.id), [p2.id]);
     await preparar("logic.setState({ tela: 'boletim', selDisc: arg.disc.id, notaDisc: arg.disc.id });");
-    await agir('/avaliacoes/' + p2.id, 'DELETE', 'await logic.renderVals().avalLista.find(a => a.nome === "P2 F3b").excluir();');
-    assert.deepEqual((await api(`/disciplinas/${disc.id}/avaliacoes`)).corpo, []);
+    await agir('/avaliacoes/' + p2.id, 'DELETE', 'await logic.renderVals().avalLista.find(a => a.nome === "Lista B F3b").excluir();');
+    assert.deepEqual(await extrasDe(), []);
   });
   await conferir('Carlos escreve nota e chamada na sua disciplina própria; servidor recusa escritas na de Marta com 403', async () => {
-    const v = await api(`/disciplinas/${disc.id}/avaliacoes`, 'POST', { nome: 'Professor F3b', peso: 100 }); assert.equal(v.status, 201);
+    const v = await api(`/disciplinas/${disc.id}/avaliacoes`, 'POST', { nome: 'Professor F3b', periodo_id: await periodoAtual() }); assert.equal(v.status, 201);
     await logic('logic.sair();'); await entrar('prof@escola.com');
     await preparar("logic.setState({ tela: 'disciplinas', selDisc: arg.disc.id, subAba: 'notas' });");
     await logic('logic.setState({ gnDraft: { [arg]: "9" } });', aluno.id + '-' + v.corpo.id);
     await agir(`/avaliacoes/${v.corpo.id}/notas/${aluno.id}`, 'PUT', 'await logic.salvarNotaGrade(arg, "Aluno", "Professor F3b");', aluno.id + '-' + v.corpo.id);
-    assert.equal((await boletim()).notas[0].valor, 9);
+    assert.equal((await boletim()).notas.find(n => n.avaliacao.id === v.corpo.id).valor, 9);
     // Chamada pela interface do professor, na página da disciplina: revisa a chamada da escola marcando todos presentes.
     await abrirChamadas();
     await page.getByRole('button', { name: 'Ver chamada', exact: true }).first().click();
@@ -279,7 +291,7 @@ try {
     const negativo = await api(`/disciplinas/${daMarta.id}/chamada`, 'PUT', { data: dia, presencas: [{ aluno_id: aluno.id, presente: true }] }, profToken);
     assert.equal(negativo.status, 403); assert.equal(negativo.corpo.detail, 'Sem permissão para esta disciplina');
     assert.deepEqual(await api(`/disciplinas/${daMarta.id}/chamada?data=${dia}`), antes);
-    assert.equal((await boletim()).notas[0].valor, 9);
+    assert.equal((await boletim()).notas.find(n => n.avaliacao.id === v.corpo.id).valor, 9);
   });
   await conferir('nenhum erro JavaScript no percurso', async () => assert.deepEqual(erros, []));
 } catch (erro) {
