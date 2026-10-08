@@ -910,7 +910,7 @@ class GradeAgenda extends DCLogic {
             (r, simulado) => this.setState(s2 => { const c2 = Object.assign({}, s2.canceladas); if (simulado) { if (cancelar) c2[pn.key] = true; else delete c2[pn.key]; } return { ...(simulado ? { canceladas: c2 } : {}), painel: s2.painel && s2.painel.key === pn.key ? Object.assign({}, s2.painel, { cancelada: cancelar }) : s2.painel, msg: { t: d.nome + ' · ' + nomeTurma(d.turma) + ' de ' + ddmm(pn.data) + (cancelar ? ' cancelada.' : ' reativada.') } }; }),
             t => this.setState({ msg: { t } }));
           return { paCancVis: ok && !pn.cancelada, paReatVis: ok && !!pn.cancelada, paCancOff: feita || !fut || !!st.salvando, paCancO: feita || !fut ? 0.4 : st.salvando === 'canc' ? 0.6 : 1, paCancDica: feita ? 'Aula já tem presenças' : !fut ? 'Aula já começou ou passou' : '', paCancTemDica: feita || !fut,
-            paCancelar: () => { if (feita || !fut || this.soLeitura()) return; mudar(true); }, paReativar: () => { if (this.soLeitura()) return this.setState({ msg: { t: this.soLeitura() } }); mudar(false); },
+            paCancelar: () => { if (feita || !fut || this.soLeitura()) return; return mudar(true); }, paReativar: () => { if (this.soLeitura()) return this.setState({ msg: { t: this.soLeitura() } }); return mudar(false); },
             paCancTxt: this.sv('canc', 'Cancelar aula'), paReatTxt: this.sv('canc', 'Reativar aula'), paRemDica: esc && pn.itipo === 'grade' && !pn.cancelada && !pn.feriado && fut && !feita ? 'Para remarcar, arraste a aula no Quadro.' : '' }; })(),
         paEditarVis: esc && pn.itipo === 'grade', paEditar: () => this.abrirDisc(d), paPedVis: esc && pn.pendente, paIrPed: () => this.setState({ aba: 'pedidos', painel: null }) });
     }

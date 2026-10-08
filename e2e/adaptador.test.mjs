@@ -597,3 +597,35 @@ test('escola: acadêmico e hub levam aos lugares certos, sem cair em tela de out
   assert.deepEqual(q.telas().map(t => t.label), ['Painel', 'Semestre', 'Professores', 'Alunos', 'Acadêmico', 'Avisos']);
 });
 
+
+test('excluir disciplina pelo Portal: confirma antes, bloqueia com nota e mostra o 409 do servidor', async () => {
+  const apagadas = [];
+  const q = quadro([], { apagarDisciplina: async id => { apagadas.push(id); if (id === 13) throw { status: 409, detalhe: 'Disciplina com histórico' }; } }, 'Portal.tsx');
+  let recargas = 0; q.recarregar = async () => { recargas++; };
+  Object.assign(q.state, montarEstado(escola, turma));
+  // a disciplina tem nota lançada: o diálogo já abre bloqueado e não chama o servidor
+  q.pedirExcluirDisc(13);
+  assert.deepEqual({ ...q.state.confExc }, { id: 13, nome: 'Python', bloq: true, aulas: 2, mats: 1, erro: '' });
+  const v = q.renderVals(); assert.equal(v.confExcVis, true); assert.equal(v.confExcBloq, true); assert.equal(v.confExcOk, false); assert.equal(v.confExcTitulo, 'Não dá para excluir Python');
+  v.confExcSim(); assert.deepEqual(apagadas, []);
+  v.confExcNao(); assert.equal(q.state.confExc, null);
+  // sem nota nem chamada o diálogo pede confirmação; o servidor ainda pode recusar com 409 e a mensagem dele aparece
+  q.state.notas = {}; q.state.aulas = []; q.pedirExcluirDisc(13);
+  assert.equal(q.state.confExc.bloq, false); assert.match(q.renderVals().confExcTxt, /^Saem junto 0 aulas do semestre e 1 matrícula\./);
+  await q.excluirDisc(13);
+  assert.deepEqual(apagadas, [13]); assert.equal(recargas, 0);
+  assert.equal(q.state.confExc.bloq, true); assert.equal(q.renderVals().confExcTxt, 'Disciplina com histórico'); assert.equal(q.state.excluindo, false);
+});
+
+test('recursos que o servidor ainda não guarda mostram o erro em linha em vez de fingir que gravaram', async () => {
+  const semRota = async () => { throw { status: 501, detalhe: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' }; };
+  const q = quadro([], { salvarMetaAvaliacao: semRota, salvarConselho: semRota, salvarRegra: semRota }, 'Portal.tsx');
+  let recargas = 0; q.recarregar = async () => { recargas++; };
+  Object.assign(q.state, montarEstado(escola, turma));
+  await q.salvarMetaAval({ id: 88, nome: 'P1' }, { publicada: false }, 'P1 voltou para rascunho.');
+  assert.deepEqual(q.state.gnMsg, { erro: true, t: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' });
+  q.setState({ gnMsg: null }); await q.publicarLancadas([{ id: 88 }]); assert.equal(q.state.gnMsg.erro, true);
+  q.setState({ gnMsg: null }); await q.salvarConselhoAluno({ id: 27, nome: 'Bia' }, { id: 13 }, true); assert.equal(q.state.gnMsg.erro, true);
+  await assert.rejects(q.salvarRegraEscola({ tipo: 'Semestre' }), { texto: 'O servidor ainda não guarda isso. Atualize o servidor para usar este recurso.' });
+  assert.equal(recargas, 1);
+});

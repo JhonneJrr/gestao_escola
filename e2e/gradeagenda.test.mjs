@@ -278,3 +278,98 @@ test('Sem turma e Sem sala aparecem nos nomes e o Quadro vazio tem mensagem por 
   q.props.perfil = 'Aluno'; assert.equal(q.renderVals().quadroVazioMsg, 'Você ainda não está numa turma. Fale com a secretaria.');
   q.props.perfil = 'Professor'; assert.equal(q.renderVals().quadroVazioMsg, 'Nenhuma aula sua na grade.');
 });
+
+const aulaQuinta = { aula_id: 6, disciplina_id: 13, origem: 'grade', status: 'agendada', data: '2026-10-08', hora_inicio: '10:00', hora_fim: '11:40', chamada: null, remarcada_de: null };
+const abrirAulaQuinta = q => { q.abrirAula(q.instSemana('2026-10-05', q.state, {}, 'escola').find(i => i.data === '2026-10-08')); return () => q.valsPainel(q.state, 'escola', q.agora(), {}); };
+
+test('cancelar e reativar aula gravam o status pela API, recarregam e mostram o erro do servidor', async () => {
+  const chamadas = [];
+  const q = tela({ aulas: [aulaQuinta] }, { atualizarAula: async (...a) => { chamadas.push(a); } });
+  const vals = abrirAulaQuinta(q);
+  assert.equal(vals().paCancVis, true); assert.equal(vals().paReatVis, false); assert.equal(vals().paCancOff, false);
+  const envio = vals().paCancelar(); vals().paCancelar();
+  assert.equal(vals().paCancTxt, 'Salvando…'); await envio;
+  assert.deepEqual(chamadas, [[6, { status: 'cancelada' }]]); assert.equal(q.recargas.length, 1);
+  assert.equal(q.state.painel.cancelada, true); assert.match(q.state.msg.t, /Python · 1º A de 08\/10 cancelada\./);
+  await vals().paReativar(); assert.deepEqual(chamadas.at(-1), [6, { status: 'agendada' }]); assert.equal(q.state.painel.cancelada, false);
+  // erro do servidor aparece na mensagem e não troca o estado do painel
+  const r = tela({ aulas: [aulaQuinta] }, { atualizarAula: async () => { throw { status: 409, detalhe: 'Aula já tem presenças' }; } });
+  const v2 = abrirAulaQuinta(r); await v2().paCancelar();
+  assert.equal(r.state.msg.t, 'Aula já tem presenças'); assert.equal(r.state.painel.cancelada, false); assert.equal(r.recargas.length, 0);
+});
+
+test('cancelar fica bloqueado com chamada feita, aula que já passou ou semestre encerrado', async () => {
+  const chamadas = [];
+  const rede = { atualizarAula: async (...a) => { chamadas.push(a); } };
+  const feita = tela({ aulas: [{ ...aulaQuinta, chamada: { 1: true } }] }, rede); const vf = abrirAulaQuinta(feita);
+  assert.equal(vf().paCancOff, true); assert.equal(vf().paCancDica, 'Aula já tem presenças'); vf().paCancelar();
+  const passada = tela({ aulas: [{ ...aulaQuinta, data: '2026-10-06' }] }, rede); passada.state.discs[0].grade = [{ dia_semana: 2, hora_inicio: '10:00', hora_fim: '11:40', sala: '8' }];
+  passada.abrirAula(passada.instSemana('2026-10-05', passada.state, {}, 'escola').find(i => i.data === '2026-10-06'));
+  assert.equal(passada.valsPainel(passada.state, 'escola', passada.agora(), {}).paCancDica, 'Aula já começou ou passou');
+  const enc = tela({ aulas: [aulaQuinta], semestre: { id: 1, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: '2026-10-01' } }, rede); const ve = abrirAulaQuinta(enc);
+  await ve().paCancelar(); await ve().paReativar();
+  assert.deepEqual(chamadas, []); assert.match(enc.state.msg.t, /^Semestre encerrado em 01\/10\/2026/);
+});
+
+test('aula extra direta da escola cria a aula pela API na sala da disciplina e mostra o erro do servidor', async () => {
+  const chamadas = [];
+  const q = tela({}, { criarAula: async (...a) => { chamadas.push(a); } });
+  q.setState({ aba: 'pedidos', xAberto: true });
+  const ped = () => q.valsPed(q.state, 'escola');
+  ped().setXDisc({ target: { value: '13' } });
+  for (const [k, v] of [['Data', '2026-10-14'], ['Ini', '14:00'], ['Fim', '15:40']]) ped()['setX' + k]({ target: { value: v } });
+  assert.equal(ped().xF.sala, '7'); assert.equal(ped().xCk, 'Horário livre para o professor, a turma e a sala.');
+  ped().setXSala({ target: { value: '8' } }); assert.equal(ped().xF.sala, '7'); assert.match(ped().xMsg, /usa a sala da disciplina: Sala 7/);
+  await ped().criarX({ preventDefault() {} });
+  assert.deepEqual(chamadas, [[13, { data: '2026-10-14', hora_inicio: '14:00', hora_fim: '15:40' }]]);
+  assert.equal(q.recargas.length, 1); assert.match(ped().xMsg, /^Aula extra criada: Python em 14\/10, 14:00\./); assert.equal(ped().xF.data, '');
+  // data passada, dia de aula da grade e erro do servidor
+  ped().setXIni({ target: { value: '14:00' } }); ped().setXFim({ target: { value: '15:40' } }); ped().setXData({ target: { value: '2026-10-05' } }); assert.equal(ped().xCk, 'Escolha uma data futura.'); assert.equal(ped().xOff, true);
+  ped().setXData({ target: { value: '2026-10-15' } }); assert.equal(ped().xCk, 'Já existe aula dessa disciplina nesse dia.');
+  const r = tela({}, { criarAula: async () => { throw { status: 409, detalhe: 'Já existe aula nessa data' }; } });
+  r.setState({ aba: 'pedidos', xF: { disc: '13', data: '2026-10-14', ini: '14:00', fim: '15:40', sala: '7' } });
+  await r.valsPed(r.state, 'escola').criarX({ preventDefault() {} }); assert.equal(r.state.xMsg, 'Já existe aula nessa data'); assert.equal(r.recargas.length, 0);
+});
+
+test('excluir disciplina: confirma, bloqueia com chamada e usa o 409 do servidor', async () => {
+  const apagadas = [];
+  const q = tela({}, { apagarDisciplina: async id => { apagadas.push(id); } });
+  q.abrirDisc(q.state.discs[0]);
+  const pn = () => q.valsPainel(q.state, 'escola', q.agora(), {});
+  assert.equal(pn().dExcVis, true); assert.equal(pn().dExcPerg, true);
+  pn().dExcPedir(); assert.equal(pn().dExcConf, true); assert.match(pn().dExcTxt, /^Excluir Python · 1º A\? Saem junto 2 horários semanais/);
+  pn().dExcCancelar(); assert.equal(pn().dExcPerg, true);
+  pn().dExcPedir(); await pn().dExcConfirmar();
+  assert.deepEqual(apagadas, [13]); assert.equal(q.recargas.length, 1); assert.equal(q.state.painel, null); assert.equal(q.state.msg.t, 'Python · 1º A excluída.');
+  const comChamada = tela({ aulas: [{ ...aulaQuinta, chamada: { 1: true } }] }, { apagarDisciplina: async id => { apagadas.push(id); } }); comChamada.abrirDisc(comChamada.state.discs[0]);
+  comChamada.valsPainel(comChamada.state, 'escola', comChamada.agora(), {}).dExcPedir();
+  assert.equal(comChamada.valsPainel(comChamada.state, 'escola', comChamada.agora(), {}).dExcBloq, true);
+  const r = tela({}, { apagarDisciplina: async () => { throw { status: 409, detalhe: 'Disciplina com histórico' }; } }); r.abrirDisc(r.state.discs[0]);
+  r.valsPainel(r.state, 'escola', r.agora(), {}).dExcPedir(); await r.valsPainel(r.state, 'escola', r.agora(), {}).dExcConfirmar();
+  const pr = r.valsPainel(r.state, 'escola', r.agora(), {}); assert.equal(pr.dExcBloq, true); assert.equal(pr.dExcBloqTxt, 'Disciplina com histórico'); assert.equal(r.recargas.length, 0);
+  // com o Portal por cima, o pedido de exclusão sobe para ele e o painel fecha
+  const sobe = []; const p = tela({}, {}, { aoExcluir: id => sobe.push(id) }); p.abrirDisc(p.state.discs[0]);
+  p.valsPainel(p.state, 'escola', p.agora(), {}).dExcPedir(); assert.deepEqual(sobe, [13]); assert.equal(p.state.painel, null);
+});
+
+test('somente leitura: o aviso aparece, o Quadro não arrasta e as gravações recusam', () => {
+  const q = tela({ semestre: { id: 1, nome: '2026.2', inicio: '2026-08-03', fim: '2026-12-11', encerrado_em: '2026-10-01' } });
+  assert.match(q.soLeitura(), /^Semestre encerrado em 01\/10\/2026: somente leitura\.$/);
+  const v = q.renderVals(); assert.equal(v.roVis, true); assert.equal(v.roTxt, q.soLeitura());
+  assert.equal(q.podeArrastar({ tipo: 'grade', idx: 0, data: '2026-10-08', ini: '10:00', fim: '11:40' }), false);
+  const livre = tela(); assert.equal(livre.soLeitura(), ''); assert.equal(livre.renderVals().roVis, false);
+  assert.equal(livre.podeArrastar({ tipo: 'grade', idx: 0, data: '2026-10-08', ini: '10:00', fim: '11:40' }), true);
+  assert.equal(livre.podeArrastar({ tipo: 'grade', idx: 0, data: '2026-10-07', ini: '08:00', fim: '09:40' }), false);
+  const porProp = tela({}, {}, { somenteLeitura: 'Sem semestre ativo: somente leitura. Abra um semestre na aba Semestre.' });
+  assert.equal(porProp.renderVals().roTxt, 'Sem semestre ativo: somente leitura. Abra um semestre na aba Semestre.');
+  q.abrirDisc(q.state.discs[0]); q.salvarDisc({ preventDefault() {} }); assert.equal(q.state.dErro, q.soLeitura());
+});
+
+test('Quadro por professor ganha a linha Sem professor quando uma disciplina não tem professor', () => {
+  const q = tela({ disciplinas: [{ id: 13, nome: 'Python', turma: '5', professor_id: 42, sala: '7', carga_horaria: 40, grade: [{ dia_semana: 4, hora_inicio: '10:00', hora_fim: '11:40', sala: '8', sala_id: 8 }] }, { id: 14, nome: 'Redes', turma: '5', professor_id: null, sala: '7', carga_horaria: 30, grade: [{ dia_semana: 3, hora_inicio: '13:30', hora_fim: '15:10', sala: '7', sala_id: 7 }] }] });
+  q.setState({ eixo: 'prof' });
+  const linhas = q.renderVals().linhasP; assert.deepEqual(linhas.map(l => l.nome), ['Docente', 'Sem professor']);
+  assert.equal(linhas[1].tag, 'Atribuir professor');
+  const dia = linhas[1].dias[2]; assert.equal(dia.itens.length, 1); assert.equal(dia.itens[0].bl, true); assert.match(dia.itens[0].linha, /· 1º A ·/);
+  assert.equal(linhas[0].dias[2].vazioDia, true);
+});
