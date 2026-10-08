@@ -49,8 +49,8 @@ try {
   // Hub da turma (update 4): cada disciplina tem um painel "Gerenciar" com uma caixa por aluno; quem está fora aparece como chip "Matricular X em Y".
   const caixa = nome => page.getByRole('checkbox', { name: nome, exact: true }).filter({ visible: true });
   const linhaDisc = nome => page.locator('[data-matriculas-turma] > div').filter({ has: page.getByRole('button', { name: nome, exact: true }) });
+  // Só um painel fica aberto por vez: abrir o de uma disciplina fecha o da outra. Abrir um painel já aberto não faz nada.
   async function gerenciar(disciplina) { const b = linhaDisc(disciplina).getByRole('button', { name: 'Gerenciar', exact: true }); if (await b.count()) await b.click(); }
-  async function gerenciarTodas() { const b = page.locator('[data-matriculas-turma]').getByRole('button', { name: 'Gerenciar', exact: true }); while (await b.count()) await b.first().click(); }
   async function resposta(caminho, method, agir) {
     const espera = page.waitForResponse(r => r.url() === API + caminho && r.request().method() === method);
     const [r] = await Promise.all([espera, agir()]);
@@ -109,12 +109,15 @@ try {
     await cartao('1º A').click();
     await botao('Turmas').waitFor({ state: 'visible' });
     await page.locator('[data-matriculas-turma]').waitFor({ state: 'visible' });
-    await gerenciarTodas();
     const daTurma = inicial.alunos.filter(a => a.turma_id === t1.id), foraDaTurma = inicial.alunos.filter(a => a.turma_id !== t1.id);
-    for (const a of daTurma) for (const d of discsDa(t1)) {
-      assert.ok(inicial.matriculas.some(m => m.aluno_id === a.id && m.disciplina_id === d.id), 'o seed matricula pela regra da turma');
-      await caixa(`Desmatricular ${a.nome} de ${d.nome}`).waitFor({ state: 'visible' });
+    for (const d of discsDa(t1)) {
+      await gerenciar(d.nome);
+      for (const a of daTurma) {
+        assert.ok(inicial.matriculas.some(m => m.aluno_id === a.id && m.disciplina_id === d.id), 'o seed matricula pela regra da turma');
+        await caixa(`Desmatricular ${a.nome} de ${d.nome}`).waitFor({ state: 'visible' });
+      }
     }
+    await gerenciar('Python');
     assert.equal(await page.locator('[role=button][data-fi]').count(), daTurma.length);
     for (const a of foraDaTurma) assert.equal(await caixa(`Desmatricular ${a.nome} de Python`).count(), 0);
   });
@@ -142,9 +145,8 @@ try {
     assert.ok(!matriculasDe(st, alunoA.id).includes(algoritmos.id) && !matriculasDe(st, alunoA.id).includes(redes.id));
     await cartao('1º A', inicial.alunos.filter(a => a.turma_id === t1.id).length + 1).waitFor({ state: 'visible' });
     await abrirTurma('1º A');
-    await gerenciarTodas();
-    await caixa(`Desmatricular ${nomeA} de Python`).waitFor({ state: 'visible' });
-    await caixa(`Desmatricular ${nomeA} de Banco de Dados`).waitFor({ state: 'visible' });
+    await gerenciar('Python'); await caixa(`Desmatricular ${nomeA} de Python`).waitFor({ state: 'visible' });
+    await gerenciar('Banco de Dados'); await caixa(`Desmatricular ${nomeA} de Banco de Dados`).waitFor({ state: 'visible' });
     const b = await criarAluno(nomeB, mat + 1, '3º A'); alunoB = b.corpo;
     assert.equal(b.pedido.turma_id, t3.id); assert.equal(alunoB.turma_nome, '3º A');
     assert.deepEqual(matriculasDe(await estado(), alunoB.id), ids(redes));
