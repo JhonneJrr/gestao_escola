@@ -587,6 +587,15 @@ html[data-sem-italico] *{font-style:normal !important}
             <sc-if value="{{ p.semDisc }}" hint-placeholder-val="{{ false }}"><span style="height:30px;display:inline-flex;align-items:center;font-size:13px;color:var(--texto-suave)">Sem disciplina</span></sc-if>
           </span>
           <button onClick="{{ p.redefinir }}" style="flex:none;white-space:nowrap;min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Redefinir senha</button>
+          <button onClick="{{ p.pedirExcluir }}" style="flex:none;white-space:nowrap;min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Excluir</button>
+          <sc-if value="{{ p.confirmando }}" hint-placeholder-val="{{ false }}">
+            <div data-excluir-professor="" role="group" aria-label="{{ p.confLabel }}" onClick="{{ p.parar }}" style="flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid var(--aviso);border-radius:2px;background:var(--aviso-suave);cursor:default">
+              <span style="flex:1 1 240px;min-width:0;font-size:14px;text-wrap:pretty">{{ p.confTxt }}</span>
+              <button onClick="{{ p.confNao }}" style="flex:none;white-space:nowrap;min-height:36px;padding:0 12px;border:1px solid var(--borda);border-radius:2px;background:var(--superficie);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--texto)">Cancelar</button>
+              <button onClick="{{ p.confSim }}" disabled="{{ p.excluindo }}" style="flex:none;white-space:nowrap;min-height:36px;padding:0 12px;border:1px solid var(--aviso);border-radius:2px;background:var(--aviso);color:var(--fundo);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer">{{ p.confSimTxt }}</button>
+              <sc-if value="{{ p.temErroExc }}" hint-placeholder-val="{{ false }}"><span role="alert" style="flex:1 1 100%;font-size:14px;color:var(--aviso);text-wrap:pretty">{{ p.erroExc }}</span></sc-if>
+            </div>
+          </sc-if>
         </div>
       </sc-for>
     </div>
@@ -3730,6 +3739,11 @@ class Component extends DCLogic {
         return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, abrir: () => this.abrirFicha(p), abrirLabel: 'Abrir ficha de ' + p.nome, tecla: e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); this.abrirFicha(p); } },
           ocupTxt: oc.length ? 'Ocupado: ' + oc.map(o => DIA_C[o.dia_semana] + ' ' + o.hora_inicio + '–' + o.hora_fim).join(' · ') : 'Sem horários ocupados', ocupCor: oc.length ? TINTA : 'var(--texto-suave)',
           redefinir: e => { if (e) e.stopPropagation(); this.abrirPainel({ tipo: 'prof', id: p.id }, { profs: st.profs.map(x => x.id === p.id ? Object.assign({}, x, { provisoria: true }) : x), senhaProv: { email: p.email, senha: this.senhaNova(), copiado: false, redef: p.nome } }); },
+          pedirExcluir: e => { if (e) e.stopPropagation(); this.setState({ confProf: { id: p.id, erro: '' } }); }, parar: e => { if (e) e.stopPropagation(); },
+          confirmando: !!st.confProf && st.confProf.id === p.id, confLabel: 'Confirmar exclusão de ' + p.nome, confTxt: 'Excluir ' + p.nome + '? Esta ação não pode ser desfeita.',
+          confNao: e => { if (e) e.stopPropagation(); this.setState({ confProf: null }); }, excluindo: false, confSimTxt: 'Excluir de vez',
+          confSim: e => { if (e) e.stopPropagation(); this.setState(s => ({ profs: s.profs.filter(x => x.id !== p.id), confProf: null, rotaAviso: 'Professor excluído.' })); },
+          temErroExc: !!(st.confProf && st.confProf.id === p.id && st.confProf.erro), erroExc: st.confProf && st.confProf.id === p.id ? st.confProf.erro : '',
         discs: ds.map(d => ({ nome: d.nome, ir: e => { if (e) e.stopPropagation(); this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
       df: (() => {
         const dsc = st.discs.find(d => d.id === pu.did), de = ativo ? (HOJE > ativo.inicio ? HOJE : ativo.inicio) : null;

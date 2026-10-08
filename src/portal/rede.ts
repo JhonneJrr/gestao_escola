@@ -84,6 +84,7 @@ export const criarSemestre = (corpo: SemestreEntrada) => pedir<SemestreSaida>('/
 export const encerrarSemestre = (id: number) => pedir<SemestreSaida>(`/semestres/${id}/encerrar`, undefined, 'POST');
 export const criarProfessor = (corpo: ProfessorEntrada) => pedir<ProfessorSaida>('/professores', corpo);
 export const redefinirProfessor = (id: number) => pedir<SenhaProvisoria>(`/professores/${id}/redefinir-senha`, undefined, 'POST');
+export const apagarProfessor = (id: number) => pedir<void>(`/professores/${id}`, undefined, 'DELETE');
 export const criarAluno = (corpo: AlunoEntrada) => pedir<AlunoSaida>('/alunos', corpo);
 export const atualizarAluno = (id: number, corpo: Partial<AlunoEntrada>) => pedir<AlunoSaida & { matriculas_mantidas: MatriculaMantida[] }>(`/alunos/${id}`, corpo, 'PATCH');
 export const redefinirAluno = (id: number) => pedir<SenhaProvisoria>(`/alunos/${id}/redefinir-senha`, undefined, 'POST');

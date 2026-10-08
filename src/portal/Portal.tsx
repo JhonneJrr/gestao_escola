@@ -6,7 +6,7 @@ import { publicar, configurarRecarga } from "./loja";
 import { salvarOcupacoes, pedirGradeIA, erroGradeIA } from "./rede";
 import { montarEstado, regraVazia, fmt, pct, AVISO, TINTA, dataHoje, alunosLoja, matriculasDe, turmaDoAluno } from "./adaptador";
 import { login, me, estado, trocarSenha as trocarSenhaAPI, guardarToken, lerToken, apagarToken, aoExpirar } from "./rede";
-import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor,
+import { criarSemestre, encerrarSemestre as encerrarSemestreAPI, criarProfessor, redefinirProfessor, apagarProfessor,
   criarAluno, atualizarAluno, redefinirAluno, apagarAluno, criarDisciplina, atualizarDisciplina,
   salvarGrade, apagarDisciplina, criarTurma, matricular as matricularAPI, desmatricular as desmatricularAPI } from "./rede";
 import { criarAvaliacao, apagarAvaliacao, salvarNota, apagarNota, salvarChamada as salvarChamadaAPI,
@@ -108,7 +108,7 @@ class Component extends DCLogic {
   }
   state = Object.assign({}, VISITANTE, {
     logado: false, papel: null, tela: 'inicio', papelEscolhido: 'prof', faqAberta: 0, loginEmail: '', loginSenha: '', loginErro: '',
-    funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, gnPer: null, gnCol: null, gnExtra: null, confExc: null, excluindo: false, hubMatAberta: null, semPerm: null, rotaAviso: '', alunoErro: '',
+    funcSel: 0, navAberta: false, discProfF: '', fProf: '', matDisc: '', agProfF: '', agDiscF: '', agErro: '', avDestino: '', subAba: 'alunos', gnDraft: {}, gnMsg: null, gnPer: null, gnCol: null, gnExtra: null, confExc: null, excluindo: false, confProf: null, excluindoProf: false, hubMatAberta: null, semPerm: null, rotaAviso: '', alunoErro: '',
     q: '', idadeMin: '', mediaMin: '', ordem: 'nome', pagina: 1,
     painel: null, painelUlt: null, fNome: '', fIdade: '', fMat: '', fErro: '',
     fEmail: '', fOk: '', fGrade: [], fOcup: [], fTurma: '', gaEd: null, acadDisc: false, gaAbaIni: 'quadro', hubTurma: null, hubNova: false, hubNome: '', hubErro: '', hubMsg: null, hubGravando: false, ...IA_BASE, fData: '', fIni: '', fFim: '', fDisc: '', fTexto: '', editando: false, senhaProv: null, confDesm: null, desmErro: null,
@@ -489,6 +489,7 @@ class Component extends DCLogic {
     this.atualizarURL(acad ? 'disciplinas' : tela, substituir);
     if (S.acadDisc !== acad || tela === 'frequencia') this.setState({ acadDisc: acad, gaAbaIni: acad ? 'disc' : 'quadro' });
     if (tela === 'alunos' && S.tela !== 'alunos') this.setState({ hubTurma: null, hubNova: false, hubMsg: null });
+    if (S.confProf) this.setState({ confProf: null });
     if (!S.logado && tela === 'inicio' && S.mg) return this.fecharMergulho(substituir);
     if (S.semPerm) this.setState({ semPerm: null });
     const el = this.telaRef.current, m = this.mainRef.current, de = this.state.tela;
@@ -976,6 +977,16 @@ class Component extends DCLogic {
       const salvo = await redefinirProfessor(p.id); await this.recarregar();
       this.setState({ fErro: '', senhaProv: { email: p.email, senha: salvo.senha_provisoria_texto, copiado: false, redef: p.nome } });
     } catch (erro) { this.setState({ fErro: erro.detalhe }); }
+  }
+  async excluirProf(p) {
+    if (this.state.excluindoProf) return;
+    this.setState({ excluindoProf: true });
+    try {
+      await apagarProfessor(p.id); await this.recarregar();
+      this.setState({ confProf: null, rotaAviso: 'Professor excluído.' });
+    } catch (erro) {
+      this.setState(s => ({ confProf: s.confProf && s.confProf.id === p.id ? Object.assign({}, s.confProf, { erro: textoErro(erro) }) : s.confProf }));
+    } finally { this.setState({ excluindoProf: false }); }
   }
   async redefinirSenhaAluno(a) {
     try {
@@ -2174,6 +2185,11 @@ class Component extends DCLogic {
         return { nome: p.nome, email: p.email, iniciais: ini(p.nome), semDisc: !ds.length, abrir: () => this.abrirFicha(p), abrirLabel: 'Abrir ficha de ' + p.nome, tecla: e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); this.abrirFicha(p); } },
           ocupTxt: oc.length ? 'Ocupado: ' + oc.map(o => DIA_C[o.dia_semana] + ' ' + o.hora_inicio + '–' + o.hora_fim).join(' · ') : 'Sem horários ocupados', ocupCor: oc.length ? TINTA : 'var(--texto-suave)',
           redefinir: e => { e?.stopPropagation(); this.redefinirProf(p); },
+          pedirExcluir: e => { e?.stopPropagation(); this.setState({ confProf: { id: p.id, erro: '' } }); }, parar: e => { e?.stopPropagation(); },
+          confirmando: !!st.confProf && st.confProf.id === p.id, confLabel: 'Confirmar exclusão de ' + p.nome, confTxt: 'Excluir ' + p.nome + '? Esta ação não pode ser desfeita.',
+          confNao: e => { e?.stopPropagation(); this.setState({ confProf: null }); }, excluindo: !!st.excluindoProf, confSimTxt: st.excluindoProf ? 'Excluindo…' : 'Excluir de vez',
+          confSim: e => { e?.stopPropagation(); this.excluirProf(p); },
+          temErroExc: !!(st.confProf && st.confProf.id === p.id && st.confProf.erro), erroExc: st.confProf && st.confProf.id === p.id ? st.confProf.erro : '',
         discs: ds.map(d => ({ nome: d.nome, ir: e => { if (e) e.stopPropagation(); this.setState({ selDisc: d.id, discQ: '', discProfF: '' }); this.ir('disciplinas'); } })) }; }),
       df: (() => {
         const dsc = st.discs.find(d => d.id === pu.did), de = ativo ? (HOJE > ativo.inicio ? HOJE : ativo.inicio) : null;
