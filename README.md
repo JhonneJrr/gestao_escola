@@ -31,8 +31,8 @@ O seed da API usa o semestre 2026.2. A senha de todas as contas abaixo é `escol
 | Conta | Perfil | O que vê |
 | --- | --- | --- |
 | `escola@escola.com` | Escola | Painel, semestre, professores, alunos (hub por turma), acadêmico (quadro, ano letivo, disciplinas e pedidos) e avisos de toda a escola. |
-| `prof@escola.com` | Prof. Carlos | Painel, acadêmico (Python e Banco de Dados), seus alunos e avisos. |
-| `marta@escola.com` | Profa. Marta | Painel, acadêmico (Algoritmos), seus alunos e avisos. |
+| `prof@escola.com` | Prof. Carlos | Painel, acadêmico (Python e Banco de Dados), suas turmas (com a grade de notas por período) e avisos. |
+| `marta@escola.com` | Profa. Marta | Painel, acadêmico (Algoritmos), suas turmas (com a grade de notas por período) e avisos. |
 | `ana@escola.com` | Ana Souza | Meu painel, com suas notas, frequência, próximas aulas e avisos, para leitura. |
 
 Visitantes veem a apresentação em `/` e o login em `/login`. Após entrar, escola e professores vão para `/painel`; alunos vão para `/meu-painel`. As demais telas usam `/semestre`, `/professores`, `/alunos`, `/agenda` e `/avisos`. O Acadêmico responde em `/agenda` (quadro semanal), `/disciplinas` (página da disciplina) e `/grade`; `/matriculas` abre Alunos para a escola e as notas da disciplina para o professor. A troca de senha provisória usa `/primeiro-acesso`. Rotas fora do perfil mostram o aviso do portal e voltam à primeira tela permitida.
@@ -60,12 +60,13 @@ node e2e/portal-operacao.mjs
 node e2e/portal-rotas.mjs
 node e2e/portal-grade.mjs
 node e2e/portal-turmas.mjs
+node e2e/portal-regra.mjs
 npm run comparar
 ```
 
-Os testes unitários conferem o adaptador, o conversor e as regras da Grade e agenda. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, editor de disciplina e matrícula pela disciplina; operação verifica notas, chamada pela página da disciplina, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil; grade verifica quadro, calendário, pedidos de aula extra e assistente; turmas verifica o hub por turma, a matrícula automática pela turma do aluno, a troca de turma e a chamada. O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste; professores e a turma de teste permanecem (o reseed da API limpa). As escritas de semestre são simuladas no teste de escola.
+Os testes unitários conferem o adaptador, o conversor e as regras da Grade e agenda. Integração verifica login, sessão, perfis e troca de senha; escola verifica cadastros, editor de disciplina e matrícula pela disciplina; operação verifica notas, chamada pela página da disciplina, aulas e avisos; rotas verifica URLs, recarga, histórico e acesso por perfil; grade verifica quadro, calendário, pedidos de aula extra e assistente; turmas verifica o hub por turma, a matrícula automática pela turma do aluno, a troca de turma e a chamada. O teste de rotas não altera dados. Os demais criam e apagam seus registros de teste; professores e a turma de teste permanecem (o reseed da API limpa). As escritas de semestre são simuladas no teste de escola. Regra verifica o update 4: a escola muda e salva a regra de avaliação, o professor cria atividade extra, lança nota e publica, o aluno só vê o publicado, o período fechado recusa nota e o conselho de classe muda a situação; ela restaura a regra no fim. A média e a situação calculadas pelo canvas também são conferidas contra o boletim do servidor.
 
-Para conferir o build, rode `npx vite preview --port 4173` em outro terminal e aponte o teste de rotas para ele:
+Os e2e usam `API_URL` e `FRONT_URL` (padrão `http://localhost:8000` e `http://localhost:5173`); o comparador usa `PORTA` para o vite dele (padrão 5173). Para conferir o build, rode `npx vite preview --port 4173` em outro terminal e aponte o teste de rotas para ele:
 
 ```powershell
 $env:FRONT_URL = 'http://localhost:4173'
