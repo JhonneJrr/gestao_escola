@@ -3,7 +3,7 @@ import React from 'react';
 import { DCLogic, criarDC } from './dc';
 import Template from './componentes/GradeAgendaTemplate';
 import { lerLoja, assinar, recarregarLoja } from './loja';
-import { salvarGrade, atualizarAula, salvarChamada, criarTurma, criarSala, criarDisciplina, atualizarDisciplina, pedirGradeIA, erroGradeIA, criarEvento, atualizarEvento, apagarEvento, criarPedido, aprovarPedido, recusarPedido, sugerirPedido, aceitarSugestao, recusarSugestao } from './rede';
+import { apagarDisciplina, criarAula, salvarGrade, atualizarAula, salvarChamada, criarTurma, criarSala, criarDisciplina, atualizarDisciplina, pedirGradeIA, erroGradeIA, criarEvento, atualizarEvento, apagarEvento, criarPedido, aprovarPedido, recusarPedido, sugerirPedido, aceitarSugestao, recusarSugestao } from './rede';
 import { itensGradeAPI as itensAPI, disciplinaAPI, eventoAPI, pedidoAPI, horarioAPI } from './adaptador';
 import { alunosDaChamada, faltamMarcar, presencasAPI, motivoSemChamada, mapaFeriados, feriadoDaTurma } from './grade-regras';
 const pD = s => { const p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); };
@@ -16,6 +16,7 @@ const pad = n => String(n).padStart(2, '0');
 const hm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
 const mh = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
 const fmtH = h => (Math.round(h * 10) / 10).toString().replace('.', ',') + ' h';
+const fmtN = n => (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const DIA_C = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const DIA_L = ['', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'];
@@ -40,6 +41,10 @@ const TIPOS = {
   bimestre: { label: 'Bimestre', ab: 'BI', bg: 'var(--fundo)', cor: 'var(--texto)', borda: 'var(--texto)' }
 };
 const HACH = 'repeating-linear-gradient(135deg,transparent 0 6px,var(--borda-fraca) 6px 7px)';
+// Regra de avaliação de reserva, só para a Grade e agenda usada sozinha (o Portal sempre passa a regra da escola).
+const REGRA_GA = { tipo: 'Semestre', periodos: [{ id: 'p1', nome: '1º semestre', inicio: '2026-02-02', fim: '2026-07-03', fechado: true }, { id: 'p2', nome: '2º semestre', inicio: '2026-08-03', fim: '2026-12-11', fechado: false }],
+  itens: [{ id: 'i1', nome: 'P1', tipo: 'Prova', peso: 1 }, { id: 'i2', nome: 'P2', tipo: 'Prova', peso: 1 }], extras: { permitido: true, max: 2, peso: 1 }, participacao: { ativo: false, peso: 1 },
+  recuperacao: { ativo: true, modo: 'menor' }, final: { ativo: true }, arred: '0,1', mediaMin: 6, freqMin: 75, conselho: true };
 class GradeAgenda extends DCLogic {
   state = { aba: 'quadro', eixo: null, semana: null, fTurma: '', fProf: '', fDisc: '', fSala: '', verOcup: true, soChoques: false, diaM: null,
     discs: [], profs: [], eventos: [], pedidos: [], remarc: [], pend: null, msg: null, tick: 0, largura: 1200,
@@ -275,7 +280,13 @@ class GradeAgenda extends DCLogic {
   }
   // Arrasta só aula de grade de hoje ou futura, sem chamada feita, sem feriado, nem cancelada, com o semestre aberto.
   // Na demonstração (DEV) vale a regra do canvas, que não olha a data nem a chamada.
-  podeArrastar(i) { if (this.demo()) return this.perfil() === 'escola' && i.tipo === 'grade' && !i.feriado && !this.state.pend; return this.perfil() === 'escola' && i.tipo === 'grade' && i.idx != null && !i.feriado && !i.cancelada && !i.feita && i.data >= this.agora().data && this.semAtivo() && !this.state.pend; }
+  // Texto do bloqueio somente leitura (semestre encerrado ou sem semestre ativo); vazio quando dá para editar.
+  soLeitura() { return this.props.somenteLeitura || (this.semEnc() ? 'Semestre encerrado em ' + ((lerLoja().semestre?.encerrado_em) || this.semestre().fim || '').split('-').reverse().join('/') + ': somente leitura.' : ''); }
+  podeArrastar(i) {
+    if (this.soLeitura() || this.perfil() !== 'escola' || i.tipo !== 'grade' || (i.idx == null && !this.demo()) || i.feriado || i.cancelada || i.feita || this.state.pend) return false;
+    const now = this.agora(); return i.data > now.data || (i.data === now.data && hm(i.ini) > now.min);
+  }
+  motivoSemArraste(i) { const now = this.agora(); return this.soLeitura() ? this.soLeitura() : i.feriado ? 'Dia sem aula: não dá para mover.' : i.cancelada ? 'Aula cancelada: reative para mover.' : i.feita ? 'Aula já tem presenças: não dá para mover.' : (i.data < now.data || (i.data === now.data && hm(i.ini) <= now.min)) ? 'Aula já começou ou passou: não dá para mover.' : ''; }
   abrirAula(i) { this.setState({ painel: { tipo: 'aula', key: i.key, tkey: i.tkey, disc: i.disc.id, data: i.data, ini: i.ini, fim: i.fim, sala: i.sala, itipo: i.tipo, pendente: !!i.pendente, remarcada: !!i.remarcada, feriado: i.feriado, cancelada: !!i.cancelada, pedido: i.pedido ? i.pedido.id : null } }); }
   // Chamada já feita da aula (presenças por aluno), lida das aulas do store; o estado local só existe na demonstração (DEV).
   chamadaAtual(pn) { const au = this.aulaDe(pn.disc, pn.data, pn.ini); if (au) return au.chamada || null; return (import.meta.env.DEV && this.state.chamadas[pn.key]) || null; }
@@ -293,7 +304,7 @@ class GradeAgenda extends DCLogic {
     if (import.meta.env.DEV && this.demo()) return (lerLoja().alunos || []).filter(a => d.turma && a.turma === d.turma).map(a => ({ id: a.id, nome: a.nome }));
     return alunosDaChamada(lerLoja().alunos || [], this.matriculasLoja(), d.id, this.chamadaAtual(pn));
   }
-  cargaAtual() { const st = this.state; if (st.carga !== 'ok') return st.carga; if (st.recarregando) return 'carregando'; return lerLoja().carga || 'ok'; }
+  cargaAtual() { const st = this.state; if (this.props.carga && this.props.carga !== 'ok') return this.props.carga; if (st.carga !== 'ok') return st.carga; if (st.recarregando) return 'carregando'; return lerLoja().carga || 'ok'; }
   async tentarCarregar() {
     if (this.demo()) { this.setState({ carga: 'carregando' }); clearTimeout(this.cT); this.cT = setTimeout(() => this.setState({ carga: this.props.falhaCarga ? 'erro' : 'ok' }), this.rm ? 400 : 900); return; }
     if (this.state.recarregando) return;
@@ -323,6 +334,7 @@ class GradeAgenda extends DCLogic {
     let mov = false, alvo = null;
     const move = ev => {
       const dx = ev.clientX - x0, dy = ev.clientY - y0;
+      if (!mov && !pode && !this._avisouArr && Math.hypot(dx, dy) > 8) { const mt = this.motivoSemArraste(i); if (mt && this.perfil() === 'escola') { this._avisouArr = true; this.setState({ msg: { t: mt } }); } }
       if (!mov && pode && Math.hypot(dx, dy) > 5) { mov = true; try { el.setPointerCapture(e.pointerId); } catch (er) {} el.style.zIndex = 8; el.style.boxShadow = '0 8px 20px rgba(0,0,0,.14)'; el.style.cursor = 'grabbing'; }
       if (!mov) return; ev.preventDefault();
       const ni = Math.max(0, Math.min(cols.length - 1, ci + Math.round(dx / colW)));
@@ -338,7 +350,7 @@ class GradeAgenda extends DCLogic {
       el.style.transform = ''; el.style.zIndex = ''; el.style.boxShadow = ''; el.style.cursor = '';
       if (alvo && !(alvo.dia === dia0 && alvo.ini === i.ini)) this.propor(i, alvo);
     };
-    this.limparArrasto = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); this.limparArrasto = null; };
+    this.limparArrasto = () => { this._avisouArr = false; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); this.limparArrasto = null; };
     window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   }
   propor(i, alvo) {
@@ -409,7 +421,7 @@ class GradeAgenda extends DCLogic {
       else if (choque && esc) r = { borda: '1px solid var(--aviso)', bg: 'var(--aviso-suave)', op: 1, tag: 'Choque', tagCor: 'var(--aviso)' };
       else if (cur) r = { borda: '2px solid var(--texto)', bg: 'var(--sunken)', op: 1, tag: 'Agora', tagCor: 'var(--texto)' };
       else if (i.tipo === 'extra') r.tag = 'Extra';
-      else if (i.remarcada) r.tag = 'Remarcada';
+      else if (i.remarcada) r.tag = 'Remarcada de ' + ddmm(i.dataOrig);
       if (!cur && passado && i.tipo !== 'preview' && i.tipo !== 'proposta' && !r.tag) r.op = 0.62;
       if (apagar.has(i.key)) r.op = 0.28;
       if (st.soChoques && !choque && i.tipo !== 'preview') r.op = Math.min(r.op, 0.22);
@@ -425,7 +437,7 @@ class GradeAgenda extends DCLogic {
       const pode = this.podeArrastar(i) && modo === 'dias', e = est(i), d = i.disc, pn = this.profNome(d.prof, st.profs);
       return Object.assign(e, { key: i.key, nome: d.nome, curto: d.sigla, curto2: nomeTurma(d.turma) + ' · ' + nomeSala(i.sala).replace('Lab. de Informática', 'Lab.').replace('Sala ', ''), l2: nomeTurma(d.turma) + ' · ' + nomeSala(i.sala), l3: (P === 'aluno' ? pn : pn.split(' ')[0]) + ' · ' + i.ini + '–' + i.fim, temTag: !!e.tag,
         titulo: d.nome + ' · ' + nomeTurma(d.turma) + ' · ' + nomeSala(i.sala) + ' · ' + pn + ' · ' + i.ini + '–' + i.fim + (e.tag ? ' · ' + e.tag : ''),
-        chIcone: modo === 'dias' && P !== 'aluno' && i.data === hoje && (i.tipo === 'grade' || (i.tipo === 'extra' && !i.pendente)) && !i.feriado && !i.cancelada && !this.semEnc(), chFeita: !!i.feita, chLabel: (i.feita ? 'Revisar chamada de ' : 'Fazer chamada de ') + d.nome,
+        chIcone: modo === 'dias' && P !== 'aluno' && i.data === hoje && (i.tipo === 'grade' || (i.tipo === 'extra' && !i.pendente)) && !i.feriado && !i.cancelada && !this.soLeitura(), chFeita: !!i.feita, chLabel: (i.feita ? 'Revisar chamada de ' : 'Fazer chamada de ') + d.nome,
         chBg: i.feita ? 'var(--texto)' : 'var(--superficie)', chCor: i.feita ? 'var(--fundo)' : 'var(--texto)', chParar: ev => ev.stopPropagation(), chAbrir: ev => { ev.stopPropagation(); this.abrirChamada(i); }, padDir: modo === 'dias' && P !== 'aluno' && i.data === hoje ? '30px' : '6px',
         cursor: pode ? 'grab' : 'pointer', touch: pode ? 'none' : 'auto', down: ev => this.blocoDown(ev, i), tecla: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.abrirAula(i); } } });
     };
@@ -441,15 +453,17 @@ class GradeAgenda extends DCLogic {
         ocup: profsOc.flatMap(p => (p.ocupados || []).filter(o => o.dia_semana === dia).map(o => ({ top: (hm(o.hora_inicio) - G0) * PX + 'px', h: (hm(o.hora_fim) - hm(o.hora_inicio)) * PX + 'px', txt: p.nome.split(' ')[0] + ' · ' + (o.motivo || 'ocupado') }))),
         blocos: its.map(i => Object.assign(bloco(i, 'dias'), { top: (hm(i.ini) - G0) * PX + 1 + 'px', h: (hm(i.fim) - hm(i.ini)) * PX - 2 + 'px', left: 'calc(' + (i._l / i._n * 100) + '% + 2px)', w: 'calc(' + (100 / i._n) + '% - 4px)' })) };
     });
-    const profsLinhas = esc ? (st.fProf ? st.profs.filter(p => String(p.id) === st.fProf) : st.profs) : [];
+    const semP = esc && !st.fProf && todos.some(i => i.disc.prof == null) ? [{ id: null, nome: 'Sem professor', ocupados: [], semProf: true }] : [];
+    const profsLinhas = esc ? (st.fProf ? st.profs.filter(p => String(p.id) === st.fProf) : st.profs).concat(semP) : [];
     const pct = m => ((m - JAN[0]) / (JAN[1] - JAN[0]) * 100) + '%';
     const linhasP = profsLinhas.map(p => {
-      const s = this.statusProf(p, instHoje, hoje, nm, fer);
+      const s = p.semProf ? { tag: 'Atribuir professor' } : this.statusProf(p, instHoje, hoje, nm, fer);
       return { nome: p.nome, tag: s.tag, tagBg: s.forte ? 'var(--texto)' : s.hach ? HACH : 'transparent', tagCor: s.forte ? 'var(--fundo)' : 'var(--texto)', tagBorda: s.forte ? 'var(--texto)' : 'var(--borda)',
         dias: [1, 2, 3, 4, 5].map(dia => { const data = addD(W, dia - 1);
           return { bg: data === hoje ? 'var(--sunken)' : 'transparent', feriado: !!fer[data], agora: data === hoje && nm >= JAN[0] && nm <= JAN[1], agoraL: pct(nm),
-            ocup: (p.ocupados || []).filter(o => o.dia_semana === dia).map(o => ({ left: pct(hm(o.hora_inicio)), w: ((hm(o.hora_fim) - hm(o.hora_inicio)) / (JAN[1] - JAN[0]) * 100) + '%', titulo: p.nome + ' · ' + (o.motivo || 'ocupado') + ' · ' + o.hora_inicio + '–' + o.hora_fim })),
-            blocos: todos.filter(i => i.data === data && i.disc.prof === p.id).map(i => Object.assign(bloco(i, 'prof'), { left: pct(hm(i.ini)), w: ((hm(i.fim) - hm(i.ini)) / (JAN[1] - JAN[0]) * 100) + '%' })) }; }) };
+            ocup: [], itens: (p.ocupados || []).filter(o => o.dia_semana === dia).map(o => ({ k: hm(o.hora_inicio), oc: true, bl: false, hora: o.hora_inicio + '–' + o.hora_fim, txt: o.motivo || 'Ocupado', titulo: p.nome + ' · ' + (o.motivo || 'ocupado') + ' · ' + o.hora_inicio + '–' + o.hora_fim }))
+              .concat(todos.filter(i => i.data === data && i.disc.prof === p.id).map(i => Object.assign(bloco(i, 'prof'), { k: hm(i.ini), oc: false, bl: true, hora: i.ini + '–' + i.fim, linha: i.disc.sigla + ' · ' + nomeTurma(i.disc.turma) + ' · ' + nomeSala(i.sala).replace('Lab. de Informática', 'Lab.') })))
+              .sort((a, b) => a.k - b.k), vazioDia: !todos.some(i => i.data === data && i.disc.prof === p.id) && !(p.ocupados || []).some(o => o.dia_semana === dia) && !fer[data] }; }) };
     });
     const slot = SLOTS.findIndex(s => hm(s[0]) <= nm && nm < hm(s[1])), prox = SLOTS.find(s => hm(s[0]) > nm), diaH = dsem(hoje);
     const periodo = diaH > 5 ? 'Fim de semana · sem aulas' : fer[hoje] ? 'Feriado: ' + fer[hoje] : slot >= 0 ? (slot + 1) + 'º horário · termina às ' + SLOTS[slot][1] : nm < JAN[0] ? 'Antes do 1º horário · começa às 08:00' : prox ? 'Intervalo · próximo horário às ' + prox[0] : 'Fora do horário de aula';
@@ -495,19 +509,19 @@ class GradeAgenda extends DCLogic {
   renderVals() {
     const st = this.state, P = this.perfil(), now = this.agora(), esc = P === 'escola';
     const nPend = st.pedidos.filter(p => p.status === 'pendente').length, nSug = st.pedidos.filter(p => p.prof === this.profId() && p.status === 'sugestao').length;
-    const tabs = esc ? [['quadro', 'Quadro semanal'], ['ano', 'Ano letivo'], ['disc', 'Disciplinas'], ['pedidos', 'Pedidos de aula extra', nPend]] : P === 'prof' ? [['quadro', 'Minha semana'], ['ano', 'Ano letivo']].concat(this.props.aoAbrirDisc ? [['disc', 'Disciplinas']] : [], [['pedidos', 'Aulas extras', nSug]]) : [['quadro', 'Minha semana'], ['ano', 'Ano letivo']];
+    const tabs = esc ? [['quadro', 'Quadro semanal'], ['ano', 'Ano letivo'], ['disc', 'Disciplinas'], ['aval', 'Avaliação'], ['pedidos', 'Pedidos de aula extra', nPend]] : P === 'prof' ? [['quadro', 'Minha semana'], ['ano', 'Ano letivo']].concat(this.props.aoAbrirDisc ? [['disc', 'Disciplinas']] : [], [['pedidos', 'Aulas extras', nSug]]) : [['quadro', 'Minha semana'], ['ano', 'Ano letivo']];
     const aba = tabs.some(t => t[0] === st.aba) ? st.aba : 'quadro';
     const me = this.profNome(this.profId()), fer = this.ferMap(st.eventos);
     if (this.props.soEditor) { const g = st.pGeo || {}; return Object.assign(this.valsPainel(st, P, now, fer), { raiz: this.raiz, dicaRef: this.dicaRef, conteudoVis: false, rotulo: '', subtitulo: '', abas: [], raizMinH: '0', raizBg: 'transparent', raizMaxW: 'none', raizPad: '0', raizOvx: 'visible', pPos: 'absolute', pTop: (g.top ?? 0) + 'px', pH: (g.h ?? 0) + 'px', pLeft: (g.left ?? 0) + 'px', pRight: (g.right ?? 0) + 'px' }); }
     const carga = this.cargaAtual(), ok = carga === 'ok';
-    return Object.assign(aba === 'quadro' && ok ? this.valsQuadro(st, P, now, fer) : {}, aba === 'quadro' && esc ? this.valsIa(st) : {}, aba === 'ano' ? this.valsAno(st, P, now, fer) : {}, aba === 'disc' ? this.valsDisc(st, now, fer) : {}, aba === 'pedidos' ? this.valsPed(st, P) : {}, this.valsPainel(st, P, now, fer), {
+    return Object.assign(aba === 'quadro' && ok ? this.valsQuadro(st, P, now, fer) : {}, aba === 'quadro' && esc ? this.valsIa(st) : {}, aba === 'ano' ? this.valsAno(st, P, now, fer) : {}, aba === 'disc' ? this.valsDisc(st, now, fer) : {}, aba === 'pedidos' ? this.valsPed(st, P) : {}, aba === 'aval' && esc ? this.valsAval(st) : { abaAval: false }, this.valsPainel(st, P, now, fer), {
       raiz: this.raiz, dicaRef: this.dicaRef,
       ...(() => { const emb = !!this.props.embutido, g = st.pGeo || { top: 0, h: 0, left: 0, right: 0 }; return { raizMinH: emb ? '0' : '100vh', raizBg: emb ? 'transparent' : 'var(--fundo)', raizMaxW: emb ? 'none' : '1320px', raizPad: emb ? '0' : 'clamp(20px,4cqi,40px) clamp(16px,3cqi,40px) 96px',
         pPos: emb ? 'absolute' : 'fixed', pTop: emb ? g.top + 'px' : '0', pH: emb ? g.h + 'px' : '100vh', pLeft: emb ? g.left + 'px' : '0', pRight: emb ? g.right + 'px' : '0', raizOvx: emb ? 'visible' : 'hidden' }; })(),
       rotulo: (esc ? 'Escola' : P === 'prof' ? me : nomeTurma(this.tAluno())) + ' · semestre ' + this.semestre().nome,
       subtitulo: esc ? 'O quadro mostra a escala de todos os professores agora e na semana. O ano letivo junta provas, eventos e feriados.' : P === 'prof' ? 'Suas aulas da semana, o calendário da escola e os seus pedidos de aula extra.' : 'As aulas da sua turma e o que vem pela frente no ano letivo.',
       abas: tabs.map(([id, label, n]) => ({ label, on: aba === id, peso: aba === id ? 600 : 500, cor: aba === id ? 'var(--texto)' : 'var(--texto-suave)', barra: aba === id ? 'var(--texto)' : 'transparent', temN: !!n, n: n || '', ir: () => this.setState({ aba: id, painel: null, pend: null }) })),
-      abaQuadro: aba === 'quadro' && ok, abaAno: aba === 'ano' && ok, abaDisc: aba === 'disc' && ok, abaPed: aba === 'pedidos' && ok,
+      roVis: !!this.soLeitura() && !this.props.soEditor, roTxt: this.soLeitura(), abaQuadro: aba === 'quadro' && ok, abaAno: aba === 'ano' && ok, abaDisc: aba === 'disc' && ok, abaPed: aba === 'pedidos' && ok,
       conteudoVis: true, skQuadro: carga === 'carregando' && aba === 'quadro', skAno: carga === 'carregando' && aba === 'ano', skLista: carga === 'carregando' && (aba === 'disc' || aba === 'pedidos'), cargaErro: carga === 'erro',
       tentarCarregar: () => this.tentarCarregar(), skCols: [0, 1, 2, 3, 4].map(k => ({ blocos: [[34 + k * 6, 100], [150, 100], [400 - k * 4, 100]].concat(k % 2 ? [[520, 100]] : []).map(([t, h]) => ({ top: t + 'px', h: h + 'px' })) })), skMeses: Array.from({ length: 12 }, (_, k) => ({ k })),
       skRef: el => { if (el && el.animate && !this.rm && !el._sk) { el._sk = 1; el.animate([{ opacity: 1 }, { opacity: 0.45 }, { opacity: 1 }], { duration: 1400, iterations: Infinity }); } },
@@ -560,7 +574,7 @@ class GradeAgenda extends DCLogic {
   }
   // Aplica a proposta disciplina por disciplina. Se só parte foi gravada, o resultado diz o que foi e o que falhou.
   iaAplicar() {
-    const p = this.state.iaProp; if (!p || this.state.iaFeito || this.state.salvando) return;
+    const p = this.state.iaProp; if (!p || this.state.iaFeito || this.state.salvando || this.soLeitura()) return;
     const antes = {}; p.proposta.forEach(d => { const x = this.state.discs.find(y => y.id === d.disciplina_id); antes[d.disciplina_id] = itensDe(x && x.grade); });
     return this.gravar('ia', async () => {
       const ok = [], falhas = [];
@@ -595,6 +609,7 @@ class GradeAgenda extends DCLogic {
   salvarEvento(ev) {
     ev.preventDefault(); if (this.state.salvando) return;
     const st = this.state, f = st.eF, pn = st.painel, id = pn.id, erro = t => this.responderPainel(pn, { eErro: t }, t);
+    if (this.soLeitura()) return erro(this.soLeitura());
     if (!f.titulo.trim()) return erro('Dê um título ao evento.');
     if (!f.data) return erro('Escolha a data.');
     if (f.data.slice(0, 4) !== this.ano().inicio.slice(0, 4)) return erro('A data precisa estar no ano letivo de ' + this.ano().inicio.slice(0, 4) + '.');
@@ -622,7 +637,7 @@ class GradeAgenda extends DCLogic {
     const r = {
       visOps: [['ano', 'Ano'], ['mes', 'Mês'], ['semana', 'Semana'], ['dia', 'Dia'], ['lista', 'Lista']].map(([id, l]) => ({ label: l, on: vis === id, bg: vis === id ? 'var(--texto)' : 'transparent', cor: vis === id ? 'var(--fundo)' : 'var(--texto)', peso: vis === id ? 600 : 500, ir: () => this.setState({ vis: id }) })),
       anoTitulo: titulo, anoNavVis: vis !== 'lista', anoAnt: () => nav(-1), anoProx: () => nav(1), anoHoje: () => this.setState({ ref: null }), anoNaoHoje: ref !== hoje,
-      aTurmaVis: esc, aTurma: st.aTurma, setATurma: e => this.setState({ aTurma: e.target.value }), optTurmas: lerLoja().turmas.map(t => ({ v: t.id, l: t.nome })), novoEvVis: esc, novoEv: () => this.novoEvento(vis === 'dia' ? ref : ''),
+      aTurmaVis: esc, aTurma: st.aTurma, setATurma: e => this.setState({ aTurma: e.target.value }), optTurmas: lerLoja().turmas.map(t => ({ v: t.id, l: t.nome })), novoEvVis: esc && !this.soLeitura(), novoEv: () => this.novoEvento(vis === 'dia' ? ref : ''),
       tiposF: Object.keys(TIPOS).map(k => { const T = TIPOS[k], on = !st.tiposOff[k]; return { label: T.label, ab: T.ab, bBg: T.bg, bCor: T.cor, bBorda: T.borda, on, op: on ? 1 : 0.45, borda: on ? 'var(--texto)' : 'var(--borda)', ir: () => this.setState(s => ({ tiposOff: Object.assign({}, s.tiposOff, { [k]: !s.tiposOff[k] }) })) }; }),
       escopoAno: esc ? 'A escola vê o calendário de todas as turmas.' : P === 'prof' ? 'Você vê os eventos gerais e os das turmas em que dá aula.' : this.tAluno() ? 'Você vê os eventos gerais e os ' + (this.demo() ? 'do ' : 'de ') + nomeTurma(this.tAluno()) + '.' : 'Você vê os eventos gerais.',
       visAno: vis === 'ano', visMes: vis === 'mes', visSemana: vis === 'semana', visDia: vis === 'dia', visLista: vis === 'lista', msgAnoVis: !!st.msgAno, msgAno: st.msgAno || '', fecharMsgAno: () => this.setState({ msgAno: '' })
@@ -668,6 +683,7 @@ class GradeAgenda extends DCLogic {
     return r;
   }
   abrirDisc(d) {
+    this.setState({ dExc: null });
     const f = d ? { nome: d.nome, turma: d.turma, prof: String(d.prof || ''), sala: d.sala, carga: String(d.carga), grade: (d.grade || []).map((g, k) => ({ k: k + 1, dia: String(g.dia_semana), ini: g.hora_inicio, fim: g.hora_fim, sala: g.sala || d.sala })) }
       : this.props.soEditor ? { nome: '', turma: '', prof: '', sala: '', carga: '60', grade: [{ k: 1, dia: '1', ini: '08:00', fim: '09:40', sala: '' }] }
       : { nome: '', turma: lerLoja().turmas[0]?.id, prof: '', sala: lerLoja().salas[0]?.id, carga: '60', grade: [{ k: 1, dia: '1', ini: '08:00', fim: '09:40', sala: lerLoja().salas[0]?.id }] };
@@ -687,6 +703,7 @@ class GradeAgenda extends DCLogic {
   salvarDisc(e) {
     e.preventDefault(); if (this.state.salvando) return;
     const st = this.state, f = st.dF, pn = st.painel, id = pn.id, erro = t => this.responderPainel(pn, { dErro: t, dOk: '' }, t);
+    if (this.soLeitura()) return erro(this.soLeitura());
     if (!f.nome.trim()) return erro('Informe o nome.');
     if (st.discs.some(d => d.id !== id && (d.turma || '') === (f.turma || '') && d.nome.trim().toLowerCase() === f.nome.trim().toLowerCase())) return erro('Essa turma já tem uma disciplina com esse nome.');
     const c = parseInt(f.carga, 10); if (isNaN(c) || c <= 0) return erro('A carga horária precisa ser maior que zero.');
@@ -714,7 +731,7 @@ class GradeAgenda extends DCLogic {
   valsDisc(st, now, fer) {
     const ch = this.choques(st.discs, st.profs), P = this.perfil(), esc = P === 'escola', escD = this.escopo(st, P), pag = !!this.props.aoAbrirDisc;
     return {
-      discAdmin: esc, discAjuda: pag ? 'Toque numa disciplina para abrir alunos, chamada, notas e avisos.' : '', temDiscAjuda: pag, novaSala: () => this.abrirNovo('sala'), msgDiscVis: !!st.msgDisc, msgDisc: st.msgDisc || '', fecharMsgDisc: () => this.setState({ msgDisc: '' }),
+      discAdmin: esc && !this.soLeitura(), discAjuda: pag ? 'Toque numa disciplina para abrir alunos, chamada, notas e avisos.' : '', temDiscAjuda: pag, novaSala: () => this.abrirNovo('sala'), msgDiscVis: !!st.msgDisc, msgDisc: st.msgDisc || '', fecharMsgDisc: () => this.setState({ msgDisc: '' }),
       novaDisc: () => this.abrirDisc(null), discResumo: st.discs.length + ' disciplinas · ' + lerLoja().turmas.length + ' turmas · ' + (ch.n ? ch.n + (ch.n === 1 ? ' choque na grade' : ' choques na grade') : 'grade sem choques'),
       turmasD: lerLoja().turmas.concat(escD.some(d => !d.turma) ? [{ id: null, nome: 'Sem turma' }] : []).filter(t => escD.some(d => (d.turma || null) === t.id) || esc).map(t => { const ds = escD.filter(d => (d.turma || null) === t.id); const aulas = ds.reduce((x, d) => x + (d.grade || []).length, 0);
         return { nome: t.nome, sub: ds.length + (ds.length === 1 ? ' disciplina' : ' disciplinas') + ' · ' + aulas + (aulas === 1 ? ' aula' : ' aulas') + ' por semana',
@@ -724,10 +741,66 @@ class GradeAgenda extends DCLogic {
               projCor: !(d.grade || []).length || falta > 0.05 ? 'var(--aviso)' : 'var(--texto-suave)', temCh, semH: !(d.grade || []).length, abrir: () => pag ? this.props.aoAbrirDisc(d.id) : this.abrirDisc(d), editarVis: esc && pag, editar: () => this.abrirDisc(d) }; }) }; })
     };
   }
+  valsAval(st) {
+    const R0 = this.props.regra || st.regraLocal || REGRA_GA, d = st.rDraft || R0, uso = this.props.regraUso || { itens: {}, pers: {}, part: false };
+    const mud = JSON.stringify(d) !== JSON.stringify(R0), ro = this.soLeitura();
+    const set = fn => this.setState(s => { const n = JSON.parse(JSON.stringify(s.rDraft || R0)); fn(n); return { rDraft: n, rMsg: null }; });
+    const erro = t => this.setState({ rMsg: { erro: true, t } });
+    const NOMES = { Bimestre: 'bimestre', Trimestre: 'trimestre', Semestre: 'semestre' }, QTD = { Bimestre: 4, Trimestre: 3, Semestre: 2 };
+    const tipoDe = q => ({ 1: 'Anual', 2: 'Semestre', 3: 'Trimestre', 4: 'Bimestre' })[q] || 'Personalizado';
+    const renum = its => { const c = {}; its.forEach(i => { c[i.tipo] = (c[i.tipo] || 0) + 1; i.nome = (i.tipo === 'Trabalho' ? 'T' : 'P') + c[i.tipo]; }); };
+    const gerar = (tipo, n, ant) => { const N = QTD[tipo] || n, nm = NOMES[tipo] || 'período', t0 = pD(this.ano().inicio).getTime(), t1 = pD(this.ano().fim).getTime(), passo = (t1 - t0) / N;
+      return Array.from({ length: N }, (_, k) => { const id = 'p' + (k + 1), velho = (ant || []).find(p => p.id === id);
+        return { id, nome: N === 1 ? 'Ano letivo' : (k + 1) + 'º ' + nm, inicio: k ? sD(new Date(t0 + passo * k + 864e5)) : this.ano().inicio, fim: k === N - 1 ? this.ano().fim : sD(new Date(t0 + passo * (k + 1))), fechado: !!(velho && velho.fechado) }; }); };
+    const trocarDiv = (tipo, n) => { const nov = gerar(tipo, n, d.periodos), sai = d.periodos.filter(p => !nov.some(q => q.id === p.id) && uso.pers[p.id]);
+      if (sai.length) return erro(sai[0].nome + ' já tem notas: não dá para reduzir a quantidade de períodos.');
+      set(x => { x.tipo = tipo; x.periodos = nov; }); };
+    const setQtd = q => { q = Math.max(1, Math.min(6, q)); if (q === n) return; trocarDiv(tipoDe(q), q); };
+    const n = d.periodos.length, um = (v, a, b) => Math.max(a, Math.min(b, v));
+    const frase = (() => { const per = NOMES[d.tipo] ? n + ' ' + NOMES[d.tipo] + (n > 1 ? 's' : '') : n + (n > 1 ? ' períodos' : ' período');
+      const it = d.itens.map(i => i.nome + (i.peso !== 1 ? ' (peso ' + i.peso + ')' : '')).join(', ').replace(/, ([^,]*)$/, ' e $1');
+      const pesosIg = d.itens.every(i => i.peso === 1) && (!d.participacao.ativo || d.participacao.peso === 1);
+      return [{ t: 'O ano tem ' + per + '.' }, { t: 'Em cada um: ' + (pesosIg ? 'média simples de ' : 'média de ') + it + (d.participacao.ativo ? ', mais participação' : '') + (d.extras.permitido ? '. O professor pode somar até ' + d.extras.max + (d.extras.max === 1 ? ' atividade extra' : ' atividades extras') + '.' : '.') },
+        d.recuperacao.ativo ? { t: d.recuperacao.modo === 'menor' ? 'A recuperação substitui a menor nota do período, se for maior.' : 'A recuperação substitui a média do período, se for maior.' } : null,
+        { t: 'Média do ano: média simples dos períodos.' + (d.final.ativo ? ' Abaixo de ' + fmtN(d.mediaMin) + ', prova final; o resultado é a média entre o ano e a prova final.' : '') },
+        { t: 'Aprova com média ' + fmtN(d.mediaMin) + ' ou mais e frequência de ' + d.freqMin + '% ou mais.' + (d.conselho ? ' O conselho de classe pode aprovar quem não atingiu.' : '') }].filter(Boolean); })();
+    const sw = (on, ir, label) => ({ on, ir, label, trilho: on ? 'var(--texto)' : 'var(--borda)', bola: on ? 'translateX(18px)' : 'none' });
+    return { abaAval: true, rRO: !!ro,
+      rQtd: String(n), rQtdNome: n === 1 ? 'período único no ano' : (NOMES[tipoDe(n)] ? NOMES[tipoDe(n)] + 's' : 'períodos') + ' no ano', rMenos: () => setQtd(n - 1), rMais: () => setQtd(n + 1), rMenosO: n <= 1 ? 0.35 : 1, rMaisO: n >= 6 ? 0.35 : 1,
+      rPers: d.periodos.map((p, k) => ({ nome: p.nome, inicio: p.inicio, fim: p.fim, fechado: p.fechado, stTxt: p.fechado ? 'Fechado' : 'Aberto', stBg: p.fechado ? 'var(--sunken)' : 'transparent', btTxt: p.fechado ? 'Reabrir' : 'Fechar período', temNota: !!uso.pers[p.id],
+        setNome: e => { const v = e.target.value; set(x => { x.periodos[k].nome = v; }); }, setIni: e => { const v = e.target.value; set(x => { x.periodos[k].inicio = v; }); }, setFim: e => { const v = e.target.value; set(x => { x.periodos[k].fim = v; }); },
+        alternar: () => set(x => { x.periodos[k].fechado = !x.periodos[k].fechado; }), dica: p.fechado ? 'Notas travadas para todos os professores.' : uso.pers[p.id] ? 'Com notas lançadas.' : 'Sem notas ainda.' })),
+      rItens: d.itens.map((it, k) => ({ nome: it.nome, tipo: it.tipo, peso: String(it.peso), travado: !!uso.itens[it.id], remO: uso.itens[it.id] || d.itens.length === 1 ? 0.35 : 1,
+        remDica: uso.itens[it.id] ? it.nome + ' já tem notas: não dá para remover.' : d.itens.length === 1 ? 'Precisa ter ao menos uma avaliação.' : 'Remover ' + it.nome,
+        setNome: e => { const v = e.target.value; set(x => { x.itens[k].nome = v; }); }, setTipo: e => { const v = e.target.value; set(x => { x.itens[k].tipo = v; renum(x.itens); }); },
+        menos: () => set(x => { x.itens[k].peso = um(x.itens[k].peso - 1, 1, 10); }), mais: () => set(x => { x.itens[k].peso = um(x.itens[k].peso + 1, 1, 10); }),
+        remover: () => { if (uso.itens[it.id]) return erro(it.nome + ' já tem notas: não dá para remover.'); if (d.itens.length === 1) return erro('Precisa ter ao menos uma avaliação obrigatória.'); set(x => { x.itens.splice(k, 1); renum(x.itens); }); } })),
+      rAddItem: () => set(x => { let m = 0; x.itens.forEach(i => { m = Math.max(m, +i.id.slice(1) || 0); }); x.itens.push({ id: 'i' + (m + 1), nome: '', tipo: 'Prova', peso: 1 }); renum(x.itens); }),
+      rExtras: sw(d.extras.permitido, () => set(x => { x.extras.permitido = !x.extras.permitido; }), 'Professor pode somar atividades'), rExtrasOn: d.extras.permitido,
+      rExMax: String(d.extras.max), rExMaxMenos: () => set(x => { x.extras.max = um(x.extras.max - 1, 1, 5); }), rExMaxMais: () => set(x => { x.extras.max = um(x.extras.max + 1, 1, 5); }),
+      rExPeso: String(d.extras.peso), rExPesoMenos: () => set(x => { x.extras.peso = um(x.extras.peso - 1, 1, 10); }), rExPesoMais: () => set(x => { x.extras.peso = um(x.extras.peso + 1, 1, 10); }),
+      rPart: sw(d.participacao.ativo, () => { if (d.participacao.ativo && uso.part) return erro('Participação já tem notas: não dá para desligar.'); set(x => { x.participacao.ativo = !x.participacao.ativo; }); }, 'Nota de participação'), rPartOn: d.participacao.ativo,
+      rPartPeso: String(d.participacao.peso), rPartMenos: () => set(x => { x.participacao.peso = um(x.participacao.peso - 1, 1, 10); }), rPartMais: () => set(x => { x.participacao.peso = um(x.participacao.peso + 1, 1, 10); }),
+      rRec: sw(d.recuperacao.ativo, () => set(x => { x.recuperacao.ativo = !x.recuperacao.ativo; }), 'Recuperação por período'), rRecOn: d.recuperacao.ativo,
+      rRecModos: [['menor', 'Substitui a menor nota do período', 'Ex.: P1 4,0 e P2 7,0; recuperação 6,5 → P1 vira 6,5.'], ['media', 'Substitui a média do período, se for maior', 'Ex.: média 5,5; recuperação 6,5 → período fica 6,5.']].map(([v, l, ex]) => ({ label: l, ex, on: d.recuperacao.modo === v, borda: d.recuperacao.modo === v ? 'var(--texto)' : 'var(--borda)', bg: d.recuperacao.modo === v ? 'var(--sunken)' : 'var(--superficie)', ponto: d.recuperacao.modo === v ? 1 : 0, ir: () => set(x => { x.recuperacao.modo = v; }) })),
+      rFinal: sw(d.final.ativo, () => set(x => { x.final.ativo = !x.final.ativo; }), 'Prova final do ano'),
+      rConselho: sw(d.conselho, () => set(x => { x.conselho = !x.conselho; }), 'Conselho de classe pode aprovar'),
+      rMediaMin: String(d.mediaMin).replace('.', ','), rMediaMenos: () => set(x => { x.mediaMin = um(Math.round((x.mediaMin - 0.5) * 2) / 2, 0, 10); }), rMediaMais: () => set(x => { x.mediaMin = um(Math.round((x.mediaMin + 0.5) * 2) / 2, 0, 10); }),
+      rFreqMin: d.freqMin + '%', rFreqMenos: () => set(x => { x.freqMin = um(x.freqMin - 5, 0, 100); }), rFreqMais: () => set(x => { x.freqMin = um(x.freqMin + 5, 0, 100); }),
+      rArreds: [['0,1', 'Uma casa (7,3)'], ['0,5', 'Para 0,5 (7,5)'], ['inteiro', 'Para inteiro (7)']].map(([v, l]) => ({ label: l, on: d.arred === v, bg: d.arred === v ? 'var(--texto)' : 'transparent', cor: d.arred === v ? 'var(--fundo)' : 'var(--texto)', ir: () => set(x => { x.arred = v; }) })),
+      rFrase: frase, rMud: mud, rSalvarOff: !mud || !!st.salvando, rSalvarO: !mud ? 0.4 : 1, rDescartar: () => this.setState({ rDraft: null, rMsg: null }),
+      rMsgVis: !!st.rMsg, rMsg: st.rMsg ? st.rMsg.t : '', rMsgCor: st.rMsg && st.rMsg.erro ? 'var(--aviso)' : 'var(--texto)', rMsgBorda: st.rMsg && st.rMsg.erro ? 'var(--aviso)' : 'var(--borda)', rMsgBg: st.rMsg && st.rMsg.erro ? 'var(--aviso-suave)' : 'var(--sunken)',
+      rSalvar: () => {
+        for (let k = 0; k < d.periodos.length; k++) { const p = d.periodos[k]; if (!p.inicio || !p.fim || p.inicio > p.fim) return erro(p.nome + ': o fim precisa ser depois do início.'); if (k && p.inicio <= d.periodos[k - 1].fim) return erro(p.nome + ' começa antes de ' + d.periodos[k - 1].nome + ' terminar.'); }
+        const R = JSON.parse(JSON.stringify(d)); R.itens.forEach(i => { i.nome = i.nome.trim(); });
+        this.gravar('regra', () => this.props.aoSalvarRegra ? this.props.aoSalvarRegra(R) : undefined, () => this.setState({ regraLocal: R, rDraft: null, rMsg: { erro: false, t: 'Regra salva. Vale para todas as turmas e disciplinas a partir de agora.' } }), t => this.setState({ rMsg: { erro: true, t } }));
+      } };
+  }
   pedCheck(p, q, st) { const d = st.discs.find(x => x.id === p.disc); return d ? this.checarData({ data: q.data, ini: q.ini, fim: q.fim, prof: p.prof, turma: d.turma, sala: q.sala }, st) : 'Disciplina não encontrada.'; }
   enviarPed(e) {
     e.preventDefault(); if (this.state.salvando) return;
     const st = this.state, f = st.pF, resposta = (pMsg, campos = {}) => this.setState(s => s.pF === f && s.aba === st.aba ? { ...campos, pMsg } : { msg: { t: pMsg.t } }), erro = t => resposta({ erro: true, t });
+    if (this.soLeitura()) return erro(this.soLeitura());
     if (!f.disc) return erro('Escolha a disciplina.');
     const ck = this.pedCheck({ disc: +f.disc, prof: this.profId() }, f, st); if (ck) return erro('Não dá para enviar: ' + ck);
     if (!f.motivo.trim()) return erro('Explique o motivo da aula extra.');
@@ -746,10 +819,20 @@ class GradeAgenda extends DCLogic {
     const set = (k, v) => this.setState(s => ({ [k]: v }));
     if (esc) {
       const pend = st.pedidos.filter(p => p.status === 'pendente'), hist = st.pedidos.filter(p => p.status !== 'pendente');
-      return { pedEsc: true, pedProf: false, pendTitulo: pend.length ? pend.length + (pend.length === 1 ? ' pedido aguardando análise' : ' pedidos aguardando análise') : 'Nenhum pedido aguardando análise',
+      const xf = st.xF || { disc: '', data: '', ini: '', fim: '', sala: '' }, xd = st.discs.find(x => String(x.id) === xf.disc), hojeX = this.agora().data;
+      const xck = xf.disc && xf.data && xf.ini && xf.fim ? (xf.data <= hojeX ? 'Escolha uma data futura.' : lerLoja().aulas.some(a => a.disciplina_id === +xf.disc && a.data === xf.data) || st.pedidos.some(p => p.disc === +xf.disc && p.data === xf.data && p.status === 'aprovada') || (xd && (xd.grade || []).some(g => g.dia_semana === dsem(xf.data))) ? 'Já existe aula dessa disciplina nesse dia.' : this.pedCheck({ disc: +xf.disc, prof: xd ? xd.prof : null }, Object.assign({}, xf, { sala: xf.sala || (xd && xd.sala) }), st)) : '';
+      // O servidor cria a aula extra na sala da disciplina: a sala não é um campo livre.
+      const setX = k => e => { const v = e.target.value; this.setState(s2 => { const n = Object.assign({ disc: '', data: '', ini: '', fim: '', sala: '' }, s2.xF, { [k]: v }); const dd = s2.discs.find(x => String(x.id) === n.disc); if (k === 'disc' || k === 'sala') n.sala = dd ? dd.sala || '' : ''; return { xF: n, xMsg: k === 'sala' && dd ? 'A aula extra usa a sala da disciplina: ' + nomeSala(dd.sala) + '.' : null }; }); };
+      const xExtra = { xAberto: !!st.xAberto, xFechado: !st.xAberto, abrirX: () => this.setState({ xAberto: true, xMsg: null }), fecharX: () => this.setState({ xAberto: false }), xF: xf, optDiscsX: st.discs.map(d2 => ({ v: String(d2.id), l: d2.nome + ' · ' + nomeTurma(d2.turma) })),
+        setXDisc: setX('disc'), setXData: setX('data'), setXIni: setX('ini'), setXFim: setX('fim'), setXSala: setX('sala'), xCkVis: !!(xf.disc && xf.data && xf.ini && xf.fim), xCk: xck || 'Horário livre para o professor, a turma e a sala.', xCkCor: xck ? 'var(--aviso)' : 'var(--texto-suave)', xOff: !xf.disc || !xf.data || !xf.ini || !xf.fim || !!xck || !!st.salvando || !!this.soLeitura(), xO: !xf.disc || !xf.data || !xf.ini || !xf.fim || xck ? 0.4 : st.salvando === 'extra' ? 0.6 : 1,
+        xMsgVis: !!st.xMsg, xMsg: st.xMsg || '', xTxt: this.sv('extra', 'Criar aula extra'),
+        criarX: e => { e.preventDefault(); if (xck || !xf.disc || !xf.data || !xf.ini || !xf.fim || st.salvando) return; if (this.soLeitura()) return this.setState({ xMsg: this.soLeitura() });
+          const ok = 'Aula extra criada: ' + (xd ? xd.nome : '') + ' em ' + ddmm(xf.data) + ', ' + xf.ini + '. Já está no Quadro.';
+          return this.gravar('extra', () => criarAula(+xf.disc, { data: xf.data, hora_inicio: xf.ini, hora_fim: xf.fim }), (r, simulado) => this.setState(s2 => ({ ...(simulado ? { pedidos: [{ id: Date.now(), prof: xd ? xd.prof : null, disc: +xf.disc, data: xf.data, ini: xf.ini, fim: xf.fim, sala: xf.sala || (xd && xd.sala), motivo: 'Criada pela escola.', status: 'aprovada', resposta: '', sug: null }].concat(s2.pedidos) } : {}), xF: { disc: xf.disc, data: '', ini: '', fim: '', sala: xf.sala }, xMsg: ok })), t => this.setState({ xMsg: t })); } };
+      return Object.assign(xExtra, { pedEsc: true, pedProf: false, pendTitulo: pend.length ? pend.length + (pend.length === 1 ? ' pedido aguardando análise' : ' pedidos aguardando análise') : 'Nenhum pedido aguardando análise',
         pendLista: pend.map(p => { const ck = st.pedErros?.[p.id] || this.pedCheck(p, p, st), rec = st.recusando === p.id, sug = st.sugerindo === p.id;
           return Object.assign(fmtP(p, p), { ok: !ck, ck: ck ? 'Choque: ' + ck : 'Sem choque com professor, turma e sala.', ckCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', aprovarOff: !!ck, aprovarO: ck ? 0.4 : 1,
-            normal: !rec && !sug, rec, sug, recMotivo: st.recMotivo, recErro: st.recErro, sugF: st.sug, sugErro: st.sugErro,
+            normal: !rec && !sug && !this.soLeitura(), rec, sug, recMotivo: st.recMotivo, recErro: st.recErro, sugF: st.sug, sugErro: st.sugErro,
             apTxt: this.sv('ap-' + p.id, 'Aprovar'), recTxt: this.sv('rec-' + p.id, 'Recusar pedido'), sugTxt: this.sv('sug-' + p.id, 'Enviar sugestão'), ocupado: !!st.salvando, gravErro: st.erroG['ap-' + p.id] || st.erroG['rec-' + p.id] || st.erroG['sug-' + p.id] || '', temGravErro: !!(st.erroG['ap-' + p.id] || st.erroG['rec-' + p.id] || st.erroG['sug-' + p.id]),
             aprovar: () => {
               const c2 = this.pedCheck(p, p, this.state); if (c2) return;
@@ -781,14 +864,14 @@ class GradeAgenda extends DCLogic {
               }, t => resposta({ sugErro: t }, t, mesmo));
             } }); }),
         temPend: pend.length > 0, histLista: hist.map(p => { const q = p.status === 'sugestao' ? p.sug : p; return Object.assign(fmtP(p, q), tagSt(p.status), { resposta: p.resposta, temResp: !!p.resposta }); }), temHist: hist.length > 0,
-        optSalas: lerLoja().salas.map(s => ({ v: s.id, l: s.nome })), msgPedVis: !!st.msgPed, msgPed: st.msgPed || '', fecharMsgPed: () => this.setState({ msgPed: '' }) };
+        optSalas: lerLoja().salas.map(s => ({ v: s.id, l: s.nome })), msgPedVis: !!st.msgPed, msgPed: st.msgPed || '', fecharMsgPed: () => this.setState({ msgPed: '' }) });
     }
     const meus = st.pedidos.filter(p => p.prof === this.profId()), d = st.discs.find(x => String(x.id) === f.disc);
     const ck = f.disc && f.data && f.ini && f.fim ? this.pedCheck({ disc: +f.disc, prof: this.profId() }, Object.assign({}, f, { sala: f.sala || (d && d.sala) }), st) : '';
     const setF = k => e => { const v = e.target.value; this.setState(s => { const n = Object.assign({}, s.pF, { [k]: v }); if (k === 'disc' && !s.pF.sala) { const dd = s.discs.find(x => String(x.id) === v); if (dd) n.sala = dd.sala; } return { pF: n, pMsg: null }; }); };
     return { pedEsc: false, pedProf: true, optMinhas: minhas.map(x => ({ v: String(x.id), l: x.nome + ' · ' + nomeTurma(x.turma) })), optSalas: lerLoja().salas.map(s => ({ v: s.id, l: s.nome })),
       pF: f, setPDisc: setF('disc'), setPData: setF('data'), setPIni: setF('ini'), setPFim: setF('fim'), setPSala: setF('sala'), setPMotivo: setF('motivo'), enviarPed: e => this.enviarPed(e),
-      pCkVis: !!(f.disc && f.data && f.ini && f.fim), pCk: ck ? 'Choque: ' + ck : 'Horário livre para você, a turma e a sala.', pCkCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', pEnvOff: !!ck || !!st.salvando, pEnvO: ck ? 0.4 : st.salvando === 'pedido' ? 0.6 : 1, pEnvTxt: this.sv('pedido', 'Enviar para análise'),
+      pCkVis: !!(f.disc && f.data && f.ini && f.fim), pCk: ck ? 'Choque: ' + ck : 'Horário livre para você, a turma e a sala.', pCkCor: ck ? 'var(--aviso)' : 'var(--texto-suave)', pEnvOff: !!ck || !!st.salvando || !!this.soLeitura(), pEnvO: ck ? 0.4 : st.salvando === 'pedido' ? 0.6 : 1, pEnvTxt: this.sv('pedido', 'Enviar para análise'),
       pMsgVis: !!(st.pMsg || st.erroG.pedido), pMsg: st.erroG.pedido || (st.pMsg ? st.pMsg.t : ''), pMsgCor: st.erroG.pedido || (st.pMsg && st.pMsg.erro) ? 'var(--aviso)' : 'var(--texto)',
       meusLista: meus.map(p => { const q = p.status === 'sugestao' ? p.sug : p; return Object.assign(fmtP(p, q), tagSt(p.status), { resposta: p.resposta, temResp: !!p.resposta, ehSug: p.status === 'sugestao', original: 'Você pediu ' + DIA_L[dsem(p.data)] + ', ' + ddmm(p.data) + ' · ' + p.ini + '–' + p.fim + '.',
         acTxt: this.sv('ac-' + p.id, 'Aceitar sugestão'), rsTxt: this.sv('rs-' + p.id, 'Recusar'), sgOff: !!st.salvando, sgErro: st.erroG['ac-' + p.id] || st.erroG['rs-' + p.id] || '', sgTemErro: !!(st.erroG['ac-' + p.id] || st.erroG['rs-' + p.id]),
@@ -822,13 +905,20 @@ class GradeAgenda extends DCLogic {
         cargaTxt: fmtH(c.feito) + ' de ' + d.carga + ' h cumpridas', bar: 'scaleX(' + Math.min(1, c.feito / d.carga).toFixed(3) + ')' }, paChoques: msgs.map(t => ({ t })), paTemCh: esc && msgs.length > 0, paProx: prox, paTemProx: prox.length > 0,
         ...(() => { const ci = this.chamadaInfo(pn, st, now, P), inst = { key: pn.key, tkey: pn.tkey, disc: d, data: pn.data, ini: pn.ini, fim: pn.fim, sala: pn.sala, tipo: pn.itipo, pendente: pn.pendente, remarcada: pn.remarcada, feriado: pn.feriado, cancelada: pn.cancelada, pedido: pn.pedido ? { id: pn.pedido } : null };
           return { paChVis: ci.vis, paChFeita: ci.vis && ci.feita, paChOff: !!ci.off, paChDica: ci.off, paChTemDica: !!ci.off, paChTxt: ci.txt, paChO: ci.off ? 0.4 : 1, paChPrim: ci.feita ? 'var(--superficie)' : 'var(--texto)', paChCor: ci.feita ? 'var(--texto)' : 'var(--fundo)', paCh: () => { if (!ci.off) this.abrirChamada(inst); } }; })(),
+        ...(() => { const ok = esc && !pn.pendente && !pn.feriado && (pn.itipo === 'grade' || pn.itipo === 'extra'), feita = !!this.chamadaAtual(pn), fut = pn.data > now.data || (pn.data === now.data && hm(pn.ini) > now.min), au = this.aulaDe(d.id, pn.data, pn.ini);
+          const mudar = cancelar => this.gravar('canc', async () => { if (!au) throw { detalhe: 'Aula não encontrada no semestre.' }; await atualizarAula(au.aula_id, { status: cancelar ? 'cancelada' : 'agendada' }); },
+            (r, simulado) => this.setState(s2 => { const c2 = Object.assign({}, s2.canceladas); if (simulado) { if (cancelar) c2[pn.key] = true; else delete c2[pn.key]; } return { ...(simulado ? { canceladas: c2 } : {}), painel: s2.painel && s2.painel.key === pn.key ? Object.assign({}, s2.painel, { cancelada: cancelar }) : s2.painel, msg: { t: d.nome + ' · ' + nomeTurma(d.turma) + ' de ' + ddmm(pn.data) + (cancelar ? ' cancelada.' : ' reativada.') } }; }),
+            t => this.setState({ msg: { t } }));
+          return { paCancVis: ok && !pn.cancelada, paReatVis: ok && !!pn.cancelada, paCancOff: feita || !fut || !!st.salvando, paCancO: feita || !fut ? 0.4 : st.salvando === 'canc' ? 0.6 : 1, paCancDica: feita ? 'Aula já tem presenças' : !fut ? 'Aula já começou ou passou' : '', paCancTemDica: feita || !fut,
+            paCancelar: () => { if (feita || !fut || this.soLeitura()) return; mudar(true); }, paReativar: () => { if (this.soLeitura()) return this.setState({ msg: { t: this.soLeitura() } }); mudar(false); },
+            paCancTxt: this.sv('canc', 'Cancelar aula'), paReatTxt: this.sv('canc', 'Reativar aula'), paRemDica: esc && pn.itipo === 'grade' && !pn.cancelada && !pn.feriado && fut && !feita ? 'Para remarcar, arraste a aula no Quadro.' : '' }; })(),
         paEditarVis: esc && pn.itipo === 'grade', paEditar: () => this.abrirDisc(d), paPedVis: esc && pn.pendente, paIrPed: () => this.setState({ aba: 'pedidos', painel: null }) });
     }
     if (pn.tipo === 'evento') {
       const e = st.eventos.find(x => x.id === pn.id); if (!e) return base;
       const d = e.disc ? st.discs.find(x => x.id === e.disc) : null, c = this.chipEv(e);
       return Object.assign(base, { painelTitulo: 'Calendário', pEv: true, pe: Object.assign(c, { quando: (e.fim ? ddmm(e.data) + ' a ' + ddmm(e.fim) + ' de ' : DIA_L[dsem(e.data)] + ', ' + e.data.slice(8, 10) + ' de ') + MESES[+e.data.slice(5, 7) - 1] + (e.hi ? ' · ' + e.hi + '–' + e.hf : ''), disc: d ? d.nome + ' · ' + nomeTurma(d.turma) : '', temDisc: !!d, desc: e.desc, temDesc: !!e.desc }),
-        peAcoes: esc, peEditar: () => this.editarEvento(e), peExcluir: () => {
+        peAcoes: esc && !this.soLeitura(), peEditar: () => this.editarEvento(e), peExcluir: () => {
           const ok = 'Evento removido do calendário.';
           return this.gravar('excluirEvento', () => apagarEvento(e.id), (r, simulado) => {
             if (simulado) return this.setState(s => ({ eventos: s.eventos.filter(x => x.id !== e.id), painel: null, msgAno: ok }));
@@ -877,7 +967,13 @@ class GradeAgenda extends DCLogic {
     if (pn.tipo === 'disc' && st.dF) {
       const f = st.dF, errs = this.errosDisc(f, pn.id), set = k => e => { const v = e.target.value; if (v === '__nova') return this.abrirNovo(k === 'turma' ? 'turma' : 'sala', { painel: pn, dF: st.dF }); this.setDF(k, v); };
       const disc = st.discs.find(x => x.id === pn.id), c = disc ? this.carga(disc, st, fer, now.data, now.min) : null;
-      return Object.assign(base, { painelTitulo: 'Disciplina', pDisc: true, df: f, dfTitulo: pn.id ? f.nome || 'Disciplina' : 'Nova disciplina', setDNome: set('nome'), setDTurma: set('turma'), setDProf: set('prof'), setDSala: set('sala'), setDCarga: set('carga'),
+      const dObj = pn.id ? st.discs.find(x => x.id === pn.id) : null, dCh = dObj ? lerLoja().aulas.filter(a => a.disciplina_id === dObj.id && a.chamada && Object.keys(a.chamada).length).length + (this.demo() ? Object.keys(st.chamadas).filter(k2 => k2.split('-')[0] === String(dObj.id)).length : 0) : 0, dAul = dObj ? (dObj.grade || []).length : 0;
+      const dExc = { dExcVis: !!dObj && P === 'escola' && !this.soLeitura(), dExcPerg: !st.dExc, dExcConf: st.dExc === 'conf', dExcBloq: st.dExc === 'bloq',
+        dExcBloqTxt: st.erroG.exc || 'Disciplina já tem notas ou chamadas: não dá para excluir.', dExcTxt: dObj ? 'Excluir ' + dObj.nome + ' · ' + nomeTurma(dObj.turma) + '? Saem junto ' + dAul + (dAul === 1 ? ' horário semanal' : ' horários semanais') + ' e todas as aulas geradas. Não dá para desfazer.' : '',
+        dExcPedir: () => { if (this.props.aoExcluir) { this.setState({ painel: null, dExc: null }); return this.props.aoExcluir(dObj.id); } this.setState({ dExc: dCh ? 'bloq' : 'conf', erroG: { ...st.erroG, exc: '' } }); },
+        dExcCancelar: () => this.setState({ dExc: null }),
+        dExcConfirmar: () => this.gravar('exc', () => apagarDisciplina(dObj.id), (r, simulado) => this.setState(s2 => ({ ...(simulado ? { discs: s2.discs.filter(x => x.id !== dObj.id), pedidos: s2.pedidos.filter(p => p.disc !== dObj.id), remarc: s2.remarc.filter(q => q.disc !== dObj.id) } : {}), painel: null, dExc: null, msg: { t: dObj.nome + ' · ' + nomeTurma(dObj.turma) + ' excluída.' } })), (t, er) => this.setState(s2 => ({ dExc: er && er.status === 409 ? 'bloq' : s2.dExc, erroG: { ...s2.erroG, exc: t } }))) };
+      return Object.assign(base, dExc, { painelTitulo: 'Disciplina', pDisc: true, df: f, dfTitulo: pn.id ? f.nome || 'Disciplina' : 'Nova disciplina', setDNome: set('nome'), setDTurma: set('turma'), setDProf: set('prof'), setDSala: set('sala'), setDCarga: set('carga'),
         optTurmas: [{ v: '', l: 'Sem turma' }].concat(lerLoja().turmas.map(t => ({ v: t.id, l: t.nome }))), optProfs: st.profs.map(p => ({ v: String(p.id), l: p.nome })), optSalas: [{ v: '', l: 'Sem sala' }].concat(lerLoja().salas.map(s => ({ v: s.id, l: s.nome })), this.props.soEditor ? [] : [{ v: '__nova', l: '+ Nova sala…' }]),
         dfCarga: c ? fmtH(c.feito) + ' cumpridas de ' + f.carga + ' h · a grade soma ' + fmtH(c.total) + ' no semestre' : '', dfTemCarga: !!c,
         dfLinhas: f.grade.map((r, i) => ({ n: String(i + 1), dia: r.dia, ini: r.ini, fim: r.fim, sala: r.sala || '', nota: errs[i] || 'Livre para o professor, a turma e a sala.', notaCor: errs[i] ? 'var(--aviso)' : 'var(--texto-suave)', borda: errs[i] ? 'var(--aviso)' : 'var(--borda)',
